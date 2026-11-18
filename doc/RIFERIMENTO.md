@@ -2,7 +2,7 @@
 
 ## Per cominciare
 
-Progetto Gradle (wrapper 9.9.1, AGP 9.5.1 con Kotlin integrato), un modulo `app`, package `app.australdashboard`. `minSdk` = `targetSdk` = `compileSdk` = 32. Nessuna dipendenza di runtime; nei test JUnit 4 e `org.json` (che su Android è nella piattaforma). Il controllo lint `ExpiredTargetSdkVersion` è disattivato perché riguarda solo il Play Store. Release con R8 e riduzione delle risorse: l'APK è intorno ai 290 KB con i font VT323, Orbitron e Limelight.
+Progetto Gradle (wrapper 9.9.1, AGP 9.5.1 con Kotlin integrato), un modulo `app`, package `app.australdashboard`. `minSdk` = `targetSdk` = `compileSdk` = 32. Nessuna dipendenza di runtime; nei test JUnit 4 e `org.json` (che su Android è nella piattaforma). Il controllo lint `ExpiredTargetSdkVersion` è disattivato perché riguarda solo il Play Store. Release con R8 e riduzione delle risorse: l'APK è intorno ai 670 KB con i font VT323, Orbitron, Limelight, Rajdhani (pesi 600 e 700, la parte più pesante) e Audiowide.
 
 JDK: quello di Android Studio, `/Applications/Android Studio.app/Contents/jbr/Contents/Home` (esportare `JAVA_HOME`). SDK in `~/Library/Android/sdk`, indicato in `local.properties` (ignorato da git).
 
@@ -30,6 +30,10 @@ Versione in `version.properties` (`versionCode`, `versionName`), letta da `app/b
 | `temi/Hud.kt` | Tema 2: quadrante a 60 tacche (i minuti trascorsi in ciano), termometro con fascia minima–massima, squadrette e smussi a 45° disegnati in codice; Orbitron variabile con `fontVariationSettings` |
 | `temi/Brutalismo.kt` | Tema 3: blocchi con bordi da 4 px, indice delle app a sei righe, servizi in alto (il quarto è solo l'ingranaggio); `sans-serif-condensed` peso 900 dove esiste |
 | `temi/ArtDeco.kt` | Tema 4: trittico simmetrico, cornici doppie con rombi d'oro (`Drawable` privato), comandi tondi; Limelight e `serif`; i nomi dei distributori in maiuscolo, perché nei dati del MIMIT sono un po' maiuscoli e un po' no |
+| `temi/Solari.kt` | Tema 5: ogni cifra e parola su una paletta (`GradientDrawable` con la giunzione scura a metà); orologio largo 650 px fissi come nella tavola; `sans-serif-condensed` |
+| `temi/Cyberpunk.kt` | Tema 6: smussi a 45° con `Drawable` e contorno privati, così anche il ripple segue lo smusso; servizi con larghezze fisse dai pesi della tavola; Rajdhani 600 e 700 |
+| `temi/Braun.kt` | Tema 7: display incassato, tastierino 5×2 di tasti tondi (app scure, servizi chiari; tutta la cella è toccabile); `sans-serif-light` |
+| `temi/Synthwave.kt` | Tema 8: un solo gradiente magenta→arancio su ora, orizzonte, cornice della copertina, anelli e play (testi a gradiente con `LinearGradient`); Audiowide per titoli e cifre, `sans-serif-condensed` corsivo per il testo |
 | `funzioni/` | Dati condivisi dai temi: vedi «Funzioni» |
 | `DiagnosticaActivity.kt` | Mostra versione, dimensione APK, PSS, tempi del primo frame, frame in ritardo, esito aggiornamenti |
 | `Misure.kt` | Misure in memoria del processo |
@@ -67,7 +71,9 @@ Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nasco
 - Tutte le activity usano `Theme.DeviceDefault.NoActionBar.Fullscreen`: la barra di stato di Android non toglie spazio alla Home.
 - Un riquadro con l'etichetta sul bordo esce dai propri limiti: il genitore deve avere `clipChildren=false` (`Ui.senzaRitaglio`). Mai su un genitore diretto di uno `ScrollView`, che altrimenti disegna fuori dai suoi limiti: lo `ScrollView` va dentro un `FrameLayout`.
 - `Ui.testo` imposta `isAllCaps` dopo `isSingleLine`, che altrimenti lo annulla.
-- Un testo che deve rimpicciolirsi per stare nello spazio si costruisce con `Ui.adatta`: l'adattamento automatico di Android non scatta se il testo ha l'ellissi, e `Ui.adatta` la toglie.
+- Un testo che deve rimpicciolirsi per stare nello spazio si costruisce con `Ui.adatta`, con una larghezza data (non `ADATTA`). L'adattamento automatico di Android non scatta se il testo ha l'ellissi, né su una riga sola con lo scorrimento orizzontale che `isSingleLine` accende; con un'interlinea fissa le lettere rimpicciolite si tagliano in basso. `Ui.adatta` toglie tutte e tre le cose. `setTextSize` su un testo adattato non ha effetto.
+- Un testo più alto del suo riquadro non si centra: Android lo allinea in alto e taglia il fondo. Per imitare il `line-height` della tavola (più basso dell'altezza del font) si lascia l'altezza naturale e si mettono margini negativi sopra e sotto, metà della differenza ciascuno (ora di Braun).
+- Una parola sola in un testo a due righe si spezza a metà («LAUNCH/ER»): le etichette di una parola vanno su una riga.
 - Una riga a pesi che non ci sta sposta e taglia i figli: quando lo spazio è stretto, larghezze fisse calcolate sulla tavola.
 - Font esterni in `res/font/`, letti con `resources.getFont`; licenze in `licenze/`. I font di sistema: `Typeface.MONOSPACE` al posto di Roboto Mono.
 - Icone: `res/drawable/ic_*.xml`, convertite dalle SVG delle tavole (viewport 48), bianche, colorate con `imageTintList`.
@@ -120,6 +126,7 @@ Immagine `system-images;android-32;google_apis;arm64-v8a`. AVD in `~/.android/av
 - Avvio a freddo: `adb shell am force-stop app.australdashboard`, poi `adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME` (`TotalTime`, `LaunchState: COLD`).
 - Posizione finta: `adb shell appops set com.android.shell android:mock_location allow`, poi per `gps` e `fused` `adb shell cmd location providers add-test-provider <p>`, `set-test-provider-enabled <p> true`, `set-test-provider-location <p> --location 41.9028,12.4964`. `adb emu geo fix` da solo non bastava.
 - Permesso musica senza toccare: `adb shell cmd notification allow_listener app.australdashboard/app.australdashboard.funzioni.AscoltoNotifiche`.
+- Un brano finto per provare la scheda della musica: una pagina servita dal Mac (`python3 -m http.server 8765`, poi `adb reverse tcp:8765 tcp:8765`) con un `<audio>` e `navigator.mediaSession.metadata` (titolo, artista, copertina PNG), aperta in Chrome sull'emulatore; un tocco su play crea una sessione media vera, con il nome dell'app «Chrome». `adb shell am force-stop com.android.chrome` la chiude.
 - Le activity diverse dalla Home non sono esportate: ci si arriva dalla Home con `adb shell input tap`. Per toccare un elemento per testo o descrizione: `adb exec-out uiautomator dump /dev/tty`, poi il centro dei suoi `bounds`. Il testo letto è quello originale, senza il maiuscolo applicato dalla vista. Memoria: `adb shell dumpsys meminfo app.australdashboard`. Frame: `adb shell dumpsys gfxinfo app.australdashboard`.
 
 Misure sull'emulatore `box` (build 0.1.0, release): APK 41 KB, PSS 20–24 MB, avvio a freddo `TotalTime` 180–330 ms, primo frame dalla creazione della Home 85–125 ms, 0 frame in ritardo secondo `gfxinfo`.
@@ -134,5 +141,16 @@ Misure sull'emulatore `box` con i temi 1–4 (M02, release, APK 291 KB), avvio a
 | HUD | 164–226 ms | 34 MB (memoria nativa in più, probabilmente il disegno del quadrante) |
 | Brutalismo | 141–165 ms, un picco a 1 s non ripetuto | 24 MB |
 | Art Déco | 150–226 ms | 24 MB |
+
+Frame in ritardo: 0 per tutti.
+
+Temi 5–8 (M02, release, APK 673 KB), stesso metodo:
+
+| Tema | Avvio a freddo | PSS |
+|---|---|---|
+| Solari | 153–176 ms | 25 MB |
+| Cyberpunk | 142–165 ms | 28–31 MB |
+| Braun | 174–297 ms | 23 MB |
+| Synthwave | 156–271 ms | 24 MB |
 
 Frame in ritardo: 0 per tutti.

@@ -6,7 +6,7 @@ object Temi {
     private const val FILE = "impostazioni"
     private const val CHIAVE = "tema"
 
-    val elenco: List<Tema> = listOf(Matrix, Hud, Brutalismo, ArtDeco)
+    val elenco: List<Tema> = listOf(Matrix, Hud, Brutalismo, ArtDeco, Solari, Cyberpunk, Braun, Synthwave)
 
     fun scelto(context: Context): Tema {
         val id = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(CHIAVE, null)

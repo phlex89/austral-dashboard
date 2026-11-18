@@ -59,6 +59,8 @@ object Ui {
 
     fun adatta(testo: TextView, minimo: Int, massimo: Int): TextView {
         testo.ellipsize = null
+        testo.setHorizontallyScrolling(false)
+        testo.setLineSpacing(0f, 1f)
         testo.setAutoSizeTextTypeUniformWithConfiguration(minimo, massimo, 2, TypedValue.COMPLEX_UNIT_PX)
         return testo
     }
