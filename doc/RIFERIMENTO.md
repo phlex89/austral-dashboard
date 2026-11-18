@@ -27,7 +27,7 @@ Versione in `version.properties` (`versionCode`, `versionName`), letta da `app/b
 | `temi/Temi.kt` | Elenco dei temi e scelta, in `SharedPreferences` `impostazioni`, chiave `tema` (predefinito il primo) |
 | `temi/Ui.kt` | Costruzione delle view in px: testi, icone colorate, bordi, righe e colonne con spaziatura, `premibile` (ripple), icona del cielo |
 | `temi/Matrix.kt` | Tema 1: misure e colori della tavola `T1Home` e `T1Benzinai`; nei servizi niente icone, che non ci stavano accanto alle etichette |
-| `temi/Hud.kt` | Tema 2: quadrante a 60 tacche (i minuti trascorsi in ciano), termometro con fascia minima–massima, squadrette e smussi a 45° disegnati in codice; Orbitron variabile con `fontVariationSettings` |
+| `temi/Hud.kt` | Tema 2: quadrante a 60 tacche (i minuti trascorsi in ciano), termometro con fascia minima–massima, squadrette e smussi a 45° disegnati in codice; Orbitron variabile, un `Typeface` per peso creato una volta (un `fontVariationSettings` per testo costava 8 MB di memoria nativa) |
 | `temi/Brutalismo.kt` | Tema 3: blocchi con bordi da 4 px, indice delle app a sei righe, servizi in alto (il quarto è solo l'ingranaggio); `sans-serif-condensed` peso 900 dove esiste |
 | `temi/ArtDeco.kt` | Tema 4: trittico simmetrico, cornici doppie con rombi d'oro (`Drawable` privato), comandi tondi; Limelight e `serif`; i nomi dei distributori in maiuscolo, perché nei dati del MIMIT sono un po' maiuscoli e un po' no |
 | `temi/Solari.kt` | Tema 5: ogni cifra e parola su una paletta (`GradientDrawable` con la giunzione scura a metà); orologio largo 650 px fissi come nella tavola; `sans-serif-condensed` |
@@ -71,8 +71,8 @@ Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nasco
 - Tutte le activity usano `Theme.DeviceDefault.NoActionBar.Fullscreen`: la barra di stato di Android non toglie spazio alla Home.
 - Un riquadro con l'etichetta sul bordo esce dai propri limiti: il genitore deve avere `clipChildren=false` (`Ui.senzaRitaglio`). Mai su un genitore diretto di uno `ScrollView`, che altrimenti disegna fuori dai suoi limiti: lo `ScrollView` va dentro un `FrameLayout`.
 - `Ui.testo` imposta `isAllCaps` dopo `isSingleLine`, che altrimenti lo annulla.
-- Un testo che deve rimpicciolirsi per stare nello spazio si costruisce con `Ui.adatta`, con una larghezza data (non `ADATTA`). L'adattamento automatico di Android non scatta se il testo ha l'ellissi, né su una riga sola con lo scorrimento orizzontale che `isSingleLine` accende; con un'interlinea fissa le lettere rimpicciolite si tagliano in basso. `Ui.adatta` toglie tutte e tre le cose. `setTextSize` su un testo adattato non ha effetto.
-- Un testo più alto del suo riquadro non si centra: Android lo allinea in alto e taglia il fondo. Per imitare il `line-height` della tavola (più basso dell'altezza del font) si lascia l'altezza naturale e si mettono margini negativi sopra e sotto, metà della differenza ciascuno (ora di Braun).
+- Un testo che deve rimpicciolirsi per stare nello spazio si costruisce con `Ui.adatta`, con una larghezza data (non `ADATTA`). L'adattamento automatico di Android non scatta se il testo ha l'ellissi, né su una riga sola con lo scorrimento orizzontale che `isSingleLine` accende; con un'interlinea fissa le lettere rimpicciolite si tagliano in basso. `Ui.adatta` toglie ellissi e scorrimento e trasforma l'interlinea in una proporzione, che scende con il testo. Il testo si rimpicciolisce anche per stare in altezza: un riquadro più basso dell'altezza naturale del font lo rimpicciolisce sempre (l'interlinea non conta sull'ultima riga). `setTextSize` su un testo adattato non ha effetto.
+- Un testo più alto del suo riquadro non si centra: Android lo allinea in alto e taglia il fondo. Per imitare il `line-height` della tavola (più basso dell'altezza del font) si lascia l'altezza naturale e si mettono margini negativi sopra e sotto, metà della differenza ciascuno (ora di Braun e di Brutalismo).
 - Una parola sola in un testo a due righe si spezza a metà («LAUNCH/ER»): le etichette di una parola vanno su una riga.
 - Una riga a pesi che non ci sta sposta e taglia i figli: quando lo spazio è stretto, larghezze fisse calcolate sulla tavola.
 - Font esterni in `res/font/`, letti con `resources.getFont`; licenze in `licenze/`. I font di sistema: `Typeface.MONOSPACE` al posto di Roboto Mono.
@@ -133,24 +133,22 @@ Misure sull'emulatore `box` (build 0.1.0, release): APK 41 KB, PSS 20–24 MB, a
 
 Misure sull'emulatore `box` con il tema Matrix (M02, release): APK 174 KB, PSS 23 MB, avvio a freddo `TotalTime` 152–196 ms, 0 frame in ritardo. Primo download dei prezzi MIMIT e lettura: circa 4 s.
 
-Misure sull'emulatore `box` con i temi 1–4 (M02, release, APK 291 KB), avvio a freddo dalla riga `Displayed` di logcat dopo `am force-stop` (Android riapre subito la Home, e `am start -W` dà allora `TotalTime: 0`):
+Misure con gli otto temi (M02, release, APK 673 KB), avvio a freddo dalla riga `Displayed` di logcat dopo `am force-stop` (Android riapre subito la Home, e `am start -W` dà allora `TotalTime: 0`), quattro avvii per tema; PSS a Home ferma dopo un avvio pulito:
 
-| Tema | Avvio a freddo | PSS |
-|---|---|---|
-| Matrix | 145–184 ms | 24 MB |
-| HUD | 164–226 ms | 34 MB (memoria nativa in più, probabilmente il disegno del quadrante) |
-| Brutalismo | 141–165 ms, un picco a 1 s non ripetuto | 24 MB |
-| Art Déco | 150–226 ms | 24 MB |
+| Tema | `box` avvio | `box` PSS | `box-lento` avvio | `box-lento` PSS |
+|---|---|---|---|---|
+| Matrix | 145–233 ms | 24 MB | 136–182 ms | 31 MB |
+| HUD | 141–191 ms | 24 MB | 126–231 ms | 32 MB |
+| Brutalismo | 150–223 ms | 24 MB | 130–142 ms | 31 MB |
+| Art Déco | 160–171 ms | 25 MB | 148–182 ms | 32 MB |
+| Solari | 166–303 ms | 25 MB | 146–196 ms | 33 MB |
+| Cyberpunk | 140–169 ms | 25 MB | 159–207 ms | 32 MB |
+| Braun | 150–179 ms | 24 MB | 125–156 ms | 31 MB |
+| Synthwave | 195–273 ms | 25 MB | 144–210 ms | 32 MB |
 
-Frame in ritardo: 0 per tutti.
+Frame in ritardo: 0 per tutti, su tutti e due.
 
-Temi 5–8 (M02, release, APK 673 KB), stesso metodo:
-
-| Tema | Avvio a freddo | PSS |
-|---|---|---|
-| Solari | 153–176 ms | 25 MB |
-| Cyberpunk | 142–165 ms | 28–31 MB |
-| Braun | 174–297 ms | 23 MB |
-| Synthwave | 156–271 ms | 24 MB |
-
-Frame in ritardo: 0 per tutti.
+- `box-lento` non è più lento negli avvii: con 2 core del Mac l'emulatore resta molto più veloce del box. Il fattore tra box ed emulatore si misura solo sul box (prove di M01).
+- Su `box-lento` il PSS è più alto di 7–8 MB per tutti i temi, ma la memoria propria dell'app (heap Java e nativo) è uguale: il PSS divide le librerie condivise tra i processi, e su un sistema con meno processi ne tocca all'app una quota più grande. Il confronto con l'obiettivo dei 40 MB va fatto su `box`.
+- Il PSS va letto dopo un avvio pulito: dopo aver girato per Impostazioni e Benzinai lo stesso processo sale di 5–10 MB.
+- HUD era a 34 MB: `fontVariationSettings` su ogni testo creava un font nativo per testo. Ora c'è un `Typeface` per peso (`Font.Builder` con la variazione, `CustomFallbackBuilder`), e HUD sta con gli altri.

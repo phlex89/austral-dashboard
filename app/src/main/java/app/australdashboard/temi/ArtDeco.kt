@@ -219,7 +219,7 @@ object ArtDeco : Tema {
             val cella = Ui.colonna(s, 10, Gravity.CENTER).apply {
                 background = Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
                 setPadding(14, 0, 14, 0)
-                addView(Ui.testo(s, 40, ORO, limelight, 44, numero))
+                addView(Ui.testo(s, 40, ORO, limelight, 44, numero).apply { gravity = Gravity.CENTER_HORIZONTAL })
                 addView(Ui.icona(s, icona, ORO), lp(60, 60))
                 addView(Ui.testo(s, dimensione, AVORIO, serif, 36, nome, righe = 2).apply { gravity = Gravity.CENTER })
             }

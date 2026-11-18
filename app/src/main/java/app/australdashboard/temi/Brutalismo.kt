@@ -79,7 +79,7 @@ object Brutalismo : Tema {
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeBrutalismo(s, azioni)
 
     private class HomeBrutalismo(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
-        private val ora = Ui.adatta(Ui.testo(s, 208, SFONDO, nero, 178).apply { letterSpacing = -0.038f }, 120, 208)
+        private val ora = Ui.testo(s, 208, SFONDO, nero).apply { letterSpacing = -0.038f }
         private val data = Ui.testo(s, 28, SFONDO, mono, 34, maiuscolo = true)
         private val gradi = Ui.testo(s, 156, TESTO, nero, 140, "--°").apply { letterSpacing = -0.038f }
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, TESTO)
@@ -143,7 +143,11 @@ object Brutalismo : Tema {
                 setPadding(24, 18, 24, 18)
             }
             blocco.addView(Ui.testo(s, 28, SFONDO, mono, 34, "ORA LOCALE /"))
-            blocco.addView(ora, lp(TUTTO, 178).apply { leftMargin = -6 })
+            blocco.addView(ora, lp(TUTTO, ADATTA).apply {
+                leftMargin = -6
+                topMargin = -32
+                bottomMargin = -33
+            })
             blocco.addView(View(s), lp(1, 0, 1f))
             blocco.addView(data)
             Ui.senzaRitaglio(blocco)

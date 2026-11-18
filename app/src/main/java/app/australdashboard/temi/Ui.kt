@@ -60,7 +60,8 @@ object Ui {
     fun adatta(testo: TextView, minimo: Int, massimo: Int): TextView {
         testo.ellipsize = null
         testo.setHorizontallyScrolling(false)
-        testo.setLineSpacing(0f, 1f)
+        val naturale = testo.paint.getFontMetricsInt(null)
+        if (naturale > 0) testo.setLineSpacing(0f, testo.lineHeight / naturale.toFloat())
         testo.setAutoSizeTextTypeUniformWithConfiguration(minimo, massimo, 2, TypedValue.COMPLEX_UNIT_PX)
         return testo
     }

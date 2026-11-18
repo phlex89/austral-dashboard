@@ -9,6 +9,8 @@ import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.graphics.fonts.Font
+import android.graphics.fonts.FontFamily
 import android.graphics.ColorFilter
 import android.graphics.drawable.Drawable
 import android.text.SpannableString
@@ -60,6 +62,13 @@ object Hud : Tema {
 
     private fun orbitron(context: Context): Typeface = Ui.font(context, R.font.orbitron)
 
+    private val pesi = HashMap<Int, Typeface>()
+
+    private fun orbitron(context: Context, peso: Int): Typeface = pesi.getOrPut(peso) {
+        val font = Font.Builder(context.resources, R.font.orbitron).setFontVariationSettings("'wght' $peso").build()
+        Typeface.CustomFallbackBuilder(FontFamily.Builder(font).build()).build()
+    }
+
     private val condensato: Typeface = Typeface.create("sans-serif-condensed", Typeface.NORMAL)
     private val condensatoGrassetto: Typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
 
@@ -74,8 +83,7 @@ object Hud : Tema {
         peso: Int = 400,
         spaziatura: Int = 0,
         interlinea: Int = px,
-    ): TextView = Ui.testo(context, px, colore, orbitron(context), interlinea, contenuto).apply {
-        fontVariationSettings = "'wght' $peso"
+    ): TextView = Ui.testo(context, px, colore, orbitron(context, peso), interlinea, contenuto).apply {
         if (spaziatura > 0) letterSpacing = spaziatura.toFloat() / px
     }
 

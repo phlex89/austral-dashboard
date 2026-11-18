@@ -1,6 +1,6 @@
 ---
 milestone: M02
-stato: chiuso
+stato: in-corso
 data: 2026-11-18
 lettori: persone
 ---
@@ -51,3 +51,23 @@ Il GPS del box è ancora da verificare (prove di M01). Senza posizione non ci so
 - Alternativa: nessun ripiego; meteo e Benzinai mostrano «posizione non disponibile».
 
 **Risposta (2026-11-18):** come la proposta.
+
+## D-6 · Preferiti dei Benzinai: Torino, Cellamare, Valenzano
+
+Richiesta (2026-11-18): come preferiti solo Torino, Cellamare (Bari) e Valenzano (Bari), anche già pronti nell'app. Oggi un preferito è un singolo distributore. Nei dati del MIMIT a Cellamare c'è 1 distributore, a Valenzano 5, a Torino 213.
+
+- **Proposta:** i preferiti diventano luoghi. In cima al pannello Benzinai, per ognuno dei tre comuni, il distributore con la benzina self più economica, anche se è lontano; un tocco apre la sua scheda. I tre comuni sono già nell'app; la ★ sui singoli distributori sparisce.
+- Alternativa A: come la proposta, ma i 3 più economici per comune invece di uno.
+- Alternativa B: i preferiti restano distributori singoli. Già pronti: quello di Cellamare e i 5 di Valenzano; per Torino servono nomi o indirizzi dei distributori che usi.
+
+**Risposta (2026-11-18):** come la proposta.
+
+## D-7 · Commit della tappa 2 e passo successivo
+
+Misure e confronto con le tavole sono finiti; le correzioni di HUD, Brutalismo, Art Déco e `Ui.adatta` non sono ancora nel commit.
+
+- **Proposta:** commit adesso, poi la tappa 3: rilascio con `./release.sh` e prova sul box. Prima del rilascio si rifà la prova della catena di aggiornamento sull'emulatore.
+- Alternativa: commit, poi i preferiti di D-6 prima della tappa 3.
+- Alternativa: nessun commit per ora.
+
+**Risposta (2026-11-18):** come la proposta; i preferiti di D-6 si fanno prima del rilascio, perché erano chiesti nello stesso messaggio.
