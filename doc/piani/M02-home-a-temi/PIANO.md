@@ -1,0 +1,100 @@
+---
+milestone: M02
+stato: in-corso
+data: 2026-11-18
+lettori: entrambi
+---
+
+# M02 · La Home vera, in otto temi
+
+## In una pagina
+
+La Home provvisoria di M01 diventa quella disegnata nella tavola «Launcher auto — 8 temi Home» (artifact Design `FB5G7dpEA4q1GcwEvhxoXL`). I temi sono otto e si sceglie quale usare in Impostazioni › Tema; la scelta vale subito.
+
+| Tema | Carattere | Cosa domina |
+|---|---|---|
+| 1 Matrix | terminale a fosfori verdi, riquadri alla tmux | ora |
+| 2 HUD futuristico | cruscotto sci-fi, quadrante a 60 tacche | ora |
+| 3 Brutalismo | blocchi grezzi, tipografia enorme | app |
+| 4 Art Déco | oro su nero, trittico simmetrico | ora |
+| 5 Solari | tabellone partenze a palette | ora |
+| 6 Cyberpunk | giallo neon, angoli smussati | musica |
+| 7 Braun | apparecchio Dieter Rams, tasti tondi | app |
+| 8 Synthwave | tramonto anni '80, orizzonte | musica |
+
+I temi cambiano l'aspetto e la disposizione, non le funzioni. Ogni tema ha le stesse tre schermate:
+
+- **Home con musica**: ora e data, meteo (attuale, minima, massima), il brano in ascolto con copertina e comandi, sei app (Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), quattro servizi.
+- **Home senza musica**: al posto del brano, «Apri Spotify» e un tasto play.
+- **Benzinai**: distributori vicini ordinati per «conviene», prezzo o distanza; i preferiti con la ★ in cima; la scheda del distributore toccato.
+
+I quattro servizi sono Benzinai, Tutte le app, Impostazioni di Android, Impostazioni del launcher.
+
+Le funzioni nuove, uguali per tutti i temi:
+
+| Funzione | Da dove arriva |
+|---|---|
+| Musica | Le sessioni media di Android; serve una volta il permesso «accesso alle notifiche» |
+| Meteo | Open-Meteo via internet, ogni 30 minuti |
+| Benzinai | I prezzi pubblici del Ministero (MIMIT), con la posizione del box |
+| Tutte le app | Una griglia con tutte le app installate |
+
+Si lavora a tappe: prima le funzioni e il selettore con il tema Matrix, poi gli altri temi a gruppi. Le decisioni prese sono in `DOMANDE.md`.
+
+Si chiude quando tutti e otto i temi funzionano sull'emulatore `box`, l'avvio a freddo resta sotto il mezzo secondo e la prova sul box è fatta.
+
+## Per chi esegue
+
+**Riferimento grafico.** Le tavole stanno nell'artifact Design: `project/T<n>Home.dc.html` (Home; la variante senza musica è la stessa tavola con `music=false`), `project/T<n>Benzinai.dc.html`, e in `project/canvas.json` le note `t<n>spec` con palette, font, raggi e misure dei bersagli di ogni tema. Le misure sono in px a 1244×1194: in Kotlin si usano i px così come sono (il box è fisso a 1244×1194, 200 dpi), con un helper `px(Int)` che non converte.
+
+**Struttura.**
+
+- `temi/Tema.kt`: `interface Tema { val id: String; val nome: String; val idea: String; fun home(s: Schermata, azioni: AzioniHome): VistaHome; fun benzinai(s: Schermata, azioni: AzioniBenzinai): VistaBenzinai }`. `VistaHome` espone `view`, `mostraMeteo(Meteo?)`, `mostraMusica(Musica?)`; `VistaBenzinai` espone `view`, `mostra(ElencoBenzinai)`. L'ora è un `TextClock`, si aggiorna da sé.
+- `temi/Temi.kt`: l'elenco degli otto in ordine e `scelto(context)`, letto da `SharedPreferences` `impostazioni`, chiave `tema`, predefinito `matrix`.
+- Un file per tema: `temi/Matrix.kt`, `Hud.kt`, `Brutalismo.kt`, `ArtDeco.kt`, `Solari.kt`, `Cyberpunk.kt`, `Braun.kt`, `Synthwave.kt`. Costruiscono le view in codice, come oggi, senza XML di layout.
+- `temi/Grafica.kt`: i pezzi grafici che più temi riusano: bordi e riempimenti (`GradientDrawable`), angoli smussati a 45° (`Drawable` con `Path`), gradiente lineare, paletta Solari con giunzione, cornice doppia con rombi, quadrante a 60 tacche (`View` che disegna su `Canvas`), barra a celle del meteo.
+- Icone: le SVG delle tavole come `VectorDrawable` in `res/drawable/` (meteo per codice WMO, precedente, play, pausa, successivo, benzinaio, griglia, cursori, ingranaggio, stella, chiudi, indietro), colorate dal tema con `setTint`.
+- Font: VT323, Orbitron, Limelight, Rajdhani, Audiowide in `res/font/` (licenza OFL), caricati con `resources.getFont`; ognuno arriva con il suo tema. Gli altri sono di sistema: `sans-serif-condensed` per Roboto Condensed, `serif` per Noto Serif, `monospace` per Roboto Mono, `sans-serif-light` per Roboto Light.
+- `HomeActivity`: costruisce la Home del tema scelto; in `onResume` la ricostruisce se il tema è cambiato. Registra gli ascoltatori di musica e meteo in `onStart` e li toglie in `onStop`.
+- `BenzinaiActivity`: pannello Benzinai del tema scelto.
+- `TutteLeAppActivity`: griglia delle app con `ACTION_MAIN` + `CATEGORY_LAUNCHER`, ordinate per nome, nei colori del tema scelto (sfondo, testo, accento: `Tema` espone una piccola `Palette`).
+- `ImpostazioniActivity`: aggiunge «Tema» (apre `TemiActivity`), «Consenti la lettura della musica» (apre `ACTION_NOTIFICATION_LISTENER_SETTINGS`, nascosto se già concesso) e «Città di riserva» (apre `CittaActivity`: si scrive il nome, Open-Meteo Geocoding propone le città, un tocco salva nome e coordinate).
+- `TemiActivity`: elenco degli otto temi, una riga grande per tema con nome e idea, il corrente segnato; un tocco salva e torna indietro.
+
+**Funzioni.**
+
+- Musica (`funzioni/Musica.kt`): `NotificationListenerService` vuoto (`AscoltoNotifiche`) dichiarato nel manifest, solo per avere il diritto di chiamare `MediaSessionManager.getActiveSessions`. Si segue la sessione in riproduzione, altrimenti la più recente: titolo, artista, copertina (`METADATA_KEY_ALBUM_ART` o `ART`), stato, nome dell'app. Comandi con `transportControls`. Senza sessione la Home mostra lo stato «senza musica»: «Apri Spotify» apre l'app, play apre Spotify e invia `KEYCODE_MEDIA_PLAY`. Il nome dell'app nelle etichette viene dalla sessione, non è fisso «Spotify».
+- Meteo (`funzioni/Meteo.kt`): `https://api.open-meteo.com/v1/forecast?latitude=..&longitude=..&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`; nessuna chiave. Ultimo valore in `SharedPreferences` per mostrarlo subito all'avvio a freddo; nuovo controllo ogni 30 minuti mentre la Home è visibile. Codici WMO → descrizione italiana e icona.
+- Posizione (`funzioni/Posizione.kt`): `LocationManager`, provider `fused`, poi `gps`, poi `network`; `getLastKnownLocation` subito, `getCurrentLocation` in seguito. Permesso `ACCESS_FINE_LOCATION`, chiesto al primo uso. Senza posizione si usa la città di riserva; senza nemmeno quella, meteo e Benzinai dicono che manca la posizione.
+- Benzinai (`funzioni/Benzinai.kt`): i due CSV del MIMIT, `anagrafica_impianti_attivi.csv` e `prezzo_alle_8.csv` (`https://www.mimit.gov.it/images/exportCSV/`, separatore `|`, aggiornati ogni mattina; indirizzi e formato da verificare all'inizio del lavoro). Si scaricano solo all'apertura del pannello e al massimo una volta al giorno; si leggono in streaming e si salva un file compatto con tutti gli impianti che hanno il prezzo «Benzina» self (l'Austral va a benzina). A ogni apertura si filtra il file compatto: impianti entro 15 km dalla posizione, più i preferiti. Ordinamenti: «Prezzo», «Distanza» e «Conviene» = costo di 40 l più andata e ritorno a 6 l/100 km, al prezzo di quel distributore. Preferiti: id impianto in `SharedPreferences`, mostrati in cima anche se oltre i 15 km. Il parser è logica non banale: va coperto da unit test (righe valide, campi mancanti, virgola decimale, impianto senza prezzo self).
+- App della Home: fisse, Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok. Un'app non installata resta visibile ma spenta. Spotify si apre toccando la scheda del brano.
+
+**Prestazioni.** Si costruisce solo il tema scelto. Nessun lavoro di rete o di disco sul thread dell'interfaccia. Obiettivi sull'emulatore `box`: avvio a freddo sotto i 500 ms, PSS sotto i 40 MB, 0 frame in ritardo a riposo. APK sotto 1 MB con i cinque font.
+
+**Documentazione.** Nello stesso commit del comportamento: `GUIDA.md` (scegliere il tema, permessi musica e posizione, Benzinai), `RIFERIMENTO.md` (file nuovi, fonti dei dati, permessi), `DECISIONI.md` (temi intercambiabili; fonti di meteo e prezzi).
+
+**Passi.**
+
+- [x] Risposte alle domande di `DOMANDE.md`.
+- [x] Struttura dei temi, `TemiActivity`, voce in Impostazioni, preferenza `tema`.
+- [x] Tema Matrix completo con tutte le funzioni: musica, meteo, posizione, app, Tutte le app, Benzinai (con test del parser).
+- [ ] Temi 2–4: HUD, Brutalismo, Art Déco.
+- [ ] Temi 5–8: Solari, Cyberpunk, Braun, Synthwave.
+- [ ] Misure sull'emulatore `box` e `box-lento` per ogni tema; confronto con le tavole.
+- [ ] Rilascio e prova sul box (Prove manuali).
+
+## Prove manuali
+
+| Prova | Esito |
+|---|---|
+| Ogni tema si sceglie da Impostazioni e la Home cambia subito | da provare |
+| Musica: brano, copertina e comandi con Spotify in CarPlay | da provare |
+| Meteo con la posizione del box | da provare |
+| Benzinai: elenco, ordinamenti, preferiti, scheda | da provare |
+| Leggibilità al sole e tocchi via CarPlay per ogni tema | da provare |
+| Avvio a freddo e memoria sul box, tema per tema | da provare |
+
+## Diario
+
+- 2026-11-18: piano scritto dalle tavole degli otto temi; risposte alle cinque domande.
+- 2026-11-18: prima tappa fatta. Struttura dei temi, selettore, funzioni (musica, meteo, posizione, città di riserva, Benzinai, Tutte le app) e tema Matrix. Sull'emulatore `box`: APK 174 KB, PSS 23 MB, avvio a freddo 152–196 ms, 0 frame in ritardo; meteo e Benzinai provati con una posizione finta a Roma, prezzi reali scaricati in circa 4 s. Non provati: musica con un brano vero (sull'emulatore non c'è Spotify) e `box-lento`. Scostamenti: nei servizi del tema Matrix niente icone, perché accanto al tasto F e all'etichetta non ci stavano; la scheda del distributore ha altezza fissa (270 px) sotto l'elenco che scorre; i distributori senza aggiornamenti recenti mostrano la data vera (anche settimane prima).

@@ -1,21 +1,36 @@
 package app.australdashboard
 
+import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
+import android.provider.Settings
 import android.view.Choreographer
 import android.view.FrameMetrics
-import android.view.Gravity
 import android.view.ViewTreeObserver
 import android.view.Window
-import android.widget.TextClock
 import app.australdashboard.aggiornamenti.AggiornamentoJob
+import app.australdashboard.funzioni.FonteMeteo
+import app.australdashboard.funzioni.Lettore
+import app.australdashboard.funzioni.Posizione
+import app.australdashboard.temi.AppHome
+import app.australdashboard.temi.AzioniHome
+import app.australdashboard.temi.Temi
+import app.australdashboard.temi.VistaHome
+import java.util.Date
 
-class HomeActivity : Schermata() {
+class HomeActivity : Schermata(), AzioniHome {
+    private val principale = Handler(Looper.getMainLooper())
+    private lateinit var vista: VistaHome
+    private var temaCostruito = ""
+    private var lettore: Lettore? = null
+
     private val frameListener = Window.OnFrameMetricsAvailableListener { _, metriche, _ ->
         if (metriche.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == 0L) {
             Misure.frameTotali++
@@ -25,31 +40,77 @@ class HomeActivity : Schermata() {
         }
     }
 
+    private val orologio = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) = vista.mostraOra(Date())
+    }
+
+    private val controlloMeteo = object : Runnable {
+        override fun run() {
+            aggiornaMeteo()
+            principale.postDelayed(this, INTERVALLO_METEO_MS)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val creazione = SystemClock.uptimeMillis()
         super.onCreate(savedInstanceState)
-
-        val radice = colonna().apply { gravity = Gravity.CENTER_HORIZONTAL }
-        radice.addView(TextClock(this).apply {
-            format12Hour = "HH:mm"
-            format24Hour = "HH:mm"
-            textSize = 160f
-            setTextColor(Color.WHITE)
-            gravity = Gravity.CENTER
-        })
-        radice.addView(testo("Austral Dashboard ${versione()}", 28f).apply { gravity = Gravity.CENTER })
-        radice.addView(pulsante("Impostazioni") {
-            startActivity(Intent(this, ImpostazioniActivity::class.java))
-        })
-        setContentView(radice)
-
+        costruisci()
         if (Misure.homePrimoFrameMs == null) misuraPrimoFrame(creazione)
         AggiornamentoJob.programma(this)
     }
 
+    private fun costruisci() {
+        val tema = Temi.scelto(this)
+        temaCostruito = tema.id
+        vista = tema.home(this, this)
+        vista.mostraOra(Date())
+        vista.mostraMeteo(FonteMeteo.ultimo(this))
+        setContentView(vista.view)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (Temi.scelto(this).id != temaCostruito) costruisci()
+        vista.mostraOra(Date())
+        registerReceiver(orologio, IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_TICK)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        })
+        lettore = Lettore(this) { vista.mostraMusica(it) }.also { it.avvia() }
+        if (!Posizione.permessoConcesso(this) && !permessoChiesto) {
+            permessoChiesto = true
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
+        }
+        principale.post(controlloMeteo)
+    }
+
+    override fun onStop() {
+        principale.removeCallbacks(controlloMeteo)
+        lettore?.ferma()
+        lettore = null
+        unregisterReceiver(orologio)
+        super.onStop()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (Posizione.permessoConcesso(this)) aggiornaMeteo(forza = true)
+    }
+
+    private fun aggiornaMeteo(forza: Boolean = false) {
+        if (!forza && !FonteMeteo.daAggiornare(this)) return
+        Posizione.aggiorna(this) { luogo ->
+            if (luogo == null) return@aggiorna
+            Thread {
+                val meteo = FonteMeteo.scarica(applicationContext, luogo) ?: return@Thread
+                runOnUiThread { if (!isDestroyed) vista.mostraMeteo(meteo) }
+            }.start()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        window.addOnFrameMetricsAvailableListener(frameListener, Handler(Looper.getMainLooper()))
+        window.addOnFrameMetricsAvailableListener(frameListener, principale)
     }
 
     override fun onPause() {
@@ -59,6 +120,34 @@ class HomeActivity : Schermata() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() = Unit
+
+    override fun benzinai() = startActivity(Intent(this, BenzinaiActivity::class.java))
+
+    override fun tutteLeApp() = startActivity(Intent(this, TutteLeAppActivity::class.java))
+
+    override fun impostazioniAndroid() = startActivity(Intent(Settings.ACTION_SETTINGS))
+
+    override fun impostazioniLauncher() = startActivity(Intent(this, ImpostazioniActivity::class.java))
+
+    override fun apri(app: AppHome) {
+        app.intent(this)?.let { startActivity(it) }
+    }
+
+    override fun apriMusica() {
+        lettore?.apriApp()
+    }
+
+    override fun precedente() {
+        lettore?.precedente()
+    }
+
+    override fun playPausa() {
+        lettore?.playPausa()
+    }
+
+    override fun successivo() {
+        lettore?.successivo()
+    }
 
     private fun misuraPrimoFrame(creazione: Long) {
         val osservatore = window.decorView.viewTreeObserver
@@ -75,5 +164,8 @@ class HomeActivity : Schermata() {
         })
     }
 
-    private fun versione(): String = packageManager.getPackageInfo(packageName, 0).versionName
+    private companion object {
+        const val INTERVALLO_METEO_MS = 5 * 60 * 1000L
+        var permessoChiesto = false
+    }
 }

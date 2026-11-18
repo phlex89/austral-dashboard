@@ -8,6 +8,8 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Kotlin e View native, senza dipendenze](#kotlin-e-view-native-senza-dipendenze)
 - [Sviluppo e test solo sul Mac](#sviluppo-e-test-solo-sul-mac)
 - [Aggiornamenti dalle GitHub Releases](#aggiornamenti-dalle-github-releases)
+- [Temi intercambiabili per la Home](#temi-intercambiabili-per-la-home)
+- [Fonti di meteo e prezzi](#fonti-di-meteo-e-prezzi)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -41,3 +43,24 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - Gli indirizzi `releases/latest/download/<file>` sono stabili e non consumano il limite di chiamate dell'API di GitHub.
 - Tutte le versioni si firmano con la stessa chiave, tenuta fuori dal repository e con una copia di backup: con una chiave diversa Android rifiuta l'aggiornamento.
 - Il controllo degli aggiornamenti gira anche all'avvio del sistema, separato dall'interfaccia, così una versione che si chiude all'avvio si può ancora correggere. Il launcher Ottocast resta installato come riserva.
+
+## Temi intercambiabili per la Home
+
+**In breve.** La Home ha otto temi, disegnati nella tavola Design del 2026-11-18, e si sceglie quale usare in Impostazioni. Ogni tema costruisce in codice la sua Home e il suo pannello Benzinai; i dati e le azioni sono gli stessi per tutti. Si costruisce solo il tema scelto, così l'avvio non dipende dal numero dei temi.
+
+**Dettagli.**
+
+- I temi cambiano disposizione oltre ai colori (in alcuni domina l'ora, in altri la musica o le app): per questo ogni tema è una classe con le sue view, non un insieme di colori applicato a un layout unico.
+- I cinque font che Android non ha (VT323, Orbitron, Limelight, Rajdhani, Audiowide) vanno nell'APK, licenza OFL: l'APK resta sotto 1 MB.
+- Le sei app della Home sono fisse: Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok. Spotify si apre dalla scheda del brano.
+- Ordine di lavoro: prima le funzioni e il tema Matrix, poi gli altri a gruppi (piano M02).
+
+## Fonti di meteo e prezzi
+
+**In breve.** Il meteo viene da Open-Meteo e i prezzi dei carburanti dagli open data del Ministero (MIMIT). Nessuno dei due chiede una chiave, quindi niente segreti nel repository pubblico. I prezzi si scaricano solo quando si apre il pannello Benzinai, al massimo una volta al giorno, perché i file coprono tutta Italia e il box usa la rete del telefono.
+
+**Dettagli.**
+
+- I due CSV del MIMIT pesano circa 7,5 MB insieme. Dopo il download se ne tiene un file compatto con i soli impianti che hanno la benzina self, e lo si filtra per posizione a ogni apertura: così ci si può spostare senza riscaricare.
+- Se il box non ha una posizione, meteo e Benzinai usano una città di riserva scelta in Impostazioni (Open-Meteo Geocoding).
+- «Conviene» ordina per il costo di un pieno da 40 litri più andata e ritorno a 6 l/100 km.

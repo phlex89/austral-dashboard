@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Color
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 
 abstract class Schermata : Activity() {
@@ -23,6 +24,12 @@ abstract class Schermata : Activity() {
         orientation = LinearLayout.VERTICAL
         setBackgroundColor(Color.BLACK)
         setPadding(dp(32), dp(32), dp(32), dp(32))
+    }
+
+    protected fun scorrevole(contenuto: LinearLayout): ScrollView = ScrollView(this).apply {
+        setBackgroundColor(Color.BLACK)
+        isFillViewport = true
+        addView(contenuto)
     }
 
     protected fun testo(contenuto: String, dimensione: Float = 24f): TextView = TextView(this).apply {

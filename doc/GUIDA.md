@@ -2,13 +2,29 @@
 
 ## Per cominciare
 
-**In breve.** Austral Dashboard è il launcher del box Ottocast in auto. Per ora mostra l'ora, la versione e le Impostazioni; il resto arriva con i prossimi piani.
+**In breve.** Austral Dashboard è il launcher del box Ottocast in auto. La Home mostra ora, meteo, il brano in ascolto, sei app e quattro servizi; l'aspetto dipende dal tema scelto in Impostazioni.
 
 | Schermata | Come ci arrivi | Cosa trovi |
 |---|---|---|
-| Home | Tasto casa della barra Ottocast | Ora, versione, Impostazioni |
-| Impostazioni | Home → Impostazioni | Controlla aggiornamenti, Diagnostica, Impostazioni di sistema, Cambia launcher predefinito |
+| Home | Tasto casa della barra Ottocast | Ora e data, meteo, brano in ascolto con i comandi, Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok, i quattro servizi |
+| Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza»; la ★ li mette tra i preferiti, in cima |
+| Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico |
+| Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
 | Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo |
+
+Un'app della Home che non è installata resta spenta. Toccando la copertina o il titolo del brano si apre l'app che lo suona; senza musica, «Apri Spotify» apre Spotify e il tasto play riprende l'ultima app musicale.
+
+«Conviene» mette in cima il distributore con cui spendi meno contando un pieno da 40 litri e il viaggio di andata e ritorno. I prezzi si scaricano quando apri Benzinai, al massimo una volta al giorno.
+
+## Prima configurazione
+
+**In breve.** Tre permessi, una volta sola.
+
+1. Alla prima apertura della Home Android chiede la posizione: consenti. Serve al meteo e ai Benzinai.
+2. Impostazioni → **Consenti la lettura della musica** → attiva Austral Dashboard. Serve a mostrare il brano e a comandarlo; il pulsante sparisce quando il permesso c'è.
+3. Impostazioni → **Città di riserva**: scrivi la città, tocca **Cerca** e scegli. Si usa solo quando il box non sa dove si trova.
+
+Per cambiare l'aspetto: Impostazioni → **Tema**, poi tocca quello che vuoi. La Home cambia subito.
 
 ## Prima installazione sul box
 
