@@ -74,7 +74,7 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 - [x] Aggiornatore con test.
 - [x] Keystore e `release.sh`.
 - [x] Prova completa sull'emulatore: v1 installata, v2 pubblicata, aggiornamento ricevuto.
-- [ ] Test reale sul box (Prove manuali).
+- [ ] Test reale sul box (Prove manuali), previsto il 2026-11-19.
 
 ## Prove manuali
 
@@ -85,7 +85,7 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 | v2 trovata dal tasto «Controlla aggiornamenti» | da provare |
 | L'aggiornamento parte senza conferma (altrimenti con un tocco) | da provare |
 | Taratura: avvio a freddo e memoria, box contro emulatore | da provare |
-| Barra Ottocast in basso: si può nascondere? | da provare |
+| Barra Ottocast in basso: si può nascondere? | non serve: l'utente preferisce tenerla visibile (2026-11-18) |
 | Barra di stato di Android: compare sopra il launcher? | da provare |
 | GPS del box: c'è una posizione senza il telefono? | da provare |
 
@@ -94,3 +94,4 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 - 2026-11-18: piano scritto.
 - 2026-11-18: strumenti, emulatori, scheletro, diagnostica, aggiornatore (9 unit test), chiave e `release.sh` fatti. Sull'emulatore `box`: APK 41 KB, PSS 20–24 MB, avvio a freddo 180–330 ms; il controllo aggiornamenti risponde HTTP 404 finché non c'è una release. Scostamenti dal piano: `compileSdk` 32; la taskbar di Android 12L dell'emulatore si toglie disattivando il launcher di sistema; i frame in ritardo si contano contro `FrameMetrics.DEADLINE`.
 - 2026-11-18: pubblicate v0.1.0 e v0.1.1. Sull'emulatore `box` la 0.1.0 scaricata da GitHub, al riavvio, trova la 0.1.1, la scarica e chiede l'installazione. La prima volta Android chiede il permesso «installa app sconosciute» per Austral Dashboard; dopo, conferma con un tocco («Update») e la 0.1.1 si installa. Da quel momento l'app risulta installata da sé stessa (`installerPackageName=app.australdashboard`): gli aggiornamenti successivi potrebbero non chiedere conferma, da verificare. Il link `releases/latest/download` di GitHub punta alla nuova versione solo 1–2 minuti dopo la pubblicazione.
+- 2026-11-18: pubblicata la v0.2.0 (codice 3, la Home a temi di M02). Sull'emulatore `box` la 0.1.1 l'ha trovata con «Controlla aggiornamenti» e installata, e l'app risulta installata da sé stessa. Le prove sul box sono rimandate al 2026-11-19: l'utente installa a mano la 0.2.0 dal browser del box, poi si pubblica una versione successiva per provare l'aggiornamento all'accensione e dal tasto. La barra Ottocast resta visibile per scelta dell'utente, quindi la prova per nasconderla non serve.
