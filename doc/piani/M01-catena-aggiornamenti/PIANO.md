@@ -1,6 +1,6 @@
 ---
 milestone: M01
-stato: proposto
+stato: in-corso
 data: 2026-11-18
 lettori: entrambi
 ---
@@ -68,11 +68,11 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 
 **Passi.**
 
-- [ ] Strumenti: Android Studio installato dall'utente, SDK e immagine Android 12 arm64, AVD «box» e «box-lento».
-- [ ] Scheletro Gradle e `HomeActivity` impostabile come launcher sull'emulatore.
-- [ ] Diagnostica.
-- [ ] Aggiornatore con test.
-- [ ] Keystore e `release.sh`.
+- [x] Strumenti: Android Studio installato dall'utente, SDK e immagine Android 12 arm64, AVD «box» e «box-lento».
+- [x] Scheletro Gradle e `HomeActivity` impostabile come launcher sull'emulatore.
+- [x] Diagnostica.
+- [x] Aggiornatore con test.
+- [x] Keystore e `release.sh`.
 - [ ] Prova completa sull'emulatore: v1 installata, v2 pubblicata, aggiornamento ricevuto.
 - [ ] Test reale sul box (Prove manuali).
 
@@ -89,3 +89,4 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 ## Diario
 
 - 2026-11-18: piano scritto.
+- 2026-11-18: strumenti, emulatori, scheletro, diagnostica, aggiornatore (9 unit test), chiave e `release.sh` fatti. Sull'emulatore `box`: APK 41 KB, PSS 20–24 MB, avvio a freddo 180–330 ms; il controllo aggiornamenti risponde HTTP 404 finché non c'è una release. Scostamenti dal piano: `compileSdk` 32; la taskbar di Android 12L dell'emulatore si toglie disattivando il launcher di sistema; i frame in ritardo si contano contro `FrameMetrics.DEADLINE`.
