@@ -11,6 +11,9 @@ import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.RelativeSizeSpan
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
@@ -36,6 +39,7 @@ import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
 import app.australdashboard.temi.Ui.lpf
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -121,6 +125,101 @@ object ArtDeco : Tema {
         }
     }
 
+    private fun disegnaRombo(canvas: Canvas, tratto: Paint, x: Float, y: Float, semidiagonale: Float) {
+        val percorso = Path().apply {
+            moveTo(x, y - semidiagonale)
+            lineTo(x + semidiagonale, y)
+            lineTo(x, y + semidiagonale)
+            lineTo(x - semidiagonale, y)
+            close()
+        }
+        canvas.drawPath(percorso, tratto)
+    }
+
+    private fun vernice(colore: Int) = Paint().apply { color = colore }
+
+    private class FilettoRombo(context: Context) : View(context) {
+        private val filetto = vernice(FILETTO_MEDIO)
+        private val oro = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ORO }
+
+        override fun onDraw(canvas: Canvas) {
+            val centro = width / 2f
+            val meta = height / 2f
+            canvas.drawRect(0f, meta - 1f, centro - 22f, meta + 1f, filetto)
+            canvas.drawRect(centro + 22f, meta - 1f, width.toFloat(), meta + 1f, filetto)
+            disegnaRombo(canvas, oro, centro, meta, 8.5f)
+        }
+    }
+
+    private class FilettoServizio(context: Context) : View(context) {
+        private val spesso = vernice(ORO)
+        private val sottile = vernice(FILETTO_ESTERNO)
+
+        override fun onDraw(canvas: Canvas) {
+            canvas.drawRect(0f, 0f, width.toFloat(), 3f, spesso)
+            val margine = (width - 36) / 2f
+            canvas.drawRect(margine, 7f, margine + 36f, 9f, sottile)
+        }
+    }
+
+    private class FregioOre(context: Context) : View(context) {
+        private val passate = vernice(FILETTO_ESTERNO)
+        private val corrente = vernice(AVORIO)
+        private val future = vernice(FILETTO_INTERNO)
+        private var ora = -1
+
+        fun imposta(nuova: Int) {
+            if (nuova == ora) return
+            ora = nuova
+            invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            if (ora < 0) return
+            for (i in 0 until 24) {
+                val altezza = (8 + 4 * (minOf(i, 23 - i) / 2)).toFloat()
+                val sinistra = i * 14f
+                canvas.drawRect(sinistra, height - altezza, sinistra + 6f, height.toFloat(), if (i < ora) passate else if (i == ora) corrente else future)
+            }
+        }
+    }
+
+    private class AstaMeteo(context: Context) : View(context) {
+        private val filetto = vernice(FILETTO_ESTERNO)
+        private val oro = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ORO }
+        private var posizione = 0.5f
+
+        fun imposta(meteo: Meteo?) {
+            visibility = if (meteo == null) INVISIBLE else VISIBLE
+            if (meteo == null) return
+            val escursione = meteo.massima - meteo.minima
+            posizione = if (escursione <= 0) 0.5f else ((meteo.gradi - meteo.minima) / escursione.toFloat()).coerceIn(0f, 1f)
+            invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            val larghezza = width.toFloat()
+            canvas.drawRect(0f, 8f, larghezza, 10f, filetto)
+            canvas.drawRect(0f, 0f, 2f, 18f, oro)
+            canvas.drawRect(larghezza - 2f, 0f, larghezza, 18f, oro)
+            disegnaRombo(canvas, oro, posizione * larghezza, 9f, 9.9f)
+        }
+    }
+
+    private fun romano(numero: Int): String {
+        val valori = intArrayOf(10, 9, 5, 4, 1)
+        val simboli = arrayOf("X", "IX", "V", "IV", "I")
+        var resto = numero
+        val risultato = StringBuilder()
+        for (i in valori.indices) {
+            while (resto >= valori[i]) {
+                risultato.append(simboli[i])
+                resto -= valori[i]
+            }
+        }
+        return risultato.toString()
+    }
+
     private fun ovale(colore: Int, spessore: Int, sfondo: Int = Color.TRANSPARENT): GradientDrawable =
         GradientDrawable().apply {
             shape = GradientDrawable.OVAL
@@ -144,7 +243,7 @@ object ArtDeco : Tema {
     private fun tasto(context: Context, icona: ImageView, latoIcona: Int, pieno: Boolean, descrizione: String, azione: () -> Unit): View {
         val cerchio = FrameLayout(context).apply {
             background = if (pieno) {
-                ovale(ORO, 0, ORO)
+                LayerDrawable(arrayOf(ovale(ORO, 2), ovale(ORO, 0, ORO))).apply { setLayerInset(1, 10, 10, 10, 10) }
             } else {
                 LayerDrawable(arrayOf(ovale(ORO, 2), ovale(FILETTO_MEDIO, 2))).apply { setLayerInset(1, 8, 8, 8, 8) }
             }
@@ -179,14 +278,16 @@ object ArtDeco : Tema {
         private val massima = Ui.testo(s, 32, AVORIO, serif, 40, "max --°")
         private val minima = Ui.testo(s, 32, SABBIA, serif, 40, "min --°")
         private val inAscolto = Ui.colonna(s, 0, Gravity.CENTER_HORIZONTAL)
-        private val fermo = Ui.colonna(s, 40, Gravity.CENTER)
+        private val fermo = Ui.colonna(s, 36, Gravity.CENTER)
         private val copertina = ImageView(s).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = Ui.pieno(FILETTO_INTERNO)
         }
-        private val titolo = Ui.testo(s, 46, AVORIO, limelight, 52)
-        private val artista = Ui.testo(s, 30, SABBIA, corsivo, 38)
+        private val titolo = Ui.testo(s, 46, AVORIO, limelight, 52).apply { gravity = Gravity.CENTER_HORIZONTAL }
+        private val artista = Ui.testo(s, 30, SABBIA, corsivo, 38).apply { gravity = Gravity.CENTER_HORIZONTAL }
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, NERO)
+        private val fregio = FregioOre(s)
+        private val asta = AstaMeteo(s).apply { visibility = View.INVISIBLE }
         private lateinit var pulsantePlay: View
 
         override val view: View = costruisci()
@@ -216,10 +317,11 @@ object ArtDeco : Tema {
         }
 
         private fun servizio(numero: String, icona: Int, nome: String, dimensione: Int, descrizione: String, azione: () -> Unit): View {
-            val cella = Ui.colonna(s, 10, Gravity.CENTER).apply {
+            val cella = Ui.colonna(s, 8, Gravity.CENTER).apply {
                 background = Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
                 setPadding(14, 0, 14, 0)
                 addView(Ui.testo(s, 40, ORO, limelight, 44, numero).apply { gravity = Gravity.CENTER_HORIZONTAL })
+                addView(FilettoServizio(s), lp(64, 9))
                 addView(Ui.icona(s, icona, ORO), lp(60, 60))
                 addView(Ui.testo(s, dimensione, AVORIO, serif, 36, nome, righe = 2).apply { gravity = Gravity.CENTER })
             }
@@ -244,6 +346,16 @@ object ArtDeco : Tema {
                         topMargin = 15
                     },
                 )
+                addView(
+                    View(s).apply {
+                        background = Ui.bordo(FILETTO_MEDIO, 2)
+                        rotation = 45f
+                    },
+                    lpf(54, 54).apply {
+                        leftMargin = 23
+                        topMargin = 23
+                    },
+                )
                 addView(Ui.testo(s, 44, ORO, limelight, 44, app.sigla).apply { gravity = Gravity.CENTER }, lpf(100, 100))
             }
             Ui.senzaRitaglio(monogramma)
@@ -265,8 +377,9 @@ object ArtDeco : Tema {
             riga.addView(data)
             return Ui.colonna(s, 14, Gravity.CENTER).apply {
                 background = Cornice(ORO, FILETTO_MEDIO, 12, true)
-                addView(ora)
+                addView(ora, lp(TUTTO, 160))
                 addView(riga)
+                addView(fregio, lp(328, 28))
             }
         }
 
@@ -283,8 +396,7 @@ object ArtDeco : Tema {
                 },
                 lpf(ADATTA, ADATTA, Gravity.CENTER),
             )
-            return Ui.riga(s, 18).apply {
-                background = Cornice(ORO, FILETTO_MEDIO, 12, true)
+            val riga = Ui.riga(s, 18).apply {
                 gravity = Gravity.CENTER
                 addView(sinistra, lp(200, ADATTA))
                 addView(rombo(s, 16))
@@ -292,15 +404,27 @@ object ArtDeco : Tema {
                 addView(rombo(s, 16))
                 addView(destra, lp(140, ADATTA))
             }
+            return Ui.colonna(s, 14, Gravity.CENTER).apply {
+                background = Cornice(ORO, FILETTO_MEDIO, 12, true)
+                addView(riga, lp(ADATTA, ADATTA))
+                addView(asta, lp(360, 18))
+            }
         }
 
         private fun boxMusica(): View {
             val box = FrameLayout(s).apply { background = Cornice(ORO, FILETTO_MEDIO, 12, true) }
 
             val cornice = FrameLayout(s).apply {
-                background = Ui.bordo(ORO, 2)
-                setPadding(10, 10, 10, 10)
-                addView(Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }, lpf(230, 230))
+                background = Ui.bordo(FILETTO_MEDIO, 2)
+                setPadding(6, 6, 6, 6)
+                addView(
+                    FrameLayout(s).apply {
+                        background = Ui.bordo(ORO, 2)
+                        setPadding(8, 8, 8, 8)
+                        addView(Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }, lpf(220, 220))
+                    },
+                    lpf(ADATTA, ADATTA),
+                )
             }
             val info = Ui.colonna(s, 4, Gravity.CENTER_HORIZONTAL).apply {
                 addView(titolo)
@@ -312,7 +436,7 @@ object ArtDeco : Tema {
                 tasto(s, Ui.icona(s, R.drawable.ic_precedente, ORO), 44, false, "Brano precedente") { azioni.precedente() },
                 lp(120, 120),
             )
-            pulsantePlay = tasto(s, iconaPlay, 56, true, "Riproduci o metti in pausa") { azioni.playPausa() }
+            pulsantePlay = tasto(s, iconaPlay, 52, true, "Riproduci o metti in pausa") { azioni.playPausa() }
             comandi.addView(pulsantePlay, lp(140, 140))
             comandi.addView(
                 tasto(s, Ui.icona(s, R.drawable.ic_successivo, ORO), 44, false, "Brano successivo") { azioni.successivo() },
@@ -320,7 +444,9 @@ object ArtDeco : Tema {
             )
             inAscolto.setPadding(26, 26, 26, 26)
             inAscolto.addView(cornice, lp(ADATTA, ADATTA))
-            inAscolto.addView(info, lp(TUTTO, ADATTA).apply { topMargin = 20 })
+            inAscolto.addView(info, lp(TUTTO, ADATTA).apply { topMargin = 16 })
+            inAscolto.addView(View(s), lp(0, 0, 1f))
+            inAscolto.addView(FilettoRombo(s), lp(420, 18))
             inAscolto.addView(View(s), lp(0, 0, 1f))
             inAscolto.addView(comandi, lp(ADATTA, ADATTA))
 
@@ -331,7 +457,7 @@ object ArtDeco : Tema {
             }
             val azioniFermo = Ui.riga(s, 32)
             azioniFermo.addView(
-                tasto(s, Ui.icona(s, R.drawable.ic_play, NERO), 56, true, "Riproduci") { azioni.playPausa() },
+                tasto(s, Ui.icona(s, R.drawable.ic_play, NERO), 52, true, "Riproduci") { azioni.playPausa() },
                 lp(140, 140),
             )
             val apri = Ui.testo(s, 34, AVORIO, corsivo, 40, "Apri Spotify").apply {
@@ -342,6 +468,7 @@ object ArtDeco : Tema {
             azioniFermo.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(ADATTA, 120))
             fermo.setPadding(26, 26, 26, 26)
             fermo.addView(titoloFermo, lp(ADATTA, ADATTA))
+            fermo.addView(FilettoRombo(s), lp(420, 18))
             fermo.addView(azioniFermo, lp(ADATTA, ADATTA))
 
             box.addView(inAscolto, lpf(TUTTO, TUTTO))
@@ -354,9 +481,11 @@ object ArtDeco : Tema {
             ora.text = SimpleDateFormat("HH:mm", Locale.ITALIAN).format(adesso)
             giorno.text = SimpleDateFormat("EEEE", Locale.ITALIAN).format(adesso)
             data.text = SimpleDateFormat("d MMMM", Locale.ITALIAN).format(adesso)
+            fregio.imposta(Calendar.getInstance().apply { time = adesso }.get(Calendar.HOUR_OF_DAY))
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
+            asta.imposta(meteo)
             if (meteo == null) return
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             condizione.text = FonteMeteo.descrizione(meteo.codice)
@@ -437,7 +566,7 @@ object ArtDeco : Tema {
         private fun evidenziaOrdine(attivo: Ordine) {
             for ((ordine, tasto) in ordini) {
                 val scelto = ordine == attivo
-                tasto.background = if (scelto) Ui.pieno(ORO) else Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
+                tasto.background = if (scelto) Cornice(ORO, NERO, 6, false, ORO) else Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
                 tasto.setTextColor(if (scelto) NERO else AVORIO)
                 tasto.isSelected = scelto
             }
@@ -450,9 +579,10 @@ object ArtDeco : Tema {
                 visibility = View.GONE
             }
             Ui.adatta(indirizzo, 32, 56)
-            val testi = Ui.colonna(s, 10)
+            val testi = Ui.colonna(s, 6)
             testi.addView(etichetta)
             testi.addView(indirizzo, lp(TUTTO, 128))
+            testi.addView(FilettoRombo(s), lp(420, 18))
             val riga = Ui.riga(s)
             riga.addView(dettagli)
             riga.addView(aggiornato)
@@ -507,32 +637,39 @@ object ArtDeco : Tema {
         private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val blocco = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 22, Gravity.CENTER).apply {
+                addView(View(s).apply { setBackgroundColor(FILETTO_MEDIO) }, lp(0, 2, 1f))
                 addView(rombo(s, 16))
                 addView(maiuscoletto(Ui.testo(s, 40, AVORIO, serif, 48, titolo), 40, 8))
                 addView(rombo(s, 16))
+                addView(View(s).apply { setBackgroundColor(FILETTO_MEDIO) }, lp(0, 2, 1f))
             }
             blocco.addView(intestazione, lp(TUTTO, 48))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
+            distributori.forEachIndexed { i, d -> righe.addView(riga(d, luogo, i + 1), lp(TUTTO, 120)) }
             blocco.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(blocco, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore, luogo: Boolean): View {
+        private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = Cornice(if (scelto) ORO else FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
-                setPadding(32, 0, 32, 0)
+                setPadding(28, 0, 32, 0)
             }
+            corpo.addView(Ui.testo(s, 40, ORO, limelight, 44, romano(posizione)).apply { gravity = Gravity.CENTER }, lp(56, ADATTA))
             val sinistra = Ui.colonna(s)
             sinistra.addView(Ui.testo(s, 40, AVORIO, serif, 48, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, SABBIA, corsivo, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(Ui.testo(s, 30, SABBIA, serif, 36, Benzinai.distanza(d.distanzaKm)))
             val prezzo = Ui.riga(s, 0, Gravity.BOTTOM)
-            prezzo.addView(Ui.testo(s, 58, ORO, limelight, 60, Benzinai.prezzo(d.prezzo)))
+            val cifre = Benzinai.prezzo(d.prezzo)
+            val testoPrezzo = SpannableString(cifre).apply {
+                if (cifre.length > 1) setSpan(RelativeSizeSpan(40f / 58f), cifre.length - 1, cifre.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            prezzo.addView(Ui.testo(s, 58, ORO, limelight, 60).apply { text = testoPrezzo })
             prezzo.addView(Ui.testo(s, 28, SABBIA, serif, 34, " €/l"))
             corpo.addView(prezzo)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))

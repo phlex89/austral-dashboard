@@ -1,11 +1,14 @@
 package app.australdashboard.temi
 
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -27,6 +30,7 @@ import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
 import app.australdashboard.temi.Ui.lpf
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -41,12 +45,19 @@ object Braun : Tema {
     private const val ANELLO = 0xFF3D3D3D.toInt()
     private const val DISPLAY = 0xFF0E100E.toInt()
     private const val FILETTO = 0xFF2A2D2A.toInt()
-    private const val CHIARO = 0xFFD9D9D4.toInt()
+    private const val GRIGIO_CHIARO = 0xFFD9D9D4.toInt()
     private const val TESTO = 0xFFEDEDED.toInt()
     private const val SECONDARIO = 0xFFA8A8A8.toInt()
     private const val ARANCIO = 0xFFFF7A1A.toInt()
     private const val ONDA = 0x33FFFFFF
     private const val ONDA_SCURA = 0x33000000
+    private const val TACCA = 0xFF5A5A5A.toInt()
+    private const val CONCA_SCURA_ALTO = 0xFF242424.toInt()
+    private const val CONCA_SCURA_BASSO = 0xFF363636.toInt()
+    private const val CONCA_CHIARA_ALTO = 0xFFC6C6C1.toInt()
+    private const val CONCA_CHIARA_BASSO = 0xFFE8E8E3.toInt()
+    private const val CONCA_PLAY_ALTO = 0xFFE96A0A.toInt()
+    private const val CONCA_PLAY_BASSO = 0xFFFF9340.toInt()
 
     private val leggero: Typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
     private val normale: Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
@@ -69,25 +80,103 @@ object Braun : Tema {
             if (spessore > 0) setStroke(spessore, bordo)
         }
 
+    private enum class Tipo(val esterno: Int, val alto: Int, val basso: Int) {
+        SCURO(TASTO, CONCA_SCURA_ALTO, CONCA_SCURA_BASSO),
+        CHIARO(GRIGIO_CHIARO, CONCA_CHIARA_ALTO, CONCA_CHIARA_BASSO),
+        PLAY(ARANCIO, CONCA_PLAY_ALTO, CONCA_PLAY_BASSO),
+    }
+
+    private fun conca(tipo: Tipo): GradientDrawable =
+        GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(tipo.alto, tipo.basso)).apply {
+            shape = GradientDrawable.OVAL
+        }
+
+    private fun cornice(context: Context, tipo: Tipo, interno: Int, contenuto: View): FrameLayout =
+        FrameLayout(context).apply {
+            background = ovale(tipo.esterno, if (tipo == Tipo.SCURO) ANELLO else 0)
+            clipToOutline = true
+            addView(contenuto.apply { background = conca(tipo) }, lpf(interno, interno, Gravity.CENTER))
+        }
+
     private class Tasto(val view: View, val icona: ImageView)
 
     private fun tasto(
         context: Context,
         lato: Int,
+        interno: Int,
         icona: Int,
-        scuro: Boolean,
+        tipo: Tipo,
         tinta: Int,
         descrizione: String?,
         azione: () -> Unit,
     ): Tasto {
         val glifo = Ui.icona(context, icona, tinta)
-        val cornice = FrameLayout(context).apply {
-            background = if (scuro) ovale(TASTO, ANELLO) else ovale(ARANCIO)
-            clipToOutline = true
-            addView(glifo, lpf(lato, lato, Gravity.CENTER))
-        }
-        Ui.premibile(cornice, if (scuro) ONDA else ONDA_SCURA, descrizione, azione)
+        val contenuto = FrameLayout(context).apply { addView(glifo, lpf(lato, lato, Gravity.CENTER)) }
+        val cornice = cornice(context, tipo, interno, contenuto)
+        Ui.premibile(cornice, if (tipo == Tipo.SCURO) ONDA else ONDA_SCURA, descrizione, azione)
         return Tasto(cornice, glifo)
+    }
+
+    private class ScalaOre(context: Context) : View(context) {
+        private val pennello = Paint()
+        var ore = 0f
+            set(valore) {
+                field = valore
+                invalidate()
+            }
+
+        override fun onDraw(canvas: Canvas) {
+            val passo = (width - 2f) / 24f
+            for (i in 0..24) {
+                val lunga = i % 6 == 0
+                pennello.color = if (lunga) SECONDARIO else TACCA
+                val x = i * passo
+                canvas.drawRect(x, if (lunga) 0f else 10f, x + 2f, 18f, pennello)
+            }
+            pennello.color = ARANCIO
+            val x = ore / 24f * (width - 2f) - 1.5f
+            canvas.drawRect(x, 0f, x + 5f, 18f, pennello)
+        }
+    }
+
+    private class Termometro(context: Context) : View(context) {
+        private val pennello = Paint()
+        private var gradi = 0
+        private var minima = 0
+        private var massima = 0
+        private var presente = false
+
+        fun imposta(meteo: Meteo?) {
+            presente = meteo != null
+            if (meteo != null) {
+                minima = minOf(meteo.minima, meteo.gradi)
+                massima = maxOf(meteo.massima, meteo.gradi)
+                gradi = meteo.gradi
+            }
+            invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            pennello.color = TACCA
+            canvas.drawRect(11f, 6f, 13f, 106f, pennello)
+            if (!presente) return
+            val escursione = massima - minima
+            if (escursione > 0) {
+                val gradiPerTacca = (escursione + 15) / 16
+                var g = minima
+                while (g <= massima) {
+                    val estremo = g == minima || g == massima
+                    pennello.color = if (estremo) SECONDARIO else TACCA
+                    val y = 105f - (g - minima) * 100f / escursione
+                    val mezza = if (estremo) 8f else 3f
+                    canvas.drawRect(12f - mezza, y, 12f + mezza, y + 2f, pennello)
+                    g += gradiPerTacca
+                }
+            }
+            val y = if (escursione > 0) 106f - (gradi - minima) * 100f / escursione else 56f
+            pennello.color = ARANCIO
+            canvas.drawCircle(12f, y, 8f, pennello)
+        }
     }
 
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeBraun(s, azioni)
@@ -97,6 +186,8 @@ object Braun : Tema {
         private val cielo = Ui.testo(s, 32, TESTO, normale, 38, "In attesa")
         private val gradi = Ui.testo(s, 124, TESTO, leggero, 124, "--°").apply { letterSpacing = -0.032f }
         private val estremi = Ui.testo(s, 28, SECONDARIO, normale, 34, " ")
+        private val scala = ScalaOre(s)
+        private val termometro = Termometro(s)
         private val ora = Ui.testo(s, 212, TESTO, leggero, 200).apply {
             letterSpacing = -0.0377f
             gravity = Gravity.END
@@ -106,8 +197,16 @@ object Braun : Tema {
         private val fermo = Ui.riga(s, 28).apply { setPadding(44, 24, 28, 24) }
         private val copertina = ImageView(s).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
-            background = arrotondato(TASTO, 14)
+            background = arrotondato(TASTO, 12)
             clipToOutline = true
+        }
+        private val cornicecopertina = FrameLayout(s).apply {
+            background = arrotondato(0, 18, ANELLO, 2)
+            setPadding(6, 6, 6, 6)
+        }
+        private val spia = Ui.riga(s, 12).apply {
+            addView(View(s).apply { background = ovale(ARANCIO) }, lp(12, 12))
+            addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "in riproduzione"))
         }
         private val titolo = Ui.testo(s, 46, TESTO, normale, 54)
         private val artista = Ui.testo(s, 30, SECONDARIO, normale, 36)
@@ -127,30 +226,36 @@ object Braun : Tema {
         }
 
         private fun display(): View {
-            val riquadro = Ui.riga(s, 0, Gravity.NO_GRAVITY).apply {
+            val riquadro = Ui.colonna(s).apply {
                 background = arrotondato(DISPLAY, 28, FILETTO, 2)
-                setPadding(40, 26, 40, 26)
+                setPadding(40, 24, 40, 22)
             }
+            val contenuto = Ui.riga(s, 0, Gravity.NO_GRAVITY)
             val sinistra = Ui.colonna(s, 4, Gravity.CENTER_VERTICAL)
             val rigaCielo = Ui.riga(s, 12)
             rigaCielo.addView(iconaMeteo, lp(48, 48))
             rigaCielo.addView(cielo)
             sinistra.addView(rigaCielo)
-            sinistra.addView(gradi)
+            val rigaGradi = Ui.riga(s, 24)
+            rigaGradi.addView(gradi)
+            rigaGradi.addView(termometro, lp(28, 112))
+            sinistra.addView(rigaGradi)
             sinistra.addView(estremi)
-            riquadro.addView(sinistra, lp(380, TUTTO))
-            riquadro.addView(View(s).apply { setBackgroundColor(FILETTO) }, lp(2, TUTTO).apply {
+            contenuto.addView(sinistra, lp(380, TUTTO))
+            contenuto.addView(View(s).apply { setBackgroundColor(FILETTO) }, lp(2, TUTTO).apply {
                 leftMargin = 40
                 rightMargin = 40
             })
             val destra = Ui.colonna(s, 0, Gravity.CENTER_VERTICAL)
             destra.addView(ora, lp(TUTTO, ADATTA).apply {
-                topMargin = -29
-                bottomMargin = -29
+                topMargin = -39
+                bottomMargin = -39
             })
             destra.addView(data, lp(TUTTO, ADATTA).apply { topMargin = 10 })
-            riquadro.addView(destra, lp(0, TUTTO, 1f))
-            Ui.senzaRitaglio(riquadro, destra, sinistra)
+            contenuto.addView(destra, lp(0, TUTTO, 1f))
+            Ui.senzaRitaglio(riquadro, contenuto, destra, sinistra, rigaGradi)
+            riquadro.addView(contenuto, lp(TUTTO, 0, 1f))
+            riquadro.addView(scala, lp(TUTTO, 18).apply { topMargin = 8 })
             return riquadro
         }
 
@@ -158,18 +263,20 @@ object Braun : Tema {
             val sezione = FrameLayout(s).apply { background = arrotondato(MODULO, 28) }
 
             inAscolto.gravity = Gravity.CENTER_VERTICAL
-            Ui.premibile(copertina, ONDA, "Apri Spotify") { azioni.apriMusica() }
-            inAscolto.addView(copertina, lp(202, 202))
+            cornicecopertina.addView(copertina, lpf(186, 186))
+            Ui.premibile(cornicecopertina, ONDA, "Apri Spotify") { azioni.apriMusica() }
+            inAscolto.addView(cornicecopertina, lp(198, 198))
             val info = Ui.colonna(s, 4, Gravity.CENTER_VERTICAL)
-            info.addView(titolo)
+            info.addView(spia)
+            info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 2 })
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(0, TUTTO, 1f))
             val comandi = Ui.riga(s, 24)
-            comandi.addView(tasto(s, 44, R.drawable.ic_precedente, true, TESTO, "Brano precedente") { azioni.precedente() }.view, lp(130, 130))
-            play = tasto(s, 56, R.drawable.ic_pausa, false, CORPO, "Pausa") { azioni.playPausa() }
+            comandi.addView(tasto(s, 44, 100, R.drawable.ic_precedente, Tipo.SCURO, TESTO, "Brano precedente") { azioni.precedente() }.view, lp(130, 130))
+            play = tasto(s, 56, 118, R.drawable.ic_pausa, Tipo.PLAY, CORPO, "Pausa") { azioni.playPausa() }
             comandi.addView(play.view, lp(150, 150))
-            comandi.addView(tasto(s, 44, R.drawable.ic_successivo, true, TESTO, "Brano successivo") { azioni.successivo() }.view, lp(130, 130))
+            comandi.addView(tasto(s, 44, 100, R.drawable.ic_successivo, Tipo.SCURO, TESTO, "Brano successivo") { azioni.successivo() }.view, lp(130, 130))
             inAscolto.addView(comandi)
 
             fermo.gravity = Gravity.CENTER_VERTICAL
@@ -181,7 +288,7 @@ object Braun : Tema {
                 setPadding(48, 0, 48, 0)
             }
             fermo.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(ADATTA, 130))
-            fermo.addView(tasto(s, 56, R.drawable.ic_play, false, CORPO, "Riproduci") { azioni.playPausa() }.view, lp(150, 150))
+            fermo.addView(tasto(s, 56, 118, R.drawable.ic_play, Tipo.PLAY, CORPO, "Riproduci") { azioni.playPausa() }.view, lp(150, 150))
 
             sezione.addView(inAscolto, lpf(TUTTO, TUTTO))
             sezione.addView(fermo, lpf(TUTTO, TUTTO))
@@ -209,7 +316,15 @@ object Braun : Tema {
                 for (c in 0 until 5) riga.addView(celle[r * 5 + c], lp(220, TUTTO))
                 colonna.addView(riga, lp(TUTTO, 0, 1f))
             }
-            return colonna
+            val filetto = View(s).apply { setBackgroundColor(ANELLO) }
+            return FrameLayout(s).apply {
+                addView(colonna, lpf(TUTTO, TUTTO))
+                addView(filetto, lpf(2, TUTTO).apply {
+                    leftMargin = 709
+                    topMargin = 10
+                    bottomMargin = 10
+                })
+            }
         }
 
         private fun cella(tondo: View, nome: String): LinearLayout {
@@ -224,11 +339,7 @@ object Braun : Tema {
         }
 
         private fun cellaApp(app: AppHome): View {
-            val tondo = Ui.testo(s, 58, TESTO, leggero, 0, app.sigla).apply {
-                gravity = Gravity.CENTER
-                background = ovale(TASTO, ANELLO)
-                clipToOutline = true
-            }
+            val tondo = cornice(s, Tipo.SCURO, 118, Ui.testo(s, 58, TESTO, leggero, 0, app.sigla).apply { gravity = Gravity.CENTER })
             val installata = app.intent(s) != null
             Ui.premibile(tondo, ONDA, app.nome) { if (installata) azioni.apri(app) }
             val cella = cella(tondo, app.nome)
@@ -237,17 +348,19 @@ object Braun : Tema {
         }
 
         private fun cellaServizio(icona: Int, lato: Int, nome: String, descrizione: String?, azione: () -> Unit): View {
-            val t = tasto(s, lato, icona, false, CORPO, descrizione ?: nome, azione)
-            t.view.background = ovale(CHIARO)
+            val t = tasto(s, lato, 118, icona, Tipo.CHIARO, CORPO, descrizione ?: nome, azione)
             return cella(t.view, nome)
         }
 
         override fun mostraOra(adesso: Date) {
             ora.text = SimpleDateFormat("HH:mm", Locale.ITALIAN).format(adesso)
             data.text = SimpleDateFormat("EEEE d MMMM", Locale.ITALIAN).format(adesso)
+            val calendario = Calendar.getInstance().apply { time = adesso }
+            scala.ore = calendario.get(Calendar.HOUR_OF_DAY) + calendario.get(Calendar.MINUTE) / 60f
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
+            termometro.imposta(meteo)
             if (meteo == null) return
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             cielo.text = FonteMeteo.descrizione(meteo.codice)
@@ -307,7 +420,7 @@ object Braun : Tema {
 
         private fun intestazione(): View {
             val riga = Ui.riga(s, 28)
-            riga.addView(tasto(s, 48, R.drawable.ic_indietro, true, TESTO, "Indietro") { azioni.indietro() }.view, lp(120, 120))
+            riga.addView(tasto(s, 48, 92, R.drawable.ic_indietro, Tipo.SCURO, TESTO, "Indietro") { azioni.indietro() }.view, lp(120, 120))
             riga.addView(Ui.testo(s, 68, TESTO, leggero, 76, "Benzinai"), lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
             for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
@@ -339,12 +452,15 @@ object Braun : Tema {
                 setPadding(36, 26, 36, 26)
             }
             val testi = Ui.colonna(s, 8, Gravity.CENTER_VERTICAL)
-            testi.addView(nomeScheda)
+            val rigaNome = Ui.riga(s, 12)
+            rigaNome.addView(View(s).apply { background = ovale(ARANCIO) }, lp(12, 12))
+            rigaNome.addView(nomeScheda, lp(0, ADATTA, 1f))
+            testi.addView(rigaNome, lp(TUTTO, ADATTA))
             testi.addView(indirizzo, lp(TUTTO, 136))
             testi.addView(dettagli)
             riquadro.addView(testi, lp(0, ADATTA, 1f))
             val comandi = Ui.riga(s, 20)
-            comandi.addView(tasto(s, 48, R.drawable.ic_chiudi, true, TESTO, "Chiudi scheda") { seleziona(null) }.view, lp(120, 120))
+            comandi.addView(tasto(s, 48, 92, R.drawable.ic_chiudi, Tipo.SCURO, TESTO, "Chiudi scheda") { seleziona(null) }.view, lp(120, 120))
             riquadro.addView(comandi)
             riquadro.visibility = View.GONE
             scheda = riquadro
@@ -390,7 +506,11 @@ object Braun : Tema {
 
         private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
-            colonna.addView(Ui.testo(s, 40, TESTO, normale, 48, titolo).apply { setPadding(12, 0, 0, 0) })
+            val intestazioneSezione = Ui.riga(s, 20)
+            intestazioneSezione.addView(Ui.testo(s, 40, TESTO, normale, 48, titolo))
+            intestazioneSezione.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(0, 2, 1f))
+            intestazioneSezione.setPadding(12, 0, 0, 0)
+            colonna.addView(intestazioneSezione, lp(TUTTO, ADATTA))
             val righe = Ui.colonna(s, 20)
             distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
@@ -401,7 +521,7 @@ object Braun : Tema {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
-            val corpo = Ui.riga(s, 28).apply {
+            val corpo = Ui.riga(s, 24).apply {
                 background = arrotondato(MODULO, 28, if (scelto) ARANCIO else MODULO, 3)
                 clipToOutline = true
                 setPadding(32, 0, 32, 0)
@@ -410,9 +530,20 @@ object Braun : Tema {
             sinistra.addView(Ui.testo(s, 40, TESTO, normale, 46, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
-            corpo.addView(Ui.testo(s, 30, SECONDARIO, normale, 36, Benzinai.distanza(d.distanzaKm)))
+            corpo.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 56))
+            corpo.addView(Ui.testo(s, 30, SECONDARIO, normale, 36, Benzinai.distanza(d.distanzaKm)).apply {
+                gravity = Gravity.END
+                minWidth = 96
+            }, lp(ADATTA, ADATTA))
+            corpo.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 56))
             val prezzo = Ui.riga(s, 0, Gravity.TOP)
-            prezzo.addView(Ui.testo(s, 64, TESTO, leggero, 64, Benzinai.prezzo(d.prezzo)).apply { letterSpacing = -0.031f })
+            val testoPrezzo = SpannableStringBuilder(Benzinai.prezzo(d.prezzo)).apply {
+                if (isNotEmpty()) setSpan(RelativeSizeSpan(42f / 64f), length - 1, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            prezzo.addView(Ui.testo(s, 64, TESTO, leggero, 64).apply {
+                letterSpacing = -0.031f
+                text = testoPrezzo
+            })
             prezzo.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, " €/l"))
             corpo.addView(prezzo)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))

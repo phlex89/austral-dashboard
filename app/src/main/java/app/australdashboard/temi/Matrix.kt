@@ -3,6 +3,9 @@ package app.australdashboard.temi
 import android.content.Context
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -24,6 +27,7 @@ import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
 import app.australdashboard.temi.Ui.lpf
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -53,6 +57,7 @@ object Matrix : Tema {
         verticale: Boolean = true,
         bordo: Int = BORDO,
         alto: Int = 22,
+        destra: String? = null,
     ): Riquadro {
         val interno = (if (verticale) Ui.colonna(context) else Ui.riga(context)).apply {
             background = Ui.bordo(bordo, 2)
@@ -66,6 +71,14 @@ object Matrix : Tema {
         val esterno = FrameLayout(context).apply {
             addView(interno, lpf(TUTTO, TUTTO))
             addView(etichetta, lpf(ADATTA, ADATTA, Gravity.TOP or Gravity.START).apply { leftMargin = 22 })
+            if (destra != null) {
+                val lato = Ui.testo(context, 40, ATTENUATO, vt(context), 40, destra).apply {
+                    setBackgroundColor(NERO)
+                    setPadding(12, 0, 12, 0)
+                    translationY = -alto.toFloat()
+                }
+                addView(lato, lpf(ADATTA, ADATTA, Gravity.TOP or Gravity.END).apply { rightMargin = 22 })
+            }
         }
         Ui.senzaRitaglio(esterno)
         return Riquadro(esterno, interno, etichetta)
@@ -91,12 +104,20 @@ object Matrix : Tema {
         private val estremi = Ui.testo(s, 30, ATTENUATO, Ui.mono, 36, " ")
         private val minima = Ui.testo(s, 28, VERDE, Ui.mono, 30)
         private val massima = Ui.testo(s, 28, VERDE, Ui.mono, 30)
-        private val celle = List(8) { View(s) }
-        private val barra = Ui.riga(s, 6)
+        private val celle = List(9) { View(s) }
+        private val barra = Ui.riga(s, 8)
+        private val giorni = List(7) { Ui.testo(s, 28, ATTENUATO, Ui.mono, 28).apply { gravity = Gravity.CENTER } }
+        private val strisciaGiorni = Ui.riga(s, 6)
+        private val oreCelle = List(24) { View(s) }
+        private var ultimaOra = -1
         private lateinit var musica: Riquadro
         private val inAscolto = Ui.riga(s, 24)
         private val fermo = Ui.riga(s, 24)
         private val copertina = ImageView(s).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+        private val cornice = FrameLayout(s).apply {
+            background = Ui.bordo(VERDE, 2)
+            setPadding(4, 4, 4, 4)
+        }
         private val titolo = Ui.testo(s, 68, VERDE, vt, 64, maiuscolo = true)
         private val artista = Ui.testo(s, 30, ATTENUATO, Ui.mono, 36)
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, NERO)
@@ -122,18 +143,33 @@ object Matrix : Tema {
         private fun prompt(testo: String) = Ui.testo(s, 28, ATTENUATO, Ui.mono, 34, testo)
 
         private fun boxOra(): View {
-            val r = riquadro(s, "[ 01 · ORA ]")
-            r.interno.addView(prompt("~$ date \"+%H:%M\""))
-            r.interno.addView(ora, lp(ADATTA, ADATTA).apply { topMargin = 6 })
+            val r = riquadro(s, "[ 01 · ORA ]", destra = "[ 24H ]")
+            val rigaPrompt = Ui.riga(s)
+            rigaPrompt.addView(prompt("~$ date \"+%H:%M\""), lp(0, ADATTA, 1f))
+            giorni.forEachIndexed { i, g ->
+                g.text = "LMMGVSD"[i].toString()
+                g.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                strisciaGiorni.addView(g, lp(34, 34))
+            }
+            rigaPrompt.addView(strisciaGiorni)
+            r.interno.addView(rigaPrompt, lp(TUTTO, 34))
+            r.interno.addView(ora, lp(ADATTA, 200).apply { topMargin = -10 })
             val rigaData = Ui.riga(s, 14)
             rigaData.addView(data)
             rigaData.addView(View(s).apply { setBackgroundColor(VERDE) }, lp(20, 36))
-            r.interno.addView(rigaData, lp(ADATTA, ADATTA).apply { topMargin = 14 })
+            r.interno.addView(rigaData, lp(ADATTA, ADATTA).apply { topMargin = 12 })
+            val rigaOre = Ui.riga(s, 10)
+            rigaOre.addView(Ui.testo(s, 28, ATTENUATO, Ui.mono, 30, "00"))
+            val celleOre = Ui.riga(s, 4)
+            oreCelle.forEach { celleOre.addView(it, lp(16, 30)) }
+            rigaOre.addView(celleOre)
+            rigaOre.addView(Ui.testo(s, 28, ATTENUATO, Ui.mono, 30, "24"))
+            r.interno.addView(rigaOre, lp(ADATTA, ADATTA).apply { topMargin = 12 })
             return r.esterno
         }
 
         private fun boxMeteo(): View {
-            val r = riquadro(s, "[ 02 · METEO ]")
+            val r = riquadro(s, "[ 02 · METEO ]", destra = "[ QUI ]")
             r.interno.addView(prompt("~$ meteo --qui"))
             val rigaGradi = Ui.riga(s, 20)
             rigaGradi.addView(iconaMeteo, lp(72, 72))
@@ -141,9 +177,11 @@ object Matrix : Tema {
             r.interno.addView(rigaGradi, lp(ADATTA, ADATTA).apply { topMargin = 6 })
             r.interno.addView(cielo)
             r.interno.addView(estremi, lp(ADATTA, ADATTA).apply { topMargin = 10 })
-            barra.addView(minima, lp(ADATTA, ADATTA).apply { rightMargin = 8 })
-            celle.forEach { barra.addView(it, lp(26, 30)) }
-            barra.addView(massima, lp(ADATTA, ADATTA).apply { leftMargin = 8 })
+            val celleGradi = Ui.riga(s, 6)
+            celle.forEach { celleGradi.addView(it, lp(24, 30)) }
+            barra.addView(minima)
+            barra.addView(celleGradi)
+            barra.addView(massima)
             barra.visibility = View.INVISIBLE
             r.interno.addView(barra, lp(ADATTA, ADATTA).apply { topMargin = 10 })
             return r.esterno
@@ -155,8 +193,8 @@ object Matrix : Tema {
             musica.interno.gravity = Gravity.CENTER_VERTICAL
 
             Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }
-            copertina.background = Ui.bordo(BORDO, 2)
-            inAscolto.addView(copertina, lp(160, 160))
+            cornice.addView(copertina, lpf(148, 148))
+            inAscolto.addView(cornice, lp(160, 160))
             val info = Ui.colonna(s)
             info.addView(titolo)
             info.addView(artista, lp(ADATTA, ADATTA).apply { topMargin = 6 })
@@ -191,17 +229,24 @@ object Matrix : Tema {
         }
 
         private fun boxApp(): View {
-            val r = riquadro(s, "[ 04 · APP ]", verticale = false)
+            val r = riquadro(s, "[ 04 · APP ]", verticale = false, destra = "[ ${AppHome.elenco.size} ]")
             r.interno.apply {
                 dividerDrawable = GradientDrawable().apply { setSize(20, 20) }
                 showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
             }
-            for (app in AppHome.elenco) {
-                val cella = Ui.colonna(s, 6, Gravity.CENTER).apply {
-                    background = Ui.bordo(BORDO, 2)
+            AppHome.elenco.forEachIndexed { i, app ->
+                val contenuto = Ui.colonna(s, 6, Gravity.CENTER).apply {
                     setPadding(6, 0, 6, 0)
                     addView(Ui.testo(s, 88, VERDE, vt, 72, "[${app.sigla}]"))
                     addView(Ui.testo(s, 28, VERDE, Ui.mono, 32, app.nome, righe = 2).apply { gravity = Gravity.CENTER })
+                }
+                val cella = FrameLayout(s).apply {
+                    background = Ui.bordo(BORDO, 2)
+                    addView(contenuto, lpf(TUTTO, TUTTO))
+                    addView(
+                        Ui.testo(s, 28, ATTENUATO, Ui.mono, 32, "${i + 1}"),
+                        lpf(ADATTA, ADATTA, Gravity.TOP or Gravity.START).apply { topMargin = 6; leftMargin = 10 },
+                    )
                 }
                 val installata = app.intent(s) != null
                 if (!installata) cella.alpha = 0.35f
@@ -214,22 +259,27 @@ object Matrix : Tema {
         private fun servizi(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val voci = listOf(
-                Pair("F1", "Benzinai") to azioni::benzinai,
-                Pair("F2", "Tutte le app") to azioni::tutteLeApp,
-                Pair("F3", "Impostazioni Android") to azioni::impostazioniAndroid,
-                Pair("F4", "Launcher") to azioni::impostazioniLauncher,
+                Triple("F1", "Benzinai", R.drawable.ic_benzinaio) to azioni::benzinai,
+                Triple("F2", "Tutte le app", R.drawable.ic_griglia) to azioni::tutteLeApp,
+                Triple("F3", "Impostazioni Android", R.drawable.ic_cursori) to azioni::impostazioniAndroid,
+                Triple("F4", "Launcher", R.drawable.ic_ingranaggio) to azioni::impostazioniLauncher,
             )
-            val pesi = listOf(1f, 1f, 1.5f, 1f)
+            val pesi = listOf(0.85f, 1.1f, 1.7f, 0.85f)
             voci.forEachIndexed { i, (voce, azione) ->
-                val (tasto, nome) = voce
-                val cella = Ui.riga(s, 14).apply {
-                    setBackgroundColor(VERDE)
-                    setPadding(22, 0, 22, 0)
+                val (tasto, nome, icona) = voce
+                val intestazione = Ui.riga(s).apply {
                     addView(Ui.testo(s, 28, NERO, Ui.monoGrassetto, 28, tasto).apply {
                         background = Ui.bordo(NERO, 2)
                         setPadding(6, 4, 6, 4)
                     })
-                    addView(Ui.testo(s, 44, NERO, vt, 40, nome, maiuscolo = true, righe = 2))
+                    addView(View(s), lp(0, 1, 1f))
+                    addView(Ui.icona(s, icona, NERO), lp(40, 40))
+                }
+                val cella = Ui.colonna(s, 6, Gravity.CENTER_VERTICAL).apply {
+                    setBackgroundColor(VERDE)
+                    setPadding(16, 0, 16, 0)
+                    addView(intestazione, lp(TUTTO, ADATTA))
+                    addView(Ui.testo(s, 40, NERO, vt, 40, nome, maiuscolo = true))
                 }
                 riga.addView(Ui.premibile(cella, ONDA_SCURA, nome) { azione() }, lp(0, TUTTO, pesi[i]))
             }
@@ -239,6 +289,26 @@ object Matrix : Tema {
         override fun mostraOra(adesso: Date) {
             ora.text = SimpleDateFormat("HH:mm", Locale.ITALIAN).format(adesso)
             data.text = SimpleDateFormat("EEEE d MMMM", Locale.ITALIAN).format(adesso)
+            val calendario = Calendar.getInstance().apply { time = adesso }
+            val giorno = (calendario.get(Calendar.DAY_OF_WEEK) + 5) % 7
+            val ore = calendario.get(Calendar.HOUR_OF_DAY)
+            val segno = giorno * 24 + ore
+            if (segno == ultimaOra) return
+            ultimaOra = segno
+            giorni.forEachIndexed { i, g ->
+                val oggi = i == giorno
+                g.setTextColor(if (oggi) NERO else ATTENUATO)
+                g.typeface = if (oggi) Ui.monoGrassetto else Ui.mono
+                g.background = if (oggi) Ui.pieno(VERDE) else null
+            }
+            strisciaGiorni.contentDescription = "Giorno della settimana: ${SimpleDateFormat("EEEE", Locale.ITALIAN).format(adesso)}"
+            oreCelle.forEachIndexed { i, c ->
+                c.background = when {
+                    i < ore -> Ui.pieno(ATTENUATO)
+                    i == ore -> Ui.pieno(VERDE)
+                    else -> Ui.bordo(BORDO, 2)
+                }
+            }
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
@@ -250,10 +320,15 @@ object Matrix : Tema {
             minima.text = "${meteo.minima}°"
             massima.text = "${meteo.massima}°"
             val ampiezza = (meteo.massima - meteo.minima).coerceAtLeast(1)
-            val accese = ((meteo.gradi - meteo.minima) * 8f / ampiezza).roundToInt().coerceIn(0, 8)
+            val attuale = ((meteo.gradi - meteo.minima) * 8f / ampiezza).roundToInt().coerceIn(0, 8)
             celle.forEachIndexed { i, cella ->
-                cella.background = if (i < accese) Ui.pieno(VERDE) else Ui.bordo(ATTENUATO, 2)
+                cella.background = when {
+                    i < attuale -> Ui.pieno(ATTENUATO)
+                    i == attuale -> Ui.pieno(VERDE)
+                    else -> Ui.bordo(ATTENUATO, 2)
+                }
             }
+            barra.contentDescription = "Temperatura attuale ${meteo.gradi}° tra minima ${meteo.minima}° e massima ${meteo.massima}°"
             barra.visibility = View.VISIBLE
         }
 
@@ -261,10 +336,12 @@ object Matrix : Tema {
             inAscolto.visibility = if (musica != null) View.VISIBLE else View.GONE
             fermo.visibility = if (musica == null) View.VISIBLE else View.GONE
             if (musica == null) {
+                this.musica.interno.background = Ui.bordo(BORDO, 2)
                 this.musica.etichetta.text = "[ 03 · SPOTIFY ]"
                 return
             }
             val stato = if (musica.inRiproduzione) "IN RIPRODUZIONE" else "IN PAUSA"
+            this.musica.interno.background = Ui.bordo(if (musica.inRiproduzione) VERDE else BORDO, if (musica.inRiproduzione) 4 else 2)
             this.musica.etichetta.text = "[ 03 · ${musica.app.uppercase(Locale.ITALIAN)} ▸ $stato ]"
             titolo.text = musica.titolo
             artista.text = "artista: ${musica.artista}"
@@ -280,6 +357,7 @@ object Matrix : Tema {
         private val ordini = LinkedHashMap<Ordine, TextView>()
         private val elencoView = Ui.colonna(s, 40).apply { setPadding(0, 24, 0, 0) }
         private lateinit var scheda: Riquadro
+        private val etichettaIndirizzo = Ui.testo(s, 28, ATTENUATO, Ui.mono, 34, "indirizzo:")
         private val indirizzo = Ui.adatta(Ui.testo(s, 82, VERDE, vt, contenuto = "", maiuscolo = true, righe = 2), 40, 82)
         private val dettagli = Ui.testo(s, 30, VERDE, Ui.mono, 36)
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
@@ -313,7 +391,10 @@ object Matrix : Tema {
                 addView(Ui.testo(s, 44, VERDE, vt, 40, "ESC"))
             }
             riga.addView(Ui.premibile(esc, ONDA, "Indietro") { azioni.indietro() }, lp(ADATTA, TUTTO))
-            riga.addView(Ui.testo(s, 76, VERDE, vt, 70, "~$ benzinai"), lp(0, ADATTA, 1f))
+            val titolo = Ui.riga(s, 14)
+            titolo.addView(Ui.testo(s, 76, VERDE, vt, 70, "~$ benzinai"))
+            titolo.addView(View(s).apply { setBackgroundColor(VERDE) }, lp(26, 52))
+            riga.addView(titolo, lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
             for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
                 val tasto = Ui.testo(s, 44, VERDE, vt, 40, nome, maiuscolo = true).apply { gravity = Gravity.CENTER }
@@ -339,7 +420,8 @@ object Matrix : Tema {
             scheda.interno.background = Ui.bordo(VERDE, 2, NERO)
             scheda.interno.gravity = Gravity.CENTER_VERTICAL
             val testi = Ui.colonna(s)
-            testi.addView(indirizzo, lp(TUTTO, 140))
+            testi.addView(etichettaIndirizzo)
+            testi.addView(indirizzo, lp(TUTTO, 96))
             testi.addView(dettagli, lp(ADATTA, ADATTA).apply { topMargin = 12 })
             scheda.interno.addView(testi, lp(0, ADATTA, 1f))
             val comandi = Ui.riga(s, 20)
@@ -369,13 +451,13 @@ object Matrix : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("[ ★ PREFERITI · ${e.preferiti.size} ]", e.preferiti, true)
+                    if (e.preferiti.isNotEmpty()) sezione("[ ★ PREFERITI ]", "[ ${e.preferiti.size} ]", e.preferiti, true)
                     val nomeOrdine = when (e.ordine) {
                         Ordine.CONVIENE -> "CONVIENE"
                         Ordine.PREZZO -> "PREZZO"
                         Ordine.DISTANZA -> "DISTANZA"
                     }
-                    if (e.vicini.isNotEmpty()) sezione("[ VICINI · ORDINE: $nomeOrdine ]", e.vicini, false)
+                    if (e.vicini.isNotEmpty()) sezione("[ VICINI ]", "[ ORDINE: $nomeOrdine ]", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("~$ benzinai", "Nessun distributore entro 15 km.")
                 }
             }
@@ -389,31 +471,45 @@ object Matrix : Tema {
             elencoView.addView(r.esterno, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
-            val r = riquadro(s, titolo)
+        private fun sezione(titolo: String, destra: String, distributori: List<Distributore>, luogo: Boolean) {
+            val r = riquadro(s, titolo, destra = destra)
             r.interno.apply {
                 dividerDrawable = GradientDrawable().apply { setSize(20, 20) }
                 showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
             }
-            distributori.forEach { r.interno.addView(riga(it, luogo), lp(TUTTO, 120)) }
+            distributori.forEachIndexed { i, d -> r.interno.addView(riga(d, luogo, i), lp(TUTTO, 120)) }
             elencoView.addView(r.esterno, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore, luogo: Boolean): View {
+        private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
-            val corpo = Ui.riga(s, 24).apply {
+            val corpo = Ui.riga(s, 20).apply {
                 background = if (scelto) Ui.bordo(VERDE, 3) else Ui.bordo(BORDO, 2)
-                setPadding(24, 0, 24, 0)
+                setPadding(16, 0, 24, 0)
             }
+            val marcatore = when {
+                scelto -> ">"
+                luogo -> "*"
+                else -> "${posizione + 1}"
+            }
+            corpo.addView(
+                Ui.testo(s, 60, if (scelto) VERDE else ATTENUATO, vt, 50, marcatore).apply { gravity = Gravity.CENTER },
+                lp(34, ADATTA),
+            )
             val sinistra = Ui.colonna(s)
             sinistra.addView(Ui.testo(s, 54, VERDE, vt, 50, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, ATTENUATO, Ui.mono, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             val destra = Ui.colonna(s, 0, Gravity.END)
             val prezzo = Ui.riga(s, 0, Gravity.BOTTOM)
-            prezzo.addView(Ui.testo(s, 76, VERDE, vt, 62, Benzinai.prezzo(d.prezzo)))
+            prezzo.addView(Ui.testo(s, 76, VERDE, vt, 62).apply {
+                val cifre = Benzinai.prezzo(d.prezzo)
+                text = SpannableString(cifre).apply {
+                    setSpan(RelativeSizeSpan(52f / 76f), cifre.length - 1, cifre.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            })
             prezzo.addView(Ui.testo(s, 28, ATTENUATO, Ui.mono, 28, " €/l"))
             destra.addView(prezzo)
             destra.addView(Ui.testo(s, 30, ATTENUATO, Ui.mono, 36, Benzinai.distanza(d.distanzaKm)))
@@ -429,7 +525,7 @@ object Matrix : Tema {
                 return
             }
             scheda.esterno.visibility = View.VISIBLE
-            scheda.etichetta.text = "[ SCHEDA ▸ ${d.nome.uppercase(Locale.ITALIAN)} · ${d.marchio.uppercase(Locale.ITALIAN)} ]"
+            scheda.etichetta.text = "[ > ${d.nome.uppercase(Locale.ITALIAN)} · ${d.marchio.uppercase(Locale.ITALIAN)} ]"
             indirizzo.text = "${d.indirizzo} - ${d.comune}"
             dettagli.text = "self ${Benzinai.prezzo(d.prezzo)} €/l · ${Benzinai.distanza(d.distanzaKm)} · aggiornato ${Benzinai.quando(d.aggiornato, System.currentTimeMillis())}"
         }

@@ -26,14 +26,14 @@ Versione in `version.properties` (`versionCode`, `versionName`), letta da `app/b
 | `temi/Tema.kt` | Contratto dei temi: `Tema` (`home`, `benzinai`, `palette`), `VistaHome`, `VistaBenzinai`, `AzioniHome`, `AzioniBenzinai`, le sei `AppHome` con i nomi dei pacchetti |
 | `temi/Temi.kt` | Elenco dei temi e scelta, in `SharedPreferences` `impostazioni`, chiave `tema` (predefinito il primo) |
 | `temi/Ui.kt` | Costruzione delle view in px: testi, icone colorate, bordi, righe e colonne con spaziatura, `premibile` (ripple), icona del cielo |
-| `temi/Matrix.kt` | Tema 1: misure e colori della tavola `T1Home` e `T1Benzinai`; nei servizi niente icone, che non ci stavano accanto alle etichette |
-| `temi/Hud.kt` | Tema 2: quadrante a 60 tacche (i minuti trascorsi in ciano), termometro con fascia minima–massima, squadrette e smussi a 45° disegnati in codice; Orbitron variabile, un `Typeface` per peso creato una volta (un `fontVariationSettings` per testo costava 8 MB di memoria nativa) |
-| `temi/Brutalismo.kt` | Tema 3: blocchi con bordi da 4 px, indice delle app a sei righe, servizi in alto (il quarto è solo l'ingranaggio); `sans-serif-condensed` peso 900 dove esiste |
-| `temi/ArtDeco.kt` | Tema 4: trittico simmetrico, cornici doppie con rombi d'oro (`Drawable` privato), comandi tondi; Limelight e `serif`; i nomi dei distributori in maiuscolo, perché nei dati del MIMIT sono un po' maiuscoli e un po' no |
-| `temi/Solari.kt` | Tema 5: ogni cifra e parola su una paletta (`GradientDrawable` con la giunzione scura a metà); orologio largo 650 px fissi come nella tavola; `sans-serif-condensed` |
-| `temi/Cyberpunk.kt` | Tema 6: smussi a 45° con `Drawable` e contorno privati, così anche il ripple segue lo smusso; servizi con larghezze fisse dai pesi della tavola; Rajdhani 600 e 700 |
-| `temi/Braun.kt` | Tema 7: display incassato, tastierino 5×2 di tasti tondi (app scure, servizi chiari; tutta la cella è toccabile); `sans-serif-light` |
-| `temi/Synthwave.kt` | Tema 8: un solo gradiente magenta→arancio su ora, orizzonte, cornice della copertina, anelli e play (testi a gradiente con `LinearGradient`); Audiowide per titoli e cifre, `sans-serif-condensed` corsivo per il testo |
+| `temi/Matrix.kt` | Tema 1: misure e colori della tavola `T1Home` e `T1Benzinai`; striscia dei giorni, barra delle 24 ore e barra dei gradi a 9 celle (la cella accesa è la posizione dei gradi tra minima e massima); etichette a destra sui bordi dei riquadri; riquadro della musica acceso quando suona; servizi con tasto F e icona sopra l'etichetta; nei Benzinai la colonna dei marcatori (`>` aperta, `*` preferito, posizione) |
+| `temi/Hud.kt` | Tema 2: quadrante a 60 tacche (i minuti trascorsi in ciano, quello in corso lungo e bianco) con l'anello delle 24 ore e la striscia dei giorni, termometro a una tacca per grado su una finestra di 16 gradi centrata su minima e massima, spia quadrata della musica, barretta della distanza su 5 km nei Benzinai, squadrette e smussi a 45° disegnati in codice; Orbitron variabile, un `Typeface` per peso creato una volta (un `fontVariationSettings` per testo costava 8 MB di memoria nativa) |
+| `temi/Brutalismo.kt` | Tema 3: blocchi con bordi da 4 px, indice delle app a sei righe, servizi in alto (il quarto è solo l'ingranaggio); caselle dei giorni e barra della giornata nel blocco dell'ora, barra min–max con cursore rosso, play con blocco bianco sfalsato, casella della posizione nei Benzinai; `sans-serif-condensed` peso 900 dove esiste |
+| `temi/ArtDeco.kt` | Tema 4: trittico simmetrico, cornici doppie con rombi d'oro (`Drawable` privato), comandi tondi; fregio delle 24 ore a gradoni, asta min–max con il rombo, copertina in tripla cornice, numerali romani di posizione nei Benzinai (da `romano`); Limelight e `serif`; i nomi dei distributori in maiuscolo, perché nei dati del MIMIT sono un po' maiuscoli e un po' no |
+| `temi/Solari.kt` | Tema 5: ogni cifra e parola su una paletta (`Paletta`: gradiente con la giunzione scura a metà e i due perni neri); mini-palette dei giorni, etichette di sezione con filetto, spie tonde accese o spente; orologio largo 650 px fissi come nella tavola; `sans-serif-condensed` |
+| `temi/Cyberpunk.kt` | Tema 6: smussi a 45° con `Drawable` e contorno privati, così anche il ripple segue lo smusso (contorno giallo o grigio e linguetta gialla nello stesso `Drawable`); striscia dei giorni, 24 tacche inclinate sotto l'ora, asta min–max con cursore inclinato, app numerate con triangolino; servizi con larghezze fisse dai pesi della tavola; Rajdhani 600 e 700 |
+| `temi/Braun.kt` | Tema 7: display incassato con la scala di sintonia delle 24 ore (lancetta sull'ora vera) e il termometro verticale, tastierino 5×2 di tasti tondi con conca a gradiente (app scure, servizi chiari; tutta la cella è toccabile) e filetto tra app e servizi; `sans-serif-light` |
+| `temi/Synthwave.kt` | Tema 8: un solo gradiente magenta→arancio su ora, orizzonte, cornice della copertina, anelli e play (testi a gradiente con `LinearGradient`); orizzonte a tre righe con il mezzo sole che segue l'ora del giorno, giorni con il cerchio pieno, tubo min–max; Audiowide per titoli e cifre, `sans-serif-condensed` corsivo per il testo |
 | `funzioni/` | Dati condivisi dai temi: vedi «Funzioni» |
 | `DiagnosticaActivity.kt` | Mostra versione, dimensione APK, PSS, tempi del primo frame, frame in ritardo, esito aggiornamenti |
 | `Misure.kt` | Misure in memoria del processo |
@@ -58,11 +58,11 @@ Vincoli che valgono per ogni funzione:
 - L'immagine arriva all'auto come video CarPlay: un piccolo ritardo tra tocco e risposta c'è comunque e non dipende dal launcher.
 - Tocco via CarPlay: progettare per tap e swipe semplici, bersagli grandi; niente multitouch.
 - Il box non legge i dati dell'auto (velocità, carburante, clima): parla con l'auto solo via CarPlay. Ora, rete, media e app sì.
-- La barra in basso (casa, indietro, ora, regolazioni) è di Ottocast ed esiste anche fuori dal launcher. Car Launcher, nelle foto, non mostrava la barra di stato di Android.
+- La barra in basso (casa, indietro, ora, regolazioni) è di Ottocast ed esiste anche fuori dal launcher. Resta visibile per scelta dell'utente (2026-11-18): i layout contano solo sull'area sopra di lei. Car Launcher, nelle foto, non mostrava la barra di stato di Android.
 - Il box si riaccende a ogni partenza: l'avvio a freddo del launcher conta.
 - Un aggiornamento del firmware Ottocast potrebbe reimpostare il launcher predefinito.
 
-Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nascondere, se c'è la barra di stato di Android, se il box ha un GPS suo, se l'aggiornamento avviene senza conferma, il fattore tra i tempi del box e quelli dell'emulatore.
+Da verificare sul box (prove manuali di M01, previste il 2026-11-19): se c'è la barra di stato di Android, se il box ha un GPS suo, se l'aggiornamento avviene senza conferma, il fattore tra i tempi del box e quelli dell'emulatore.
 
 ## Temi
 
@@ -75,6 +75,8 @@ Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nasco
 - Un testo più alto del suo riquadro non si centra: Android lo allinea in alto e taglia il fondo. Per imitare il `line-height` della tavola (più basso dell'altezza del font) si lascia l'altezza naturale e si mettono margini negativi sopra e sotto, metà della differenza ciascuno (ora di Braun e di Brutalismo).
 - Una parola sola in un testo a due righe si spezza a metà («LAUNCH/ER»): le etichette di una parola vanno su una riga.
 - Una riga a pesi che non ci sta sposta e taglia i figli: quando lo spazio è stretto, larghezze fisse calcolate sulla tavola.
+- Una `View` disegnata in codice con larghezza `TUTTO` dentro una colonna `ADATTA` chiede tutta la larghezza disponibile e allarga la colonna fuori dallo schermo: in `onMeasure` deve misurare zero se la larghezza non è imposta (tubo del meteo di Synthwave).
+- I dettagli che leggono ora, giorno e meteo (strisce dei giorni, barre delle ore, scale della temperatura) si aggiornano in `mostraOra` e `mostraMeteo`, senza timer propri; senza meteo, o con minima uguale alla massima, restano spenti.
 - Font esterni in `res/font/`, letti con `resources.getFont`; licenze in `licenze/`. I font di sistema: `Typeface.MONOSPACE` al posto di Roboto Mono.
 - Icone: `res/drawable/ic_*.xml`, convertite dalle SVG delle tavole (viewport 48), bianche, colorate con `imageTintList`.
 
@@ -151,4 +153,6 @@ Frame in ritardo: 0 per tutti, su tutti e due.
 - `box-lento` non è più lento negli avvii: con 2 core del Mac l'emulatore resta molto più veloce del box. Il fattore tra box ed emulatore si misura solo sul box (prove di M01).
 - Su `box-lento` il PSS è più alto di 7–8 MB per tutti i temi, ma la memoria propria dell'app (heap Java e nativo) è uguale: il PSS divide le librerie condivise tra i processi, e su un sistema con meno processi ne tocca all'app una quota più grande. Il confronto con l'obiettivo dei 40 MB va fatto su `box`.
 - Il PSS va letto dopo un avvio pulito: dopo aver girato per Impostazioni e Benzinai lo stesso processo sale di 5–10 MB.
+
+Misure dopo i dettagli nuovi delle tavole (M02, release, APK 690 KB, emulatore `box` avviato con 4 GB di RAM e un brano finto in riproduzione), quattro avvii per tema: avvio a freddo 130–268 ms, PSS 26–28 MB (Braun 26, Solari e Cyberpunk 28), 0 frame in ritardo. Rispetto alla v0.2.0 il PSS sale di 2–3 MB, in parte per la RAM diversa dell'emulatore.
 - HUD era a 34 MB: `fontVariationSettings` su ogni testo creava un font nativo per testo. Ora c'è un `Typeface` per peso (`Font.Builder` con la variazione, `CustomFallbackBuilder`), e HUD sta con gli altri.

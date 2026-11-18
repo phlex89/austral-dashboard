@@ -2,20 +2,22 @@ package app.australdashboard.temi
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.DashPathEffect
 import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.fonts.Font
 import android.graphics.fonts.FontFamily
 import android.graphics.ColorFilter
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.LayerDrawable
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
@@ -42,7 +44,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.cos
-import kotlin.math.floor
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 object Hud : Tema {
@@ -108,6 +110,12 @@ object Hud : Tema {
         vista.foreground = Squadrette(CIANO, lato.toFloat(), spessore.toFloat())
     }
 
+    private fun angoli(vista: View, colore: Int, lato: Float = 16f, spessore: Float = 2f): Squadrette {
+        val squadrette = Squadrette(colore, lato, spessore)
+        vista.foreground = LayerDrawable(arrayOf(vista.foreground, squadrette))
+        return squadrette
+    }
+
     private fun smussa(vista: View, taglio: Int) {
         vista.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(v: View, outline: Outline) {
@@ -132,10 +140,10 @@ object Hud : Tema {
 
     private fun tastoContorno(context: Context, icona: Int, lato: Int, descrizione: String, azione: () -> Unit): View {
         val cornice = FrameLayout(context).apply {
-            background = Ui.bordo(LINEA_FORTE, 2)
+            background = Ui.bordo(LINEA, 2)
             addView(Ui.icona(context, icona, TESTO), lpf(lato, lato, Gravity.CENTER))
         }
-        return Ui.premibile(cornice, ONDA, descrizione, azione)
+        return Ui.premibile(cornice, ONDA, descrizione, azione).also { angoli(it, CIANO) }
     }
 
     private fun tastoPieno(context: Context, icona: Int, lato: Int, descrizione: String, azione: () -> Unit): View {
@@ -157,6 +165,9 @@ object Hud : Tema {
         private val cielo = cond(s, 30, TESTO, "In attesa", true, 0, 34, true, 2)
         private val gradi = Ui.adatta(orb(s, 96, TESTO, "--°", 700, 0, 100), 56, 96)
         private val termometro = Termometro(s)
+        private val lettereGiorno = ArrayList<TextView>()
+        private val filettiGiorno = ArrayList<View>()
+        private var giornoCorrente = -1
         private val inAscolto = Ui.riga(s, 28)
         private val fermo = Ui.riga(s, 28)
         private val copertina = ImageView(s).apply {
@@ -201,13 +212,30 @@ object Hud : Tema {
 
         private fun boxOra(): View {
             val testi = Ui.colonna(s, 10, Gravity.CENTER)
-            testi.addView(orb(s, 28, SECONDARIO, "ORA LOCALE", 400, 4, 34).apply { gravity = Gravity.CENTER_HORIZONTAL })
-            testi.addView(ora.apply { gravity = Gravity.CENTER_HORIZONTAL })
-            testi.addView(data.apply { gravity = Gravity.CENTER_HORIZONTAL })
+            testi.addView(orb(s, 28, SECONDARIO, "ORA LOCALE", 400, 4, 34).apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 34))
+            testi.addView(ora.apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 124))
+            testi.addView(data.apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 40))
+            testi.addView(striscia(), lp(ADATTA, 36).apply { gravity = Gravity.CENTER_HORIZONTAL })
             return FrameLayout(s).apply {
                 addView(quadrante, lpf(TUTTO, TUTTO))
                 addView(testi, lpf(TUTTO, TUTTO))
             }
+        }
+
+        private fun striscia(): View {
+            val riga = Ui.riga(s, 6, Gravity.NO_GRAVITY)
+            riga.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            for (sigla in "LMMGVSD") {
+                val cella = FrameLayout(s)
+                val lettera = orb(s, 28, SECONDARIO, sigla.toString(), 400, 0, 28).apply { gravity = Gravity.CENTER }
+                val filetto = View(s).apply { setBackgroundColor(LINEA) }
+                cella.addView(lettera, lpf(TUTTO, 33, Gravity.TOP))
+                cella.addView(filetto, lpf(TUTTO, 3, Gravity.BOTTOM))
+                lettereGiorno.add(lettera)
+                filettiGiorno.add(filetto)
+                riga.addView(cella, lp(32, 36))
+            }
+            return riga
         }
 
         private fun servizi(): View {
@@ -244,7 +272,7 @@ object Hud : Tema {
                         bottomMargin = 14
                     },
                 )
-                colonna.addView(Ui.premibile(cella, ONDA, descrizione) { azione() }, lp(TUTTO, 0, 1f))
+                colonna.addView(Ui.premibile(cella, ONDA, descrizione) { azione() }.also { angoli(it, CIANO) }, lp(TUTTO, 0, 1f))
             }
             return colonna
         }
@@ -261,7 +289,10 @@ object Hud : Tema {
             cornice.addView(Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }, lpf(186, 186))
             inAscolto.addView(cornice, lp(202, 202))
             val info = Ui.colonna(s)
-            info.addView(statoMusica)
+            val rigaStato = Ui.riga(s, 12)
+            rigaStato.addView(View(s).apply { setBackgroundColor(CIANO) }, lp(14, 14))
+            rigaStato.addView(statoMusica)
+            info.addView(rigaStato)
             info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 6 })
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
@@ -284,10 +315,11 @@ object Hud : Tema {
             fermo.addView(testi, lp(0, ADATTA, 1f))
             val apri = cond(s, 34, TESTO, "Apri Spotify", true, 1, 40, true).apply {
                 gravity = Gravity.CENTER
-                background = Ui.bordo(LINEA_FORTE, 2)
+                background = Ui.bordo(LINEA, 2)
                 setPadding(40, 0, 40, 0)
             }
-            fermo.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(ADATTA, 140))
+            val cornicaApri = FrameLayout(s).apply { addView(apri, lpf(ADATTA, TUTTO)) }
+            fermo.addView(Ui.premibile(cornicaApri, ONDA, null) { azioni.apriMusica() }.also { angoli(it, CIANO) }, lp(ADATTA, 140))
             fermo.addView(tastoPieno(s, R.drawable.ic_play, 60, "Riproduci") { azioni.playPausa() }, lp(180, 140))
 
             box.addView(inAscolto, lpf(TUTTO, TUTTO, Gravity.CENTER_VERTICAL))
@@ -318,7 +350,7 @@ object Hud : Tema {
                 )
                 val installata = app.intent(s) != null
                 if (!installata) cella.alpha = 0.35f
-                Ui.premibile(cella, ONDA, app.nome) { if (installata) azioni.apri(app) }
+                angoli(Ui.premibile(cella, ONDA, app.nome) { if (installata) azioni.apri(app) }, LINEA_FORTE, 14f)
                 riga.addView(cella, lp(0, TUTTO, 1f))
             }
             return riga
@@ -330,7 +362,18 @@ object Hud : Tema {
                 setSpan(ForegroundColorSpan(CIANO), 2, 3, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
             data.text = SimpleDateFormat("EEEE d MMMM", Locale.ITALIAN).format(adesso)
-            quadrante.minuti = Calendar.getInstance().apply { time = adesso }.get(Calendar.MINUTE)
+            val calendario = Calendar.getInstance().apply { time = adesso }
+            quadrante.imposta(calendario.get(Calendar.HOUR_OF_DAY), calendario.get(Calendar.MINUTE))
+            val giorno = (calendario.get(Calendar.DAY_OF_WEEK) + 5) % 7
+            if (giorno != giornoCorrente) {
+                giornoCorrente = giorno
+                lettereGiorno.forEachIndexed { i, lettera ->
+                    val oggi = i == giorno
+                    lettera.setTextColor(if (oggi) CIANO else SECONDARIO)
+                    lettera.typeface = orbitron(s, if (oggi) 700 else 400)
+                    filettiGiorno[i].setBackgroundColor(if (oggi) CIANO else LINEA)
+                }
+            }
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
@@ -360,6 +403,7 @@ object Hud : Tema {
         private val ordini = LinkedHashMap<Ordine, TextView>()
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: FrameLayout
+        private val angoliOrdine = HashMap<Ordine, Squadrette>()
         private val etichetta = orb(s, 28, SECONDARIO, "", 400, 3, 34)
         private val indirizzo = Ui.adatta(cond(s, 72, TESTO, "", true, 1, 76, true), 34, 72)
         private val prezzoScheda = orb(s, 40, CIANO, "", 700, 0, 46)
@@ -394,7 +438,10 @@ object Hud : Tema {
             for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
                 val tasto = cond(s, 32, TESTO, nome, true, 2, 36, true).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
-                gruppo.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(200, 120))
+                val cornice = FrameLayout(s).apply { addView(tasto, lpf(TUTTO, TUTTO)) }
+                val premibile = Ui.premibile(cornice, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }
+                angoliOrdine[ordine] = angoli(premibile, CIANO)
+                gruppo.addView(premibile, lp(200, 120))
             }
             riga.addView(gruppo, lp(ADATTA, TUTTO))
             evidenziaOrdine(Ordine.CONVIENE)
@@ -404,7 +451,8 @@ object Hud : Tema {
         private fun evidenziaOrdine(attivo: Ordine) {
             for ((ordine, tasto) in ordini) {
                 val scelto = ordine == attivo
-                tasto.background = if (scelto) Smusso(CIANO, 0, 0f, 18f) else Ui.bordo(LINEA_FORTE, 2)
+                tasto.background = if (scelto) Smusso(CIANO, 0, 0f, 18f) else Ui.bordo(LINEA, 2)
+                angoliOrdine[ordine]?.apply { acceso = !scelto; invalidateSelf() }
                 tasto.setTextColor(if (scelto) SFONDO else TESTO)
                 tasto.isSelected = scelto
                 if (scelto) smussa(tasto, 18) else tasto.clipToOutline = false
@@ -458,8 +506,8 @@ object Hud : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
-                    if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false)
+                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", "%02d".format(e.preferiti.size), e.preferiti, true)
+                    if (e.vicini.isNotEmpty()) sezione("VICINI", "ORDINE: ${e.ordine.name}", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("BENZINAI", "Nessun distributore entro 15 km.")
                 }
             }
@@ -474,35 +522,51 @@ object Hud : Tema {
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(titolo: String, contatore: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
-            val testata = Ui.riga(s, 14)
+            val testata = Ui.riga(s, 16)
             testata.addView(orb(s, 40, TESTO, titolo, 700, 0, 48))
+            testata.addView(View(s).apply { setBackgroundColor(LINEA) }, lp(0, 2, 1f))
+            testata.addView(orb(s, 28, SECONDARIO, contatore, 500, 0, 32))
             colonna.addView(testata, lp(TUTTO, ADATTA))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
+            distributori.forEachIndexed { i, d -> righe.addView(riga(d, luogo, i + 1), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore, luogo: Boolean): View {
+        private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = if (scelto) Ui.bordo(CIANO, 3, PANNELLO) else Ui.bordo(LINEA, 2, PANNELLO)
-                setPadding(28, 0, 28, 0)
+                setPadding(24, 0, 28, 0)
             }
+            corpo.addView(orb(s, 28, SECONDARIO, "%02d".format(posizione), 400, 0, 32), lp(48, ADATTA))
             val sinistra = Ui.colonna(s, 2)
             sinistra.addView(cond(s, 40, TESTO, if (luogo) d.comune else d.nome, true, 1, 46, true))
             sinistra.addView(cond(s, 28, SECONDARIO, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}", false, 0, 34))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             val destra = Ui.colonna(s, 4, Gravity.END)
             val prezzo = Ui.riga(s, 0, Gravity.BOTTOM)
-            prezzo.addView(orb(s, 50, CIANO, Benzinai.prezzo(d.prezzo), 700, 0, 52))
+            val cifre = Benzinai.prezzo(d.prezzo)
+            prezzo.addView(
+                orb(s, 50, CIANO, "", 700, 0, 52).apply {
+                    text = SpannableString(cifre).apply {
+                        setSpan(RelativeSizeSpan(0.72f), cifre.length - 1, cifre.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                },
+            )
             prezzo.addView(cond(s, 28, SECONDARIO, " €/l", false, 0, 32))
             destra.addView(prezzo)
-            destra.addView(orb(s, 28, TESTO, Benzinai.distanza(d.distanzaKm), 400, 0, 32))
+            val rigaDistanza = Ui.riga(s, 14)
+            val barra = FrameLayout(s).apply { setBackgroundColor(LINEA) }
+            val riempimento = (110 * (d.distanzaKm / 5.0).coerceIn(0.0, 1.0)).roundToInt()
+            barra.addView(View(s).apply { setBackgroundColor(TESTO) }, lpf(riempimento, 8, Gravity.START))
+            rigaDistanza.addView(barra, lp(110, 8))
+            rigaDistanza.addView(orb(s, 28, TESTO, Benzinai.distanza(d.distanzaKm), 400, 0, 32))
+            destra.addView(rigaDistanza)
             corpo.addView(destra)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
             return riga
@@ -526,9 +590,12 @@ object Hud : Tema {
 }
 
 private class Squadrette(colore: Int, private val lato: Float, private val spessore: Float) : Drawable() {
+    var acceso = true
+
     private val pennello = Paint().apply { this.color = colore }
 
     override fun draw(canvas: Canvas) {
+        if (!acceso) return
         val b = bounds
         val l = b.left.toFloat()
         val t = b.top.toFloat()
@@ -606,21 +673,31 @@ private class Smusso(
 }
 
 private class Quadrante(context: Context, carattere: Typeface) : View(context) {
-    var minuti = 0
-        set(valore) {
-            if (field != valore) {
-                field = valore
-                invalidate()
-            }
+    private var ore = 0
+    private var minuti = 0
+
+    fun imposta(ore: Int, minuti: Int) {
+        if (this.ore != ore || this.minuti != minuti) {
+            this.ore = ore
+            this.minuti = minuti
+            invalidate()
         }
+    }
 
     private val tacche = FloatArray(60 * 4)
+    private val taccheCorrenti = FloatArray(60 * 4)
+    private val arcoEsterno = RectF(58f, 58f, 582f, 582f)
+    private val arcoOre = RectF(94f, 94f, 546f, 546f)
     private val cerchio = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 2f
         color = 0xFF1B3A55.toInt()
     }
-    private val tratteggio = Paint(cerchio).apply { pathEffect = DashPathEffect(floatArrayOf(4f, 10f), 0f) }
+    private val segmento = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 10f
+        strokeCap = Paint.Cap.BUTT
+    }
     private val tacca = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.BUTT
@@ -636,28 +713,46 @@ private class Quadrante(context: Context, carattere: Typeface) : View(context) {
     init {
         for (i in 0 until 60) {
             val angolo = Math.toRadians(i * 6.0 - 90.0)
-            val interno = if (i % 5 == 0) 286.0 else 296.0
+            val interno = if (i % 5 == 0) 282.0 else 294.0
             tacche[i * 4] = (320 + interno * cos(angolo)).toFloat()
             tacche[i * 4 + 1] = (320 + interno * sin(angolo)).toFloat()
             tacche[i * 4 + 2] = (320 + 312.0 * cos(angolo)).toFloat()
             tacche[i * 4 + 3] = (320 + 312.0 * sin(angolo)).toFloat()
+            taccheCorrenti[i * 4] = (320 + 276.0 * cos(angolo)).toFloat()
+            taccheCorrenti[i * 4 + 1] = (320 + 276.0 * sin(angolo)).toFloat()
+            taccheCorrenti[i * 4 + 2] = (320 + 316.0 * cos(angolo)).toFloat()
+            taccheCorrenti[i * 4 + 3] = (320 + 316.0 * sin(angolo)).toFloat()
         }
     }
 
     override fun onDraw(canvas: Canvas) {
         val scala = width / 640f
         canvas.scale(scala, scala)
-        canvas.drawCircle(320f, 320f, 268f, cerchio)
-        canvas.drawCircle(320f, 320f, 204f, tratteggio)
+        for (quarto in 0 until 4) canvas.drawArc(arcoEsterno, -81f + 90f * quarto, 72f, false, cerchio)
+        canvas.drawCircle(320f, 320f, 206f, cerchio)
+        for (i in 0 until 24) {
+            segmento.color = when {
+                i < ore -> 0xFF8FB3CF.toInt()
+                i == ore -> 0xFF3FD5FF.toInt()
+                else -> 0xFF1B3A55.toInt()
+            }
+            canvas.drawArc(arcoOre, -88.5f + 15f * i, 12f, false, segmento)
+        }
         for (i in 0 until 60) {
+            if (i == minuti) {
+                tacca.color = 0xFFE6F4FF.toInt()
+                tacca.strokeWidth = 7f
+                canvas.drawLine(taccheCorrenti[i * 4], taccheCorrenti[i * 4 + 1], taccheCorrenti[i * 4 + 2], taccheCorrenti[i * 4 + 3], tacca)
+                continue
+            }
             tacca.color = if (i < minuti) 0xFF3FD5FF.toInt() else 0xFF2E6A93.toInt()
             tacca.strokeWidth = if (i % 5 == 0) 5f else 3f
             canvas.drawLine(tacche[i * 4], tacche[i * 4 + 1], tacche[i * 4 + 2], tacche[i * 4 + 3], tacca)
         }
         canvas.drawText("00", 320f, 62f + baseNumeri, numeri)
-        canvas.drawText("15", 574f, 320f + baseNumeri, numeri)
-        canvas.drawText("30", 320f, 580f + baseNumeri, numeri)
-        canvas.drawText("45", 66f, 320f + baseNumeri, numeri)
+        canvas.drawText("15", 578f, 320f + baseNumeri, numeri)
+        canvas.drawText("30", 320f, 578f + baseNumeri, numeri)
+        canvas.drawText("45", 62f, 320f + baseNumeri, numeri)
     }
 }
 
@@ -665,7 +760,6 @@ private class Termometro(context: Context) : View(context) {
     private var meteo: Meteo? = null
     private val asse = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 3f
         color = 0xFF2E6A93.toInt()
     }
     private val fascia = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -683,7 +777,14 @@ private class Termometro(context: Context) : View(context) {
         textSize = 28f
         color = 0xFFE6F4FF.toInt()
     }
+    private val numeri = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("sans-serif-condensed", Typeface.NORMAL)
+        textSize = 28f
+        color = 0xFF8FB3CF.toInt()
+        textAlign = Paint.Align.RIGHT
+    }
     private val baseTesto = -(testo.fontMetrics.ascent + testo.fontMetrics.descent) / 2f
+    private val baseNumeri = -(numeri.fontMetrics.ascent + numeri.fontMetrics.descent) / 2f
     private val triangolo = Path()
 
     fun mostra(meteo: Meteo) {
@@ -694,28 +795,35 @@ private class Termometro(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         val scala = width / 202f
         canvas.scale(scala, scala)
-        canvas.drawLine(40f, 10f, 40f, 290f, asse)
-        for (i in 0..8) {
-            val y = 290f - 35f * i
-            canvas.drawLine(if (i % 2 == 0) 20f else 30f, y, 40f, y, asse)
+        asse.strokeWidth = 3f
+        canvas.drawLine(46f, 16f, 46f, 284f, asse)
+        for (i in 0..16) {
+            val y = 284f - 16.75f * i
+            val lunga = i % 8 == 0
+            asse.strokeWidth = if (lunga) 3f else 2f
+            canvas.drawLine(if (lunga) 34f else 39f, y, 46f, y, asse)
         }
         val m = meteo ?: return
-        val passo = maxOf(2, ceil((m.massima - m.minima + 4) / 8.0).toInt())
-        val base = floor(((m.minima + m.massima) / 2.0 - 4 * passo) / passo) * passo
-        val pxPerGrado = 280f / (8 * passo)
-        fun y(gradi: Int): Float = (290f - (gradi - base.toFloat()) * pxPerGrado).coerceIn(10f, 290f)
+        val passo = maxOf(1, ceil((m.massima - m.minima + 2) / 16.0).toInt())
+        val base = ((m.minima + m.massima) / 2.0 / (4 * passo)).roundToInt() * 4 * passo - 8 * passo
+        val pxPerGrado = 268f / (16 * passo)
+        fun y(gradi: Int): Float = (284f - (gradi - base) * pxPerGrado).coerceIn(16f, 284f)
+        for (i in 0..2) {
+            val gradi = base + 8 * passo * i
+            canvas.drawText("$gradi", 28f, y(gradi) + baseNumeri, numeri)
+        }
         val yMassima = y(m.massima)
         val yMinima = y(m.minima)
         val yAttuale = y(m.gradi)
-        canvas.drawRect(46f, yMassima, 60f, yMinima, fascia)
-        canvas.drawRect(46f, yMassima, 60f, yMinima, bordoFascia)
+        canvas.drawRect(52f, yMassima, 66f, yMinima, fascia)
+        canvas.drawRect(52f, yMassima, 66f, yMinima, bordoFascia)
         triangolo.rewind()
-        triangolo.moveTo(66f, yAttuale)
-        triangolo.lineTo(88f, yAttuale - 13f)
-        triangolo.lineTo(88f, yAttuale + 13f)
+        triangolo.moveTo(72f, yAttuale)
+        triangolo.lineTo(94f, yAttuale - 13f)
+        triangolo.lineTo(94f, yAttuale + 13f)
         triangolo.close()
         canvas.drawPath(triangolo, puntatore)
-        canvas.drawText("MAX ${m.massima}°", 98f, yMassima + baseTesto, testo)
-        canvas.drawText("MIN ${m.minima}°", 98f, maxOf(yMinima, yMassima + 32f) + baseTesto, testo)
+        canvas.drawText("MAX ${m.massima}°", 104f, yMassima + baseTesto, testo)
+        canvas.drawText("MIN ${m.minima}°", 104f, maxOf(yMinima, yMassima + 32f) + baseTesto, testo)
     }
 }

@@ -2,6 +2,7 @@ package app.australdashboard.temi
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.ColorFilter
 import android.graphics.Outline
 import android.graphics.Paint
@@ -35,6 +36,7 @@ import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
 import app.australdashboard.temi.Ui.lpf
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -50,6 +52,7 @@ object Cyberpunk : Tema {
     private const val TESTO = 0xFFF2F2F7.toInt()
     private const val SECONDARIO = 0xFFA3A3B8.toInt()
     private const val GIALLO = 0xFFFCEE0A.toInt()
+    private const val CONTORNO = 0xFF3A3A4D.toInt()
     private const val ONDA = 0x33FCEE0A
     private const val ONDA_SCURA = 0x330A0A0F
 
@@ -73,8 +76,8 @@ object Cyberpunk : Tema {
         if (spaziatura > 0) letterSpacing = spaziatura / px.toFloat()
     }
 
-    private fun taglia(v: View, colore: Int, alto: Int, basso: Int = alto): View {
-        v.background = SmussoCyb(colore, alto.toFloat(), basso.toFloat())
+    private fun taglia(v: View, colore: Int, alto: Int, basso: Int = alto, contorno: Int = 0, linguetta: Int = 0): View {
+        v.background = SmussoCyb(colore, alto.toFloat(), basso.toFloat(), contorno, linguetta, GIALLO)
         return tagliaImmagine(v, alto, basso)
     }
 
@@ -101,11 +104,12 @@ object Cyberpunk : Tema {
         taglio: Int,
         descrizione: String?,
         onda: Int,
+        contorno: Int = 0,
         azione: () -> Unit,
     ): FrameLayout {
         val f = FrameLayout(c)
         f.addView(icona, lpf(lato, lato, Gravity.CENTER))
-        taglia(f, sfondo, taglio)
+        taglia(f, sfondo, taglio, contorno = contorno)
         Ui.premibile(f, onda, descrizione, azione)
         return f
     }
@@ -119,8 +123,26 @@ object Cyberpunk : Tema {
         taglio: Int,
         descrizione: String?,
         onda: Int,
+        contorno: Int = 0,
         azione: () -> Unit,
-    ): FrameLayout = tasto(c, Ui.icona(c, icona, colore), lato, sfondo, taglio, descrizione, onda, azione)
+    ): FrameLayout = tasto(c, Ui.icona(c, icona, colore), lato, sfondo, taglio, descrizione, onda, contorno, azione)
+
+    private fun filetto(c: Context, linea: Int, tacca: Int): View = FormaCyb(c) { canvas, w, _, p ->
+        p.color = linea
+        canvas.drawRect(0f, 2f, w, 4f, p)
+        p.color = tacca
+        canvas.drawRect(0f, 0f, 48f, 6f, p)
+    }
+
+    private fun triangolo(c: Context): View = FormaCyb(c) { canvas, w, h, p ->
+        p.color = GIALLO
+        val t = Path()
+        t.moveTo(w, 0f)
+        t.lineTo(w, h)
+        t.lineTo(0f, h)
+        t.close()
+        canvas.drawPath(t, p)
+    }
 
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeCyberpunk(s, azioni)
 
@@ -131,7 +153,7 @@ object Cyberpunk : Tema {
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, GIALLO)
         private val cielo = Ui.adatta(testo(s, 34, TESTO, true, 38, "In attesa", maiuscolo = true), 20, 34)
         private val estremi = Ui.adatta(testo(s, 30, SECONDARIO, false, 34, "max --° · min --°", maiuscolo = true), 20, 30)
-        private val copertina = ImageView(s).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+        private val copertina = CopertinaCyb(s, GIALLO).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
         private val inAscolto = Ui.colonna(s)
         private val fermo = Ui.colonna(s)
         private val chipAscolto = etichetta(s, "// IN RIPRODUZIONE")
@@ -141,6 +163,13 @@ object Cyberpunk : Tema {
             70,
         )
         private val artista = testo(s, 34, SECONDARIO, false, 40, maiuscolo = true, spaziatura = 4)
+        private val appMusica = Ui.adatta(codice(s, "").apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL }, 18, 28)
+        private val settimana = Ui.riga(s, 2)
+        private val giorni = Array(7) { i ->
+            testo(s, 28, SECONDARIO, true, 28, "LMMGVSD"[i].toString()).apply { gravity = Gravity.CENTER }
+        }
+        private val tacche = TaccheCyb(s, TESTO, GIALLO, CONTORNO)
+        private val asta = AstaCyb(s, CONTORNO, TESTO, SECONDARIO, GIALLO)
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, SFONDO)
         private lateinit var play: View
 
@@ -171,19 +200,19 @@ object Cyberpunk : Tema {
                 Triple(R.drawable.ic_cursori, "Impostazioni Android", azioni::impostazioniAndroid),
                 Triple(R.drawable.ic_ingranaggio, "Launcher", azioni::impostazioniLauncher),
             )
-            val larghezze = listOf(252, 278, 380, 226)
+            val larghezze = listOf(252, 265, 366, 252)
             voci.forEachIndexed { i, (icona, nome, azione) ->
-                val cella = Ui.riga(s, 14).apply { setPadding(22, 0, 22, 0) }
-                cella.addView(Ui.icona(s, icona, GIALLO), lp(48, 48))
+                val cella = Ui.riga(s, 12)
+                cella.addView(Ui.icona(s, icona, GIALLO), lp(44, 44))
                 val etichetta = Ui.adatta(
-                    testo(s, 32, TESTO, true, 34, nome, maiuscolo = true, righe = if (' ' in nome) 2 else 1, spaziatura = 1)
+                    testo(s, 30, TESTO, true, 32, nome, maiuscolo = true, righe = if (' ' in nome) 2 else 1, spaziatura = 1)
                         .apply { gravity = Gravity.CENTER_VERTICAL },
                     20,
-                    32,
+                    30,
                 )
                 cella.addView(etichetta, lp(0, TUTTO, 1f))
-                taglia(cella, PANNELLO, 22)
-                cella.setPadding(22, 0, 22, 0)
+                taglia(cella, PANNELLO, 22, linguetta = 6)
+                cella.setPadding(26, 0, 16, 0)
                 val descrizione = if (i == 3) "Impostazioni del launcher" else nome
                 Ui.premibile(cella, ONDA, descrizione) { azione() }
                 riga.addView(cella, lp(larghezze[i], TUTTO))
@@ -193,11 +222,19 @@ object Cyberpunk : Tema {
 
         private fun boxOra(): View {
             val p = Ui.colonna(s)
-            p.addView(codice(s, "// 01 · ORA LOCALE"))
+            val intestazione = Ui.riga(s)
+            intestazione.addView(codice(s, "// 01 · ORA"), lp(0, ADATTA, 1f))
+            giorni.forEach {
+                it.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                settimana.addView(it, lp(30, 32))
+            }
+            intestazione.addView(settimana, lp(ADATTA, 32))
+            p.addView(intestazione, lp(TUTTO, 32))
             p.addView(ora.apply { gravity = Gravity.CENTER_VERTICAL }, lp(ADATTA, 172).apply { topMargin = 6 })
+            p.addView(tacche, lp(TUTTO, 14).apply { topMargin = -14 })
             p.addView(View(s), lp(TUTTO, 0, 1f))
             p.addView(data, lp(TUTTO, 38))
-            taglia(p, PANNELLO, 28, 0)
+            taglia(p, PANNELLO, 28, 0, CONTORNO)
             p.setPadding(30, 26, 30, 26)
             return p
         }
@@ -215,35 +252,48 @@ object Cyberpunk : Tema {
             colonna.addView(rigaCielo, lp(TUTTO, 48))
             colonna.addView(estremi, lp(TUTTO, 36))
             riga.addView(colonna, lp(0, ADATTA, 1f))
-            p.addView(riga, lp(TUTTO, ADATTA))
-            taglia(p, PANNELLO, 28, 0)
+            p.addView(riga, lp(TUTTO, 112))
+            p.addView(asta, lp(TUTTO, 14).apply { topMargin = 10 })
+            taglia(p, PANNELLO, 28, 0, CONTORNO)
             p.setPadding(30, 22, 30, 22)
             return p
         }
 
         private fun griglia(): View {
             val g = Ui.colonna(s, 20)
-            AppHome.elenco.chunked(2).forEach { coppia ->
+            AppHome.elenco.withIndex().chunked(2).forEach { coppia ->
                 val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-                coppia.forEach { riga.addView(cellaApp(it), lp(0, TUTTO, 1f)) }
+                coppia.forEach { riga.addView(cellaApp(it.value, it.index + 1), lp(0, TUTTO, 1f)) }
                 g.addView(riga, lp(TUTTO, 0, 1f))
             }
             return g
         }
 
-        private fun cellaApp(app: AppHome): View {
-            val c = Ui.colonna(s, 8, Gravity.CENTER)
+        private fun cellaApp(app: AppHome, numero: Int): View {
+            val c = FrameLayout(s)
+            val centro = Ui.colonna(s, 8, Gravity.CENTER)
             val sigla = testo(s, 44, GIALLO, true, 44, app.sigla).apply {
                 gravity = Gravity.CENTER
                 background = Ui.bordo(GIALLO, 2)
             }
-            c.addView(sigla, lp(64, 64))
+            centro.addView(sigla, lp(64, 64))
             val nome = Ui.adatta(
                 testo(s, 30, TESTO, true, 32, app.nome, maiuscolo = true, spaziatura = 1).apply { gravity = Gravity.CENTER },
                 18,
                 30,
             )
-            c.addView(nome, lp(TUTTO, 34))
+            centro.addView(nome, lp(TUTTO, 34))
+            c.addView(centro, lpf(TUTTO, TUTTO))
+            c.addView(
+                testo(s, 28, SECONDARIO, false, 30, numero.toString().padStart(2, '0')).apply {
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                },
+                lpf(ADATTA, ADATTA).apply {
+                    leftMargin = 12
+                    topMargin = 6
+                },
+            )
+            c.addView(triangolo(s), lpf(16, 16, Gravity.BOTTOM or Gravity.END))
             taglia(c, PANNELLO, 16)
             c.setPadding(6, 0, 6, 0)
             val installata = app.intent(s) != null
@@ -256,7 +306,10 @@ object Cyberpunk : Tema {
             val p = FrameLayout(s)
 
             inAscolto.setPadding(30, 30, 30, 30)
-            inAscolto.addView(chipAscolto, lp(ADATTA, 42))
+            val testata = Ui.riga(s, 16)
+            testata.addView(chipAscolto, lp(ADATTA, 42))
+            testata.addView(appMusica, lp(0, 32, 1f))
+            inAscolto.addView(testata, lp(TUTTO, 42))
             copertina.setBackgroundColor(TASTO)
             tagliaImmagine(copertina, 24)
             Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }
@@ -267,23 +320,33 @@ object Cyberpunk : Tema {
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(TUTTO, ADATTA).apply { topMargin = 20 })
             inAscolto.addView(View(s), lp(TUTTO, 0, 1f))
+            inAscolto.addView(filetto(s, CONTORNO, GIALLO), lp(TUTTO, 6))
+            inAscolto.addView(View(s), lp(TUTTO, 0, 1f))
             val comandi = Ui.riga(s, 20)
             comandi.addView(
-                tasto(s, R.drawable.ic_precedente, 52, TASTO, TESTO, 18, "Brano precedente", ONDA) { azioni.precedente() },
+                tasto(s, R.drawable.ic_precedente, 52, TASTO, TESTO, 18, "Brano precedente", ONDA, CONTORNO) { azioni.precedente() },
                 lp(160, 140),
             )
             play = tasto(s, iconaPlay, 64, GIALLO, 18, "Pausa", ONDA_SCURA) { azioni.playPausa() }
             comandi.addView(play, lp(0, 140, 1f))
             comandi.addView(
-                tasto(s, R.drawable.ic_successivo, 52, TASTO, TESTO, 18, "Brano successivo", ONDA) { azioni.successivo() },
+                tasto(s, R.drawable.ic_successivo, 52, TASTO, TESTO, 18, "Brano successivo", ONDA, CONTORNO) { azioni.successivo() },
                 lp(160, 140),
             )
             inAscolto.addView(comandi, lp(TUTTO, 140))
 
             fermo.setPadding(30, 30, 30, 30)
-            fermo.addView(etichetta(s, "// SPOTIFY"), lp(ADATTA, 42))
+            val testataFermo = Ui.riga(s, 16)
+            testataFermo.addView(etichetta(s, "// SPOTIFY"), lp(ADATTA, 42))
+            testataFermo.addView(
+                codice(s, "// 03 · MUSICA").apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL },
+                lp(0, 32, 1f),
+            )
+            fermo.addView(testataFermo, lp(TUTTO, 42))
             val grande = Ui.adatta(testo(s, 150, TESTO, true, 140, "Spotify", maiuscolo = true), 80, 150)
             fermo.addView(grande, lp(TUTTO, 140).apply { topMargin = 40 })
+            fermo.addView(View(s), lp(TUTTO, 0, 1f))
+            fermo.addView(filetto(s, CONTORNO, GIALLO), lp(TUTTO, 6))
             fermo.addView(View(s), lp(TUTTO, 0, 1f))
             val comandiFermo = Ui.riga(s, 20)
             comandiFermo.addView(
@@ -292,14 +355,14 @@ object Cyberpunk : Tema {
             )
             val apri = testo(s, 34, TESTO, true, 38, "Apri Spotify", maiuscolo = true, spaziatura = 2).apply {
                 gravity = Gravity.CENTER
-                taglia(this, TASTO, 18)
+                taglia(this, TASTO, 18, contorno = CONTORNO)
             }
             comandiFermo.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(0, 140, 1.4f))
             fermo.addView(comandiFermo, lp(TUTTO, 140))
 
             p.addView(inAscolto, lpf(TUTTO, TUTTO))
             p.addView(fermo, lpf(TUTTO, TUTTO))
-            taglia(p, PANNELLO, 40)
+            taglia(p, PANNELLO, 40, contorno = GIALLO)
             mostraMusica(null)
             return p
         }
@@ -309,10 +372,23 @@ object Cyberpunk : Tema {
             t.setSpan(ForegroundColorSpan(GIALLO), 2, 3, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             ora.text = t
             data.text = SimpleDateFormat("EEEE d MMMM", Locale.ITALIAN).format(adesso)
+            val calendario = Calendar.getInstance().apply { time = adesso }
+            val oggi = (calendario.get(Calendar.DAY_OF_WEEK) + 5) % 7
+            giorni.forEachIndexed { i, g ->
+                g.setTextColor(if (i == oggi) SFONDO else SECONDARIO)
+                g.setBackgroundColor(if (i == oggi) GIALLO else Color.TRANSPARENT)
+            }
+            settimana.contentDescription = "Giorno della settimana: ${SimpleDateFormat("EEEE", Locale.ITALIAN).format(adesso)}"
+            tacche.mostra(calendario.get(Calendar.HOUR_OF_DAY))
+            tacche.contentDescription = "Avanzamento della giornata: ore $t su 24"
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
             if (meteo == null) return
+            val escursione = meteo.massima - meteo.minima
+            asta.mostra(if (escursione > 0) ((meteo.gradi - meteo.minima).toFloat() / escursione).coerceIn(0f, 1f) else null)
+            asta.contentDescription =
+                "Temperatura attuale ${meteo.gradi}° tra minima ${meteo.minima}° e massima ${meteo.massima}°"
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             gradi.text = "${meteo.gradi}°"
             cielo.text = FonteMeteo.descrizione(meteo.codice)
@@ -323,8 +399,8 @@ object Cyberpunk : Tema {
             inAscolto.visibility = if (musica != null) View.VISIBLE else View.GONE
             fermo.visibility = if (musica == null) View.VISIBLE else View.GONE
             if (musica == null) return
-            val stato = if (musica.inRiproduzione) "IN RIPRODUZIONE" else "IN PAUSA"
-            chipAscolto.text = "// $stato · ${musica.app.uppercase(Locale.ITALIAN)}"
+            chipAscolto.text = if (musica.inRiproduzione) "// IN RIPRODUZIONE" else "// IN PAUSA"
+            appMusica.text = "// 03 · ${musica.app.uppercase(Locale.ITALIAN)}"
             titolo.text = musica.titolo
             artista.text = musica.artista
             if (musica.copertina != null) copertina.setImageBitmap(musica.copertina) else copertina.setImageDrawable(null)
@@ -366,7 +442,7 @@ object Cyberpunk : Tema {
         private fun intestazione(): View {
             val riga = Ui.riga(s, 24)
             riga.addView(
-                tasto(s, R.drawable.ic_indietro, 52, PANNELLO, TESTO, 20, "Indietro", ONDA) { azioni.indietro() },
+                tasto(s, R.drawable.ic_indietro, 52, PANNELLO, TESTO, 20, "Indietro", ONDA, CONTORNO) { azioni.indietro() },
                 lp(120, 120),
             )
             val titoli = Ui.colonna(s)
@@ -388,7 +464,7 @@ object Cyberpunk : Tema {
         private fun evidenziaOrdine(attivo: Ordine) {
             for ((ordine, t) in ordini) {
                 val scelto = ordine == attivo
-                taglia(t, if (scelto) GIALLO else PANNELLO, 18)
+                taglia(t, if (scelto) GIALLO else PANNELLO, 18, contorno = if (scelto) 0 else CONTORNO)
                 t.setTextColor(if (scelto) SFONDO else TESTO)
                 t.isSelected = scelto
             }
@@ -399,6 +475,7 @@ object Cyberpunk : Tema {
             val testi = Ui.colonna(s, 8)
             testi.addView(codiceScheda, lp(TUTTO, 34))
             testi.addView(indirizzo, lp(TUTTO, 0, 1f))
+            testi.addView(filetto(s, SFONDO, SFONDO), lp(TUTTO, 6))
             testi.addView(dettagli, lp(TUTTO, 36))
             p.addView(testi, lp(0, TUTTO, 1f))
             val comandi = Ui.riga(s, 20)
@@ -462,19 +539,21 @@ object Cyberpunk : Tema {
             val g = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 16)
             intestazione.addView(etichetta(s, chip), lp(ADATTA, 42))
-            intestazione.addView(testo(s, 42, TESTO, true, 48, titolo, maiuscolo = true, spaziatura = 2), lp(0, ADATTA, 1f))
+            intestazione.addView(testo(s, 42, TESTO, true, 48, titolo, maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
+            intestazione.addView(View(s).apply { setBackgroundColor(CONTORNO) }, lp(0, 2, 1f))
             g.addView(intestazione, lp(TUTTO, 48))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
+            distributori.forEachIndexed { i, d -> righe.addView(riga(d, luogo, i + 1), lp(TUTTO, 120)) }
             g.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(g, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore, luogo: Boolean): View {
+        private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
             val corpo = Ui.riga(s, 24)
+            corpo.addView(testo(s, 28, SECONDARIO, false, 32, posizione.toString().padStart(2, '0')), lp(40, ADATTA))
             val sinistra = Ui.colonna(s)
             sinistra.addView(testo(s, 44, TESTO, true, 48, if (luogo) d.comune else d.nome, maiuscolo = true), lp(TUTTO, 48))
             sinistra.addView(
@@ -483,13 +562,15 @@ object Cyberpunk : Tema {
             )
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(testo(s, 34, TESTO, true, 38, Benzinai.distanza(d.distanzaKm)), lp(ADATTA, ADATTA))
-            val prezzo = SpannableString("${Benzinai.prezzo(d.prezzo)} €/L")
+            val cifre = Benzinai.prezzo(d.prezzo)
+            val prezzo = SpannableString("$cifre €/L")
+            prezzo.setSpan(AbsoluteSizeSpan(46), cifre.length - 1, cifre.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             val inizio = prezzo.length - 4
             prezzo.setSpan(AbsoluteSizeSpan(28), inizio, prezzo.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             prezzo.setSpan(ForegroundColorSpan(SECONDARIO), inizio, prezzo.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             corpo.addView(testo(s, 68, GIALLO, true, 64).apply { text = prezzo }, lp(ADATTA, ADATTA))
-            taglia(corpo, if (scelto) SELEZIONATO else PANNELLO, 20)
-            corpo.setPadding(30, 0, 30, 0)
+            taglia(corpo, if (scelto) SELEZIONATO else PANNELLO, 20, linguetta = if (scelto) 8 else 0)
+            corpo.setPadding(28, 0, 30, 0)
             Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }
             riga.addView(corpo, lp(0, TUTTO, 1f))
             return riga
@@ -527,26 +608,145 @@ private class ContornoCyb(private val alto: Float, private val basso: Float) : V
     }
 }
 
-private class SmussoCyb(colore: Int, private val alto: Float, private val basso: Float) : Drawable() {
+private const val SPESSORE_CONTORNO_CYB = 2f
+
+private class SmussoCyb(
+    colore: Int,
+    private val alto: Float,
+    private val basso: Float,
+    contorno: Int = 0,
+    private val linguetta: Int = 0,
+    coloreLinguetta: Int = 0,
+) : Drawable() {
     private val percorso = Path()
+    private val interno = Path()
     private val pennello = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = colore }
+    private val pennelloContorno = if (contorno != 0) Paint(pennello).apply { color = contorno } else null
+    private val pennelloLinguetta = if (linguetta > 0) Paint(pennello).apply { color = coloreLinguetta } else null
 
     override fun onBoundsChange(b: Rect) {
-        percorso.set(percorsoSmussoCyb(b.left.toFloat(), b.top.toFloat(), b.right.toFloat(), b.bottom.toFloat(), alto, basso))
+        val l = b.left.toFloat()
+        val t = b.top.toFloat()
+        val r = b.right.toFloat()
+        val bt = b.bottom.toFloat()
+        percorso.set(percorsoSmussoCyb(l, t, r, bt, alto, basso))
+        if (pennelloContorno != null) {
+            val s = SPESSORE_CONTORNO_CYB
+            interno.set(
+                percorsoSmussoCyb(l + s, t + s, r - s, bt - s, maxOf(alto - 1f, 0f), if (basso > 0f) basso - 1f else 0f),
+            )
+        }
     }
 
     override fun draw(canvas: Canvas) {
-        canvas.drawPath(percorso, pennello)
+        if (Color.alpha(pennello.color) != 0) canvas.drawPath(percorso, pennello)
+        if (pennelloLinguetta != null) {
+            canvas.save()
+            canvas.clipRect(bounds.left.toFloat(), bounds.top.toFloat(), (bounds.left + linguetta).toFloat(), bounds.bottom.toFloat())
+            canvas.drawPath(percorso, pennelloLinguetta)
+            canvas.restore()
+        }
+        if (pennelloContorno != null) {
+            canvas.save()
+            canvas.clipOutPath(interno)
+            canvas.drawPath(percorso, pennelloContorno)
+            canvas.restore()
+        }
     }
 
     override fun setAlpha(alpha: Int) {
         pennello.alpha = alpha
+        pennelloContorno?.alpha = alpha
+        pennelloLinguetta?.alpha = alpha
     }
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
         pennello.colorFilter = colorFilter
+        pennelloContorno?.colorFilter = colorFilter
+        pennelloLinguetta?.colorFilter = colorFilter
     }
 
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+private class FormaCyb(c: Context, private val disegna: (Canvas, Float, Float, Paint) -> Unit) : View(c) {
+    private val pennello = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+
+    override fun onDraw(canvas: Canvas) {
+        disegna(canvas, width.toFloat(), height.toFloat(), pennello)
+    }
+}
+
+private class CopertinaCyb(c: Context, colore: Int) : ImageView(c) {
+    private val anello = SmussoCyb(Color.TRANSPARENT, 24f, 24f, colore)
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        anello.setBounds(0, 0, width, height)
+        anello.draw(canvas)
+    }
+}
+
+private fun parallelogrammaCyb(forma: Path, x: Float, larghezza: Float, altezza: Float) {
+    val inclinazione = altezza / 2f * 0.364f
+    forma.rewind()
+    forma.moveTo(x + inclinazione, 0f)
+    forma.lineTo(x + larghezza + inclinazione, 0f)
+    forma.lineTo(x + larghezza - inclinazione, altezza)
+    forma.lineTo(x - inclinazione, altezza)
+    forma.close()
+}
+
+private class TaccheCyb(c: Context, private val passata: Int, private val corrente: Int, private val futura: Int) : View(c) {
+    private val pennello = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val forma = Path()
+    private var ora = -1
+
+    fun mostra(nuova: Int) {
+        if (nuova == ora) return
+        ora = nuova
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        for (i in 0 until 24) {
+            pennello.color = if (ora < 0 || i > ora) futura else if (i == ora) corrente else passata
+            parallelogrammaCyb(forma, 3f + i * 17f, 12f, 14f)
+            canvas.drawPath(forma, pennello)
+        }
+    }
+}
+
+private class AstaCyb(
+    c: Context,
+    private val base: Int,
+    private val riempimento: Int,
+    private val estremi: Int,
+    private val cursore: Int,
+) : View(c) {
+    private val pennello = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val forma = Path()
+    private var frazione: Float? = null
+
+    fun mostra(nuova: Float?) {
+        if (nuova == frazione) return
+        frazione = nuova
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val w = width.toFloat()
+        pennello.color = base
+        canvas.drawRect(0f, 6f, w, 8f, pennello)
+        pennello.color = estremi
+        canvas.drawRect(0f, 0f, 2f, 14f, pennello)
+        canvas.drawRect(w - 2f, 0f, w, 14f, pennello)
+        val f = frazione ?: return
+        pennello.color = riempimento
+        canvas.drawRect(0f, 5f, w * f, 9f, pennello)
+        pennello.color = cursore
+        parallelogrammaCyb(forma, w * f - 6f, 12f, 14f)
+        canvas.drawPath(forma, pennello)
+    }
 }
