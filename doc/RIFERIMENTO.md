@@ -2,7 +2,7 @@
 
 ## Per cominciare
 
-Progetto Gradle (wrapper 9.9.1, AGP 9.5.1 con Kotlin integrato), un modulo `app`, package `app.australdashboard`. `minSdk` = `targetSdk` = `compileSdk` = 32. Nessuna dipendenza di runtime; nei test JUnit 4 e `org.json` (che su Android è nella piattaforma). Il controllo lint `ExpiredTargetSdkVersion` è disattivato perché riguarda solo il Play Store. Release con R8 e riduzione delle risorse: l'APK è intorno ai 175 KB con il font VT323.
+Progetto Gradle (wrapper 9.9.1, AGP 9.5.1 con Kotlin integrato), un modulo `app`, package `app.australdashboard`. `minSdk` = `targetSdk` = `compileSdk` = 32. Nessuna dipendenza di runtime; nei test JUnit 4 e `org.json` (che su Android è nella piattaforma). Il controllo lint `ExpiredTargetSdkVersion` è disattivato perché riguarda solo il Play Store. Release con R8 e riduzione delle risorse: l'APK è intorno ai 290 KB con i font VT323, Orbitron e Limelight.
 
 JDK: quello di Android Studio, `/Applications/Android Studio.app/Contents/jbr/Contents/Home` (esportare `JAVA_HOME`). SDK in `~/Library/Android/sdk`, indicato in `local.properties` (ignorato da git).
 
@@ -27,6 +27,9 @@ Versione in `version.properties` (`versionCode`, `versionName`), letta da `app/b
 | `temi/Temi.kt` | Elenco dei temi e scelta, in `SharedPreferences` `impostazioni`, chiave `tema` (predefinito il primo) |
 | `temi/Ui.kt` | Costruzione delle view in px: testi, icone colorate, bordi, righe e colonne con spaziatura, `premibile` (ripple), icona del cielo |
 | `temi/Matrix.kt` | Tema 1: misure e colori della tavola `T1Home` e `T1Benzinai`; nei servizi niente icone, che non ci stavano accanto alle etichette |
+| `temi/Hud.kt` | Tema 2: quadrante a 60 tacche (i minuti trascorsi in ciano), termometro con fascia minima–massima, squadrette e smussi a 45° disegnati in codice; Orbitron variabile con `fontVariationSettings` |
+| `temi/Brutalismo.kt` | Tema 3: blocchi con bordi da 4 px, indice delle app a sei righe, servizi in alto (il quarto è solo l'ingranaggio); `sans-serif-condensed` peso 900 dove esiste |
+| `temi/ArtDeco.kt` | Tema 4: trittico simmetrico, cornici doppie con rombi d'oro (`Drawable` privato), comandi tondi; Limelight e `serif`; i nomi dei distributori in maiuscolo, perché nei dati del MIMIT sono un po' maiuscoli e un po' no |
 | `funzioni/` | Dati condivisi dai temi: vedi «Funzioni» |
 | `DiagnosticaActivity.kt` | Mostra versione, dimensione APK, PSS, tempi del primo frame, frame in ritardo, esito aggiornamenti |
 | `Misure.kt` | Misure in memoria del processo |
@@ -64,6 +67,8 @@ Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nasco
 - Tutte le activity usano `Theme.DeviceDefault.NoActionBar.Fullscreen`: la barra di stato di Android non toglie spazio alla Home.
 - Un riquadro con l'etichetta sul bordo esce dai propri limiti: il genitore deve avere `clipChildren=false` (`Ui.senzaRitaglio`). Mai su un genitore diretto di uno `ScrollView`, che altrimenti disegna fuori dai suoi limiti: lo `ScrollView` va dentro un `FrameLayout`.
 - `Ui.testo` imposta `isAllCaps` dopo `isSingleLine`, che altrimenti lo annulla.
+- Un testo che deve rimpicciolirsi per stare nello spazio si costruisce con `Ui.adatta`: l'adattamento automatico di Android non scatta se il testo ha l'ellissi, e `Ui.adatta` la toglie.
+- Una riga a pesi che non ci sta sposta e taglia i figli: quando lo spazio è stretto, larghezze fisse calcolate sulla tavola.
 - Font esterni in `res/font/`, letti con `resources.getFont`; licenze in `licenze/`. I font di sistema: `Typeface.MONOSPACE` al posto di Roboto Mono.
 - Icone: `res/drawable/ic_*.xml`, convertite dalle SVG delle tavole (viewport 48), bianche, colorate con `imageTintList`.
 
@@ -98,6 +103,7 @@ Permessi aggiunti: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`; `<queries>`
 - GitHub aggiorna il rinvio di `releases/latest/download` 1–2 minuti dopo la pubblicazione: un controllo fatto subito dopo `release.sh` vede ancora la versione precedente.
 - Chi avvia il controllo: `AvvioReceiver` (`BOOT_COMPLETED`) e `HomeActivity.onCreate` programmano `AggiornamentoJob` (`JobScheduler`, id 1, rete richiesta; non riprogramma se è già in attesa o in corso); il pulsante in Impostazioni chiama `Aggiornatore.controlla` su un thread.
 - `release.sh`: rifiuta se manca `keystore.properties`, se ci sono modifiche non committate o se il branch non è `main`. Se il tag `v<versionName>` esiste già alza la versione (default `patch`) e `versionCode` di 1, altrimenti pubblica la versione del file così com'è. Esegue test e build, scrive `build/release/austral-dashboard.apk` e `versione.json`, committa `version.properties` se è cambiato, crea il tag, fa il push e crea la release con `gh`.
+- Prova della catena senza pubblicare (regola di `CLAUDE.md`): compilare la versione nuova con `versionCode` più basso di quello dell'ultima release (modificare `version.properties` solo per la build e rimetterlo subito com'era), installarla sull'emulatore con `adb install -r -d`, poi Impostazioni → Controlla aggiornamenti: deve scaricare, verificare e installare la release pubblicata. Installata con `adb`, l'app chiede la conferma «Update»; dopo, `adb shell pm list packages -i app.australdashboard` deve dire `installer=app.australdashboard`. Infine `adb install -r` della build normale sopra la release pubblicata conferma firma e `applicationId` (`apksigner verify --print-certs` sui due APK dà lo stesso SHA-256).
 - Chiave: `~/.android-keys/austral-dashboard.jks` (PKCS12, alias `austral-dashboard`, RSA 4096); `keystore.properties` nella radice del progetto ha `storeFile`, `storePassword`, `keyAlias`, `keyPassword` ed è ignorato da git.
 
 ## Emulatori
@@ -114,8 +120,19 @@ Immagine `system-images;android-32;google_apis;arm64-v8a`. AVD in `~/.android/av
 - Avvio a freddo: `adb shell am force-stop app.australdashboard`, poi `adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME` (`TotalTime`, `LaunchState: COLD`).
 - Posizione finta: `adb shell appops set com.android.shell android:mock_location allow`, poi per `gps` e `fused` `adb shell cmd location providers add-test-provider <p>`, `set-test-provider-enabled <p> true`, `set-test-provider-location <p> --location 41.9028,12.4964`. `adb emu geo fix` da solo non bastava.
 - Permesso musica senza toccare: `adb shell cmd notification allow_listener app.australdashboard/app.australdashboard.funzioni.AscoltoNotifiche`.
-- Le activity diverse dalla Home non sono esportate: ci si arriva dalla Home con `adb shell input tap`. Memoria: `adb shell dumpsys meminfo app.australdashboard`. Frame: `adb shell dumpsys gfxinfo app.australdashboard`.
+- Le activity diverse dalla Home non sono esportate: ci si arriva dalla Home con `adb shell input tap`. Per toccare un elemento per testo o descrizione: `adb exec-out uiautomator dump /dev/tty`, poi il centro dei suoi `bounds`. Il testo letto è quello originale, senza il maiuscolo applicato dalla vista. Memoria: `adb shell dumpsys meminfo app.australdashboard`. Frame: `adb shell dumpsys gfxinfo app.australdashboard`.
 
 Misure sull'emulatore `box` (build 0.1.0, release): APK 41 KB, PSS 20–24 MB, avvio a freddo `TotalTime` 180–330 ms, primo frame dalla creazione della Home 85–125 ms, 0 frame in ritardo secondo `gfxinfo`.
 
 Misure sull'emulatore `box` con il tema Matrix (M02, release): APK 174 KB, PSS 23 MB, avvio a freddo `TotalTime` 152–196 ms, 0 frame in ritardo. Primo download dei prezzi MIMIT e lettura: circa 4 s.
+
+Misure sull'emulatore `box` con i temi 1–4 (M02, release, APK 291 KB), avvio a freddo dalla riga `Displayed` di logcat dopo `am force-stop` (Android riapre subito la Home, e `am start -W` dà allora `TotalTime: 0`):
+
+| Tema | Avvio a freddo | PSS |
+|---|---|---|
+| Matrix | 145–184 ms | 24 MB |
+| HUD | 164–226 ms | 34 MB (memoria nativa in più, probabilmente il disegno del quadrante) |
+| Brutalismo | 141–165 ms, un picco a 1 s non ripetuto | 24 MB |
+| Art Déco | 150–226 ms | 24 MB |
+
+Frame in ritardo: 0 per tutti.

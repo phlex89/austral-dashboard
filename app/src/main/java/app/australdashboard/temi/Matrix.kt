@@ -3,7 +3,6 @@ package app.australdashboard.temi
 import android.content.Context
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -281,7 +280,7 @@ object Matrix : Tema {
         private val ordini = LinkedHashMap<Ordine, TextView>()
         private val elencoView = Ui.colonna(s, 40).apply { setPadding(0, 24, 0, 0) }
         private lateinit var scheda: Riquadro
-        private val indirizzo = Ui.testo(s, 82, VERDE, vt, contenuto = "", maiuscolo = true, righe = 2).apply { ellipsize = null }
+        private val indirizzo = Ui.adatta(Ui.testo(s, 82, VERDE, vt, contenuto = "", maiuscolo = true, righe = 2), 40, 82)
         private val dettagli = Ui.testo(s, 30, VERDE, Ui.mono, 36)
         private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, ATTENUATO)
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
@@ -342,7 +341,6 @@ object Matrix : Tema {
             scheda.interno.background = Ui.bordo(VERDE, 2, NERO)
             scheda.interno.gravity = Gravity.CENTER_VERTICAL
             val testi = Ui.colonna(s)
-            indirizzo.setAutoSizeTextTypeUniformWithConfiguration(40, 82, 2, TypedValue.COMPLEX_UNIT_PX)
             testi.addView(indirizzo, lp(TUTTO, 140))
             testi.addView(dettagli, lp(ADATTA, ADATTA).apply { topMargin = 12 })
             scheda.interno.addView(testi, lp(0, ADATTA, 1f))

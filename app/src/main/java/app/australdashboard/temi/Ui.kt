@@ -57,6 +57,12 @@ object Ui {
         if (interlinea > 0) lineHeight = interlinea
     }
 
+    fun adatta(testo: TextView, minimo: Int, massimo: Int): TextView {
+        testo.ellipsize = null
+        testo.setAutoSizeTextTypeUniformWithConfiguration(minimo, massimo, 2, TypedValue.COMPLEX_UNIT_PX)
+        return testo
+    }
+
     fun icona(context: Context, res: Int, colore: Int): ImageView = ImageView(context).apply {
         setImageResource(res)
         imageTintList = ColorStateList.valueOf(colore)

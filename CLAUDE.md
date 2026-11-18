@@ -7,6 +7,7 @@
 - Si sviluppa e si prova solo sul Mac, con l'emulatore configurato come il box. Le verifiche sul box si fanno solo nei momenti previsti dai piani.
 - Il repository è pubblico: mai keystore, password o token nel repository.
 - Interfaccia per l'auto: tema scuro ad alto contrasto, bersagli grandi, solo tap e swipe semplici.
+- Dopo la prima installazione a mano (APK dal browser o da Drive) il launcher si aggiorna da solo, senza più spostare APK. Mai rompere la catena: stessa chiave di firma, stesso `applicationId`, aggiornatore indipendente dall'interfaccia. Se un cambio tocca `aggiornamenti/`, il manifest, la firma o la build, prima di pubblicarlo si prova sull'emulatore che la nuova versione riceva ancora l'aggiornamento successivo.
 
 ## Documentazione
 

@@ -43,6 +43,7 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - Gli indirizzi `releases/latest/download/<file>` sono stabili e non consumano il limite di chiamate dell'API di GitHub.
 - Tutte le versioni si firmano con la stessa chiave, tenuta fuori dal repository e con una copia di backup: con una chiave diversa Android rifiuta l'aggiornamento.
 - Il controllo degli aggiornamenti gira anche all'avvio del sistema, separato dall'interfaccia, così una versione che si chiude all'avvio si può ancora correggere. Il launcher Ottocast resta installato come riserva.
+- Requisito dell'utente (2026-11-18): dopo la prima installazione in macchina, fatta a mano scaricando l'APK dal browser o da Drive, l'app deve essere del tutto indipendente negli aggiornamenti. Il primo aggiornamento chiede una volta il permesso «installa app sconosciute» e la conferma «Aggiorna», perché l'app risulta installata dal browser; dai successivi l'app è l'installatore di sé stessa e `USER_ACTION_NOT_REQUIRED` dovrebbe evitare ogni conferma (da verificare sul box, prove di M01).
 
 ## Temi intercambiabili per la Home
 

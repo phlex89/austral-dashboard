@@ -78,7 +78,7 @@ Si chiude quando tutti e otto i temi funzionano sull'emulatore `box`, l'avvio a 
 - [x] Risposte alle domande di `DOMANDE.md`.
 - [x] Struttura dei temi, `TemiActivity`, voce in Impostazioni, preferenza `tema`.
 - [x] Tema Matrix completo con tutte le funzioni: musica, meteo, posizione, app, Tutte le app, Benzinai (con test del parser).
-- [ ] Temi 2–4: HUD, Brutalismo, Art Déco.
+- [x] Temi 2–4: HUD, Brutalismo, Art Déco.
 - [ ] Temi 5–8: Solari, Cyberpunk, Braun, Synthwave.
 - [ ] Misure sull'emulatore `box` e `box-lento` per ogni tema; confronto con le tavole.
 - [ ] Rilascio e prova sul box (Prove manuali).
@@ -98,3 +98,5 @@ Si chiude quando tutti e otto i temi funzionano sull'emulatore `box`, l'avvio a 
 
 - 2026-11-18: piano scritto dalle tavole degli otto temi; risposte alle cinque domande.
 - 2026-11-18: prima tappa fatta. Struttura dei temi, selettore, funzioni (musica, meteo, posizione, città di riserva, Benzinai, Tutte le app) e tema Matrix. Sull'emulatore `box`: APK 174 KB, PSS 23 MB, avvio a freddo 152–196 ms, 0 frame in ritardo; meteo e Benzinai provati con una posizione finta a Roma, prezzi reali scaricati in circa 4 s. Non provati: musica con un brano vero (sull'emulatore non c'è Spotify) e `box-lento`. Scostamenti: nei servizi del tema Matrix niente icone, perché accanto al tasto F e all'etichetta non ci stavano; la scheda del distributore ha altezza fissa (270 px) sotto l'elenco che scorre; i distributori senza aggiornamenti recenti mostrano la data vera (anche settimane prima).
+- 2026-11-18: temi 2–4 fatti (HUD, Brutalismo, Art Déco) e provati sull'emulatore `box` con la Home senza musica e il pannello Benzinai. Avvio a freddo 141–226 ms per tutti; PSS 24 MB, HUD 34 MB; 0 frame in ritardo; APK 291 KB. Correzioni dopo la prova: testi centrati nel quadrante HUD e nell'ora Art Déco; `Ui.adatta` per i testi che si rimpiccioliscono (l'ellissi bloccava l'adattamento); larghezze fisse nella riga del meteo Art Déco. Scostamenti: in HUD l'etichetta della musica non mostra il nome dell'app (non ci stava); in Art Déco i nomi dei distributori sono in maiuscolo. Nuovo vincolo dell'utente: dopo la prima installazione a mano gli aggiornamenti devono essere del tutto autonomi (`CLAUDE.md`).
+- 2026-11-18: prova della catena di aggiornamento con il codice dei temi 1–4, senza pubblicare. Build di prova con `versionCode` 1 sull'emulatore `box`: «Controlla aggiornamenti» ha trovato la 0.1.1 su GitHub, l'ha scaricata, verificata e installata dopo la conferma «Update» (l'APK di prova era stato installato con `adb`); l'app risulta poi installata da sé stessa. La build nuova ha lo stesso certificato della 0.1.1 (SHA-256 `7412986f…9e36`) e si installa sopra di essa.
