@@ -20,7 +20,14 @@ Mac: sviluppo → emulatore come il box → ./release.sh
 Auto: all'accensione o dal tasto in Impostazioni → scarica → installa
 ```
 
-Ancora da costruire: il primo traguardo è in [doc/piani/M01-catena-aggiornamenti](doc/piani/M01-catena-aggiornamenti/PIANO.md).
+## A che punto è
+
+| Lavoro | Stato |
+|---|---|
+| [M01 · La catena di aggiornamento](doc/piani/M01-catena-aggiornamenti/PIANO.md) | Fatto sull'emulatore; manca il test sul box |
+| [Funzioni del launcher](doc/idee/funzioni-del-launcher.md) | Idea, da analizzare per il piano M02 |
+
+Prima installazione sul box, aggiornamenti e chiave di firma: [doc/GUIDA.md](doc/GUIDA.md).
 
 ## I documenti
 

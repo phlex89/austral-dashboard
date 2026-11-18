@@ -24,6 +24,30 @@ Versione in `version.properties` (`versionCode`, `versionName`), letta da `app/b
 | `Stato.kt` | Esito dell'ultimo controllo, in `SharedPreferences` `stato` |
 | `aggiornamenti/` | Vedi «Aggiornare» |
 
+## Il dispositivo
+
+Fatti letti dalle schermate del box (Car Launcher e Impostazioni di Android) il 2026-11-18:
+
+| Voce | Valore |
+|---|---|
+| Box | Ottocast OttoAibox P3, nome dispositivo `OttoAibox-P3` |
+| Sistema | Android 12, SDK 32, firmware `SLM920.A12.1610.202411051537_EAU`, regione firmware `KZ` |
+| Processore | Qualcomm (modulo Quectel SLM920, probabilmente QCM6125), 8 GB di RAM (circa 4,8 GB liberi), 128 GB di memoria |
+| Auto | Renault Austral, unità `Renault_AIVI2 FULL_LG Electronics`, collegata via CarPlay cablato |
+| Schermo | Risoluzione dell'unità 1244×1304; area per le app 1244×1194 px, densità 1,25 (200 dpi), circa 995×955 dp |
+| Rete | Connesso a internet (rete mobile o hotspot), non raggiungibile dal Mac |
+
+Vincoli che valgono per ogni funzione:
+
+- L'immagine arriva all'auto come video CarPlay: un piccolo ritardo tra tocco e risposta c'è comunque e non dipende dal launcher.
+- Tocco via CarPlay: progettare per tap e swipe semplici, bersagli grandi; niente multitouch.
+- Il box non legge i dati dell'auto (velocità, carburante, clima): parla con l'auto solo via CarPlay. Ora, rete, media e app sì.
+- La barra in basso (casa, indietro, ora, regolazioni) è di Ottocast ed esiste anche fuori dal launcher. Car Launcher, nelle foto, non mostrava la barra di stato di Android.
+- Il box si riaccende a ogni partenza: l'avvio a freddo del launcher conta.
+- Un aggiornamento del firmware Ottocast potrebbe reimpostare il launcher predefinito.
+
+Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nascondere, se c'è la barra di stato di Android, se il box ha un GPS suo, se l'aggiornamento avviene senza conferma, il fattore tra i tempi del box e quelli dell'emulatore.
+
 ## Aggiornare
 
 - Il box legge `https://github.com/phlex89/austral-dashboard/releases/latest/download/versione.json`: `{"versionCode", "versionName", "apk", "sha256"}`. `InfoVersione.daJson` rifiuta un `apk` non https e un'impronta che non sia di 64 cifre esadecimali.

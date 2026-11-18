@@ -85,6 +85,9 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 | v2 trovata dal tasto «Controlla aggiornamenti» | da provare |
 | L'aggiornamento parte senza conferma (altrimenti con un tocco) | da provare |
 | Taratura: avvio a freddo e memoria, box contro emulatore | da provare |
+| Barra Ottocast in basso: si può nascondere? | da provare |
+| Barra di stato di Android: compare sopra il launcher? | da provare |
+| GPS del box: c'è una posizione senza il telefono? | da provare |
 
 ## Diario
 
