@@ -31,6 +31,8 @@ Per tornare al launcher di prima: Impostazioni → **Cambia launcher predefinito
 | Auto | All'accensione il launcher controlla e scarica; se Android chiede conferma, tocca **Installa** |
 | Auto, subito | Impostazioni → **Controlla aggiornamenti** |
 
+Dopo `./release.sh` aspetta un paio di minuti prima di controllare: GitHub impiega 1–2 minuti a segnalare la versione nuova. Al primo aggiornamento Android chiede di consentire le installazioni da Austral Dashboard e poi «Aggiornare?»: tocca **Impostazioni**, attiva l'interruttore, torna indietro e tocca **Aggiorna**.
+
 Se il launcher non è in primo piano quando l'aggiornamento è pronto, compare una notifica «Aggiornamento pronto»: toccala per installare.
 
 ## La chiave di firma
