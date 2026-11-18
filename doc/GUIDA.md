@@ -7,7 +7,7 @@
 | Schermata | Come ci arrivi | Cosa trovi |
 |---|---|---|
 | Home | Tasto casa della barra Ottocast | Ora e data, meteo, brano in ascolto con i comandi, Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok, i quattro servizi |
-| Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza»; la ★ li mette tra i preferiti, in cima |
+| Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per Torino, Cellamare e Valenzano il distributore più economico del comune, anche se è lontano |
 | Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico |
 | Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
 | Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo |

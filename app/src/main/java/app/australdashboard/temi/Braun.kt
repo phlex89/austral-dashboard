@@ -1,7 +1,6 @@
 package app.australdashboard.temi
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.text.SpannableStringBuilder
@@ -89,10 +88,6 @@ object Braun : Tema {
         }
         Ui.premibile(cornice, if (scuro) ONDA else ONDA_SCURA, descrizione, azione)
         return Tasto(cornice, glifo)
-    }
-
-    private fun tinta(icona: ImageView, colore: Int) {
-        icona.imageTintList = ColorStateList.valueOf(colore)
     }
 
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeBraun(s, azioni)
@@ -289,9 +284,7 @@ object Braun : Tema {
             60,
         )
         private val dettagli = Ui.testo(s, 30, TESTO, normale, 36)
-        private lateinit var stellaScheda: Tasto
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -351,10 +344,6 @@ object Braun : Tema {
             testi.addView(dettagli)
             riquadro.addView(testi, lp(0, ADATTA, 1f))
             val comandi = Ui.riga(s, 20)
-            stellaScheda = tasto(s, 52, R.drawable.ic_stella, true, SECONDARIO, "Salva tra i preferiti") {
-                selezionato?.let(azioni::cambiaPreferito)
-            }
-            comandi.addView(stellaScheda.view, lp(120, 120))
             comandi.addView(tasto(s, 48, R.drawable.ic_chiudi, true, TESTO, "Chiudi scheda") { seleziona(null) }.view, lp(120, 120))
             riquadro.addView(comandi)
             riquadro.visibility = View.GONE
@@ -362,9 +351,8 @@ object Braun : Tema {
             return riquadro
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -383,8 +371,8 @@ object Braun : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti)
-                    if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini)
+                    if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti, true)
+                    if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
                 }
             }
@@ -400,16 +388,16 @@ object Braun : Tema {
             elencoView.addView(card, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
             colonna.addView(Ui.testo(s, 40, TESTO, normale, 48, titolo).apply { setPadding(12, 0, 0, 0) })
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -419,7 +407,7 @@ object Braun : Tema {
                 setPadding(32, 0, 32, 0)
             }
             val sinistra = Ui.colonna(s, 2)
-            sinistra.addView(Ui.testo(s, 40, TESTO, normale, 46, d.nome, maiuscolo = true))
+            sinistra.addView(Ui.testo(s, 40, TESTO, normale, 46, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(Ui.testo(s, 30, SECONDARIO, normale, 36, Benzinai.distanza(d.distanzaKm)))
@@ -428,15 +416,6 @@ object Braun : Tema {
             prezzo.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, " €/l"))
             corpo.addView(prezzo)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val stella = tasto(
-                s, 52,
-                if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella,
-                true,
-                if (preferito) ARANCIO else SECONDARIO,
-                if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti",
-            ) { azioni.cambiaPreferito(d) }
-            riga.addView(stella.view, lp(120, 120))
             return riga
         }
 
@@ -456,10 +435,6 @@ object Braun : Tema {
                 setSpan(ForegroundColorSpan(ARANCIO), 0, prezzo.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 setSpan(ForegroundColorSpan(SECONDARIO), prezzo.length + centro.length, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            val preferito = d.id in preferiti
-            stellaScheda.icona.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            tinta(stellaScheda.icona, if (preferito) ARANCIO else SECONDARIO)
-            stellaScheda.view.contentDescription = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
         }
     }
 }

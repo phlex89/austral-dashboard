@@ -1,7 +1,6 @@
 package app.australdashboard.temi
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Outline
@@ -329,10 +328,7 @@ object Synthwave : Tema {
         private val nomeScheda = Ui.testo(s, 30, SECONDARIO, normale, 36)
         private val indirizzo = Ui.adatta(Ui.testo(s, 76, TESTO, grassetto, maiuscolo = true, righe = 2), 34, 76)
         private val dettagli = Ui.testo(s, 30, TESTO, normale, 36)
-        private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, SECONDARIO)
-        private lateinit var tastoStella: View
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -385,13 +381,6 @@ object Synthwave : Tema {
             testi.addView(indirizzo, lp(TUTTO, 156))
             testi.addView(dettagli)
             val comandi = Ui.riga(s, 20)
-            val cerchioStella = FrameLayout(s).apply {
-                background = superficie(0f, CONTORNO, ovale = true)
-                addView(stellaScheda, lpf(52, 52, Gravity.CENTER))
-            }
-            arrotonda(cerchioStella, -1f)
-            tastoStella = Ui.premibile(cerchioStella, ONDA, "Salva tra i preferiti") { selezionato?.let(azioni::cambiaPreferito) }
-            comandi.addView(tastoStella, lp(120, 120))
             comandi.addView(tondo(s, R.drawable.ic_chiudi, 48, TESTO, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             val interno = Ui.riga(s, 28).apply {
                 background = GradientDrawable().apply { setColor(SUPERFICIE); cornerRadius = 28f }
@@ -404,9 +393,8 @@ object Synthwave : Tema {
             return scheda
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -425,8 +413,8 @@ object Synthwave : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti)
-                    if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini)
+                    if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti, true)
+                    if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
                 }
             }
@@ -442,16 +430,16 @@ object Synthwave : Tema {
             elencoView.addView(casella, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
             colonna.addView(Ui.testo(s, 42, TESTO, grassetto, 48, titolo), lp(ADATTA, ADATTA).apply { leftMargin = 12 })
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -460,7 +448,7 @@ object Synthwave : Tema {
                 setPadding(32, 0, 32, 0)
             }
             val sinistra = Ui.colonna(s, 2)
-            sinistra.addView(Ui.adatta(Ui.testo(s, 42, TESTO, medio, contenuto = d.nome, maiuscolo = true), 24, 42), lp(TUTTO, 48))
+            sinistra.addView(Ui.adatta(Ui.testo(s, 42, TESTO, medio, contenuto = if (luogo) d.comune else d.nome, maiuscolo = true), 24, 42), lp(TUTTO, 48))
             sinistra.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"), lp(TUTTO, 34))
             corpoRiga.addView(sinistra, lp(0, ADATTA, 1f))
             corpoRiga.addView(Ui.testo(s, 32, TESTO, medio, 38, Benzinai.distanza(d.distanzaKm)))
@@ -470,10 +458,6 @@ object Synthwave : Tema {
             corpoRiga.addView(prezzo, lp(ADATTA, ADATTA))
             arrotonda(corpoRiga, 24f)
             riga.addView(Ui.premibile(corpoRiga, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val descrizione = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            val icona = if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella
-            riga.addView(tondo(s, icona, 52, if (preferito) ROSA else SECONDARIO, descrizione) { azioni.cambiaPreferito(d) }, lp(120, 120))
             return riga
         }
 
@@ -496,10 +480,6 @@ object Synthwave : Tema {
                 setSpan(ForegroundColorSpan(SECONDARIO), inizio, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
             dettagli.text = testo
-            val preferito = d.id in preferiti
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            stellaScheda.imageTintList = ColorStateList.valueOf(if (preferito) ROSA else SECONDARIO)
-            tastoStella.contentDescription = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
         }
     }
 }

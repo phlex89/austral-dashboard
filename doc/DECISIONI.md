@@ -65,3 +65,4 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - I due CSV del MIMIT pesano circa 7,5 MB insieme. Dopo il download se ne tiene un file compatto con i soli impianti che hanno la benzina self, e lo si filtra per posizione a ogni apertura: così ci si può spostare senza riscaricare.
 - Se il box non ha una posizione, meteo e Benzinai usano una città di riserva scelta in Impostazioni (Open-Meteo Geocoding).
 - «Conviene» ordina per il costo di un pieno da 40 litri più andata e ritorno a 6 l/100 km.
+- I preferiti sono tre comuni scelti dall'utente, fissi nel codice (Torino, Cellamare, Valenzano), non distributori: un comune ha molti distributori e quello più economico cambia di giorno in giorno. Di ognuno si mostra il più economico, anche se è lontano (D-6 del piano M02).

@@ -111,12 +111,17 @@ object DatiMimit {
         return Compatto(data, impianti)
     }
 
-    fun filtra(tutti: List<Distributore>, luogo: Luogo, preferiti: Set<Long>, ordine: Ordine): ElencoBenzinai.Pronto {
-        val confronto = confronto(ordine)
+    fun filtra(tutti: List<Distributore>, luogo: Luogo, comuni: List<String>, ordine: Ordine): ElencoBenzinai.Pronto {
         val conDistanza = tutti.map { it.copy(distanzaKm = distanzaKm(luogo, it.luogo)) }
-        val (scelti, altri) = conDistanza.partition { it.id in preferiti }
-        val vicini = altri.filter { it.distanzaKm <= RAGGIO_KM }.sortedWith(confronto).take(MASSIMO_VICINI)
-        return ElencoBenzinai.Pronto(scelti.sortedWith(confronto), vicini, ordine)
+        val scelti = comuni.mapNotNull { comune ->
+            conDistanza.filter { it.comune.equals(comune, ignoreCase = true) }
+                .minWithOrNull(compareBy<Distributore> { it.prezzo }.thenBy { it.distanzaKm })
+                ?.copy(comune = comune)
+        }
+        val esclusi = scelti.map { it.id }.toSet()
+        val vicini = conDistanza.filter { it.id !in esclusi && it.distanzaKm <= RAGGIO_KM }
+            .sortedWith(confronto(ordine)).take(MASSIMO_VICINI)
+        return ElencoBenzinai.Pronto(scelti, vicini, ordine)
     }
 
     fun distanzaKm(a: Luogo, b: Luogo): Double {

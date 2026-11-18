@@ -342,10 +342,7 @@ object Cyberpunk : Tema {
         private val codiceScheda = testo(s, 30, SFONDO, true, 34, maiuscolo = true, spaziatura = 3)
         private val indirizzo = Ui.adatta(testo(s, 72, SFONDO, true, 70, maiuscolo = true, righe = 2), 32, 72)
         private val dettagli = Ui.adatta(testo(s, 32, SFONDO, true, 36, maiuscolo = true), 20, 32)
-        private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, GIALLO)
-        private lateinit var tastoStella: View
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -405,10 +402,6 @@ object Cyberpunk : Tema {
             testi.addView(dettagli, lp(TUTTO, 36))
             p.addView(testi, lp(0, TUTTO, 1f))
             val comandi = Ui.riga(s, 20)
-            tastoStella = tasto(s, stellaScheda, 56, SFONDO, 18, "Salva tra i preferiti", ONDA) {
-                selezionato?.let(azioni::cambiaPreferito)
-            }
-            comandi.addView(tastoStella, lp(120, 120))
             comandi.addView(
                 tasto(s, R.drawable.ic_chiudi, 52, SFONDO, GIALLO, 18, "Chiudi scheda", ONDA) { seleziona(null) },
                 lp(120, 120),
@@ -420,9 +413,8 @@ object Cyberpunk : Tema {
             return scheda
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -443,14 +435,14 @@ object Cyberpunk : Tema {
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
                     if (e.preferiti.isNotEmpty()) {
-                        sezione("★ ${e.preferiti.size.toString().padStart(2, '0')}", "Preferiti", e.preferiti)
+                        sezione("★ ${e.preferiti.size.toString().padStart(2, '0')}", "Preferiti", e.preferiti, true)
                     }
                     val nomeOrdine = when (e.ordine) {
                         Ordine.CONVIENE -> "CONVIENE"
                         Ordine.PREZZO -> "PREZZO"
                         Ordine.DISTANZA -> "DISTANZA"
                     }
-                    if (e.vicini.isNotEmpty()) sezione("ORDINE: $nomeOrdine", "Vicini", e.vicini)
+                    if (e.vicini.isNotEmpty()) sezione("ORDINE: $nomeOrdine", "Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("// BENZINAI", "Nessun distributore entro 15 km.")
                 }
             }
@@ -466,25 +458,25 @@ object Cyberpunk : Tema {
             elencoView.addView(p, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(chip: String, titolo: String, distributori: List<Distributore>) {
+        private fun sezione(chip: String, titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val g = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 16)
             intestazione.addView(etichetta(s, chip), lp(ADATTA, 42))
             intestazione.addView(testo(s, 42, TESTO, true, 48, titolo, maiuscolo = true, spaziatura = 2), lp(0, ADATTA, 1f))
             g.addView(intestazione, lp(TUTTO, 48))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             g.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(g, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
             val corpo = Ui.riga(s, 24)
             val sinistra = Ui.colonna(s)
-            sinistra.addView(testo(s, 44, TESTO, true, 48, d.nome, maiuscolo = true), lp(TUTTO, 48))
+            sinistra.addView(testo(s, 44, TESTO, true, 48, if (luogo) d.comune else d.nome, maiuscolo = true), lp(TUTTO, 48))
             sinistra.addView(
                 testo(s, 28, SECONDARIO, false, 34, "${d.marchio} // aggiornato ${Benzinai.quando(d.aggiornato, adesso)}", spaziatura = 1),
                 lp(TUTTO, 34),
@@ -500,21 +492,6 @@ object Cyberpunk : Tema {
             corpo.setPadding(30, 0, 30, 0)
             Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }
             riga.addView(corpo, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val descrizione = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            riga.addView(
-                tasto(
-                    s,
-                    if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella,
-                    56,
-                    PANNELLO,
-                    if (preferito) GIALLO else SECONDARIO,
-                    20,
-                    descrizione,
-                    ONDA,
-                ) { azioni.cambiaPreferito(d) },
-                lp(120, 120),
-            )
             return riga
         }
 
@@ -529,9 +506,6 @@ object Cyberpunk : Tema {
             codiceScheda.text = "// SCHEDA · ${d.nome.uppercase(Locale.ITALIAN)} · ${d.marchio.uppercase(Locale.ITALIAN)}"
             indirizzo.text = "${d.indirizzo} - ${d.comune}"
             dettagli.text = "self ${Benzinai.prezzo(d.prezzo)} €/L // ${Benzinai.distanza(d.distanzaKm)} // aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"
-            val preferito = d.id in preferiti
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            tastoStella.contentDescription = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
         }
     }
 }

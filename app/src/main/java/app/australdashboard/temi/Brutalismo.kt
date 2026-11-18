@@ -294,13 +294,7 @@ object Brutalismo : Tema {
             92,
         )
         private val dettagli = Ui.testo(s, 30, SFONDO, mono, 36, maiuscolo = true)
-        private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, SFONDO)
-        private val stellaTasto = FrameLayout(s).apply {
-            background = Ui.bordo(SFONDO, BORDO)
-            addView(stellaScheda, lpf(60, 60, Gravity.CENTER))
-        }
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -356,15 +350,13 @@ object Brutalismo : Tema {
             testi.addView(dettagli)
             scheda.addView(testi, lp(0, TUTTO, 1f))
             val comandi = Ui.colonna(s, 20)
-            comandi.addView(Ui.premibile(stellaTasto, ONDA_SCURA, "Salva tra i preferiti") { selezionato?.let(azioni::cambiaPreferito) }, lp(120, 120))
             comandi.addView(tasto(s, R.drawable.ic_chiudi, SFONDO, 56, "Chiudi scheda", onda = ONDA_SCURA) { seleziona(null) }, lp(120, 120))
             scheda.addView(comandi, lp(ADATTA, TUTTO))
             return scheda
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -383,13 +375,13 @@ object Brutalismo : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("★ ${e.preferiti.size}", "Preferiti", e.preferiti)
+                    if (e.preferiti.isNotEmpty()) sezione("★ ${e.preferiti.size}", "Preferiti", e.preferiti, true)
                     val per = when (e.ordine) {
                         Ordine.CONVIENE -> "PER CONVENIENZA"
                         Ordine.PREZZO -> "PER PREZZO"
                         Ordine.DISTANZA -> "PER DISTANZA"
                     }
-                    if (e.vicini.isNotEmpty()) sezione(per, "Vicini", e.vicini)
+                    if (e.vicini.isNotEmpty()) sezione(per, "Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
                 }
             }
@@ -406,19 +398,19 @@ object Brutalismo : Tema {
             elencoView.addView(blocco, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(pillola: String, titolo: String, distributori: List<Distributore>) {
+        private fun sezione(pillola: String, titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 16)
             intestazione.addView(etichetta(s, pillola))
             intestazione.addView(Ui.testo(s, 44, TESTO, nero, 48, titolo, maiuscolo = true))
             colonna.addView(intestazione)
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe)
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -427,24 +419,12 @@ object Brutalismo : Tema {
                 setPadding(24, 0, 24, 0)
             }
             val sinistra = Ui.colonna(s)
-            sinistra.addView(Ui.testo(s, 48, TESTO, nero, 50, d.nome, maiuscolo = true))
+            sinistra.addView(Ui.testo(s, 48, TESTO, nero, 50, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, SECONDARIO, mono, 34, "${d.marchio} / AGG. ${Benzinai.quando(d.aggiornato, adesso)}", maiuscolo = true))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(Ui.testo(s, 32, TESTO, mono, 38, Benzinai.distanza(d.distanzaKm), maiuscolo = true), lp(150, ADATTA))
             corpo.addView(Ui.testo(s, 88, TESTO, nero, 80, Benzinai.prezzo(d.prezzo)).apply { letterSpacing = -0.034f })
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            riga.addView(
-                tasto(
-                    s,
-                    if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella,
-                    if (preferito) ROSSO else TESTO,
-                    60,
-                    if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti",
-                    coloreBordo = TESTO,
-                ) { azioni.cambiaPreferito(d) },
-                lp(120, 120),
-            )
             return riga
         }
 
@@ -458,9 +438,6 @@ object Brutalismo : Tema {
             schedaEtichetta.text = "INDIRIZZO / ${d.nome} / ${d.marchio}"
             indirizzo.text = "${d.indirizzo} - ${d.comune}".uppercase(Locale.ITALIAN)
             dettagli.text = "SELF ${Benzinai.prezzo(d.prezzo)} €/L / ${Benzinai.distanza(d.distanzaKm)} / AGG. ${Benzinai.quando(d.aggiornato, System.currentTimeMillis())}"
-            val preferito = d.id in preferiti
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            stellaTasto.contentDescription = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
         }
     }
 }

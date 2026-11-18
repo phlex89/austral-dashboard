@@ -88,8 +88,8 @@ Da verificare sul box (prove manuali di M01): se la barra Ottocast si può nasco
 | `funzioni/Posizione.kt` | `LocationManager`: ultima posizione nota di fused, gps, network; poi l'ultima salvata; poi la città di riserva. `aggiorna` chiede una posizione fresca con `getCurrentLocation`. `SharedPreferences` `posizione` |
 | `funzioni/Meteo.kt` | `FonteMeteo`: Open-Meteo `v1/forecast` (attuale, minima, massima, codice WMO), salvato in `SharedPreferences` `meteo`, vecchio dopo 30 minuti; descrizione italiana e `Cielo` dal codice WMO |
 | `funzioni/Citta.kt` | Open-Meteo Geocoding, 6 risultati in italiano, etichetta «nome, admin2» |
-| `funzioni/Benzinai.kt` | Scarica i due CSV del MIMIT al massimo una volta al giorno, solo quando si apre il pannello; salva `filesDir/benzinai.txt` (tutti gli impianti con benzina self, separati da tabulazione, prima riga la data); se il download fallisce usa il file vecchio. Preferiti in `SharedPreferences` `benzinai` |
-| `funzioni/DatiMimit.kt` | Logica pura dei Benzinai: lettura dei CSV, file compatto, filtro entro 15 km più i preferiti, al massimo 30 vicini, ordinamenti, formati di prezzo, distanza e data |
+| `funzioni/Benzinai.kt` | Scarica i due CSV del MIMIT al massimo una volta al giorno, solo quando si apre il pannello; salva `filesDir/benzinai.txt` (tutti gli impianti con benzina self, separati da tabulazione, prima riga la data); se il download fallisce usa il file vecchio. I preferiti sono comuni fissi nel codice (`Benzinai.preferiti`: Torino, Cellamare, Valenzano) |
+| `funzioni/DatiMimit.kt` | Logica pura dei Benzinai: lettura dei CSV, file compatto, filtro entro 15 km più, per ogni comune preferito, il distributore più economico (con il nome del comune scritto come nell'elenco, non in maiuscolo; esce dai vicini), al massimo 30 vicini, ordinamenti, formati di prezzo, distanza e data |
 
 CSV del MIMIT (`https://www.mimit.gov.it/images/exportCSV/`), verificati il 2026-11-18:
 

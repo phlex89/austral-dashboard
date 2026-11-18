@@ -2,7 +2,6 @@ package app.australdashboard
 
 import android.os.Bundle
 import app.australdashboard.funzioni.Benzinai
-import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.Luogo
 import app.australdashboard.funzioni.Ordine
@@ -39,7 +38,7 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         }
     }
 
-    private fun mostra(elenco: ElencoBenzinai) = vista.mostra(elenco, Benzinai.preferiti(this))
+    private fun mostra(elenco: ElencoBenzinai) = vista.mostra(elenco)
 
     private fun carica() {
         val dove = luogo ?: return
@@ -55,11 +54,6 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
 
     override fun ordina(ordine: Ordine) {
         this.ordine = ordine
-        carica()
-    }
-
-    override fun cambiaPreferito(distributore: Distributore) {
-        Benzinai.cambiaPreferito(this, distributore.id)
         carica()
     }
 }

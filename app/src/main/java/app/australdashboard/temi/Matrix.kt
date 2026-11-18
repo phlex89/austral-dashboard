@@ -282,9 +282,7 @@ object Matrix : Tema {
         private lateinit var scheda: Riquadro
         private val indirizzo = Ui.adatta(Ui.testo(s, 82, VERDE, vt, contenuto = "", maiuscolo = true, righe = 2), 40, 82)
         private val dettagli = Ui.testo(s, 30, VERDE, Ui.mono, 36)
-        private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, ATTENUATO)
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -345,20 +343,14 @@ object Matrix : Tema {
             testi.addView(dettagli, lp(ADATTA, ADATTA).apply { topMargin = 12 })
             scheda.interno.addView(testi, lp(0, ADATTA, 1f))
             val comandi = Ui.riga(s, 20)
-            val stella = FrameLayout(s).apply {
-                background = Ui.bordo(VERDE, 2)
-                addView(stellaScheda, lpf(56, 56, Gravity.CENTER))
-            }
-            comandi.addView(Ui.premibile(stella, ONDA, "Preferito") { selezionato?.let(azioni::cambiaPreferito) }, lp(120, 120))
             comandi.addView(tasto(s, R.drawable.ic_chiudi, false, 52, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             scheda.interno.addView(comandi, lp(ADATTA, ADATTA).apply { leftMargin = 24 })
             scheda.esterno.visibility = View.GONE
             return scheda.esterno
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -377,13 +369,13 @@ object Matrix : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("[ ★ PREFERITI · ${e.preferiti.size} ]", e.preferiti)
+                    if (e.preferiti.isNotEmpty()) sezione("[ ★ PREFERITI · ${e.preferiti.size} ]", e.preferiti, true)
                     val nomeOrdine = when (e.ordine) {
                         Ordine.CONVIENE -> "CONVIENE"
                         Ordine.PREZZO -> "PREZZO"
                         Ordine.DISTANZA -> "DISTANZA"
                     }
-                    if (e.vicini.isNotEmpty()) sezione("[ VICINI · ORDINE: $nomeOrdine ]", e.vicini)
+                    if (e.vicini.isNotEmpty()) sezione("[ VICINI · ORDINE: $nomeOrdine ]", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("~$ benzinai", "Nessun distributore entro 15 km.")
                 }
             }
@@ -397,17 +389,17 @@ object Matrix : Tema {
             elencoView.addView(r.esterno, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val r = riquadro(s, titolo)
             r.interno.apply {
                 dividerDrawable = GradientDrawable().apply { setSize(20, 20) }
                 showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
             }
-            distributori.forEach { r.interno.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { r.interno.addView(riga(it, luogo), lp(TUTTO, 120)) }
             elencoView.addView(r.esterno, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -416,7 +408,7 @@ object Matrix : Tema {
                 setPadding(24, 0, 24, 0)
             }
             val sinistra = Ui.colonna(s)
-            sinistra.addView(Ui.testo(s, 54, VERDE, vt, 50, d.nome, maiuscolo = true))
+            sinistra.addView(Ui.testo(s, 54, VERDE, vt, 50, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, ATTENUATO, Ui.mono, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             val destra = Ui.colonna(s, 0, Gravity.END)
@@ -427,16 +419,6 @@ object Matrix : Tema {
             destra.addView(Ui.testo(s, 30, ATTENUATO, Ui.mono, 36, Benzinai.distanza(d.distanzaKm)))
             corpo.addView(destra)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val stella = FrameLayout(s).apply {
-                background = Ui.bordo(VERDE, 2)
-                addView(
-                    Ui.icona(s, if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella, if (preferito) VERDE else ATTENUATO),
-                    lpf(56, 56, Gravity.CENTER),
-                )
-            }
-            val descrizione = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            riga.addView(Ui.premibile(stella, ONDA, descrizione) { azioni.cambiaPreferito(d) }, lp(120, 120))
             return riga
         }
 
@@ -450,9 +432,6 @@ object Matrix : Tema {
             scheda.etichetta.text = "[ SCHEDA ▸ ${d.nome.uppercase(Locale.ITALIAN)} · ${d.marchio.uppercase(Locale.ITALIAN)} ]"
             indirizzo.text = "${d.indirizzo} - ${d.comune}"
             dettagli.text = "self ${Benzinai.prezzo(d.prezzo)} €/l · ${Benzinai.distanza(d.distanzaKm)} · aggiornato ${Benzinai.quando(d.aggiornato, System.currentTimeMillis())}"
-            val preferito = d.id in preferiti
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            stellaScheda.imageTintList = android.content.res.ColorStateList.valueOf(if (preferito) VERDE else ATTENUATO)
         }
     }
 }

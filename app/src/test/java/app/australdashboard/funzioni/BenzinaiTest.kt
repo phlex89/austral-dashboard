@@ -49,8 +49,8 @@ class BenzinaiTest {
 
     private fun impianti() = DatiMimit.leggiImpianti(StringReader(anagraficaCsv), prezzi())
 
-    private fun d(id: Long, prezzo: Double, lat: Double, lon: Double = 9.19) =
-        Distributore(id, "n$id", "m", "i", "c", Luogo(lat, lon), prezzo, 0L, 0.0)
+    private fun d(id: Long, prezzo: Double, lat: Double, lon: Double = 9.19, comune: String = "c") =
+        Distributore(id, "n$id", "m", "i", comune, Luogo(lat, lon), prezzo, 0L, 0.0)
 
     private fun istante(giorno: Int, ora: Int, minuti: Int) =
         LocalDateTime.of(2026, 11, giorno, ora, minuti).atZone(zona).toInstant().toEpochMilli()
@@ -133,34 +133,42 @@ class BenzinaiTest {
     }
 
     @Test
-    fun filtraPerDistanzaEIncludeIPreferitiLontani() {
+    fun perOgniComunePreferitoIlPiuEconomicoAncheLontano() {
         val vicino = d(1, 1.9, 45.47)
-        val lontano = d(2, 1.5, 41.9, 12.5)
-        val fuori = d(3, 1.6, 45.9)
-        val pronto = DatiMimit.filtra(listOf(vicino, lontano, fuori), milano, setOf(2L), Ordine.PREZZO)
-        assertEquals(listOf(2L), pronto.preferiti.map { it.id })
+        val caroTorino = d(2, 1.8, 45.07, 7.68, "TORINO")
+        val economicoTorino = d(3, 1.7, 45.08, 7.69, "TORINO")
+        val valenzano = d(4, 1.75, 41.04, 16.88, "VALENZANO")
+        val fuori = d(5, 1.6, 45.9)
+        val pronto = DatiMimit.filtra(
+            listOf(vicino, caroTorino, economicoTorino, valenzano, fuori),
+            milano,
+            listOf("Valenzano", "Cellamare", "Torino"),
+            Ordine.PREZZO,
+        )
+        assertEquals(listOf(4L, 3L), pronto.preferiti.map { it.id })
+        assertEquals(listOf("Valenzano", "Torino"), pronto.preferiti.map { it.comune })
+        assertTrue(pronto.preferiti.all { it.distanzaKm > 100 })
         assertEquals(listOf(1L), pronto.vicini.map { it.id })
-        assertTrue(pronto.preferiti.single().distanzaKm > 400)
         assertEquals(Ordine.PREZZO, pronto.ordine)
     }
 
     @Test
-    fun unPreferitoVicinoNonCompareTraIVicini() {
-        val pronto = DatiMimit.filtra(listOf(d(1, 1.9, 45.47)), milano, setOf(1L), Ordine.PREZZO)
+    fun ilPreferitoNonCompareAncheTraIVicini() {
+        val pronto = DatiMimit.filtra(listOf(d(1, 1.9, 45.47, comune = "MILANO"), d(2, 2.0, 45.47)), milano, listOf("Milano"), Ordine.PREZZO)
         assertEquals(listOf(1L), pronto.preferiti.map { it.id })
-        assertTrue(pronto.vicini.isEmpty())
+        assertEquals(listOf(2L), pronto.vicini.map { it.id })
     }
 
     @Test
     fun limitaITrentaVicini() {
         val molti = (1L..40L).map { d(it, 1.5 + it / 1000.0, 45.47) }
-        val pronto = DatiMimit.filtra(molti, milano, emptySet(), Ordine.PREZZO)
+        val pronto = DatiMimit.filtra(molti, milano, emptyList(), Ordine.PREZZO)
         assertEquals(30, pronto.vicini.size)
         assertEquals(1L, pronto.vicini.first().id)
     }
 
     private fun ordinati(ordine: Ordine, vararg impianti: Distributore) =
-        DatiMimit.filtra(impianti.toList(), milano, emptySet(), ordine).vicini.map { it.id }
+        DatiMimit.filtra(impianti.toList(), milano, emptyList(), ordine).vicini.map { it.id }
 
     @Test
     fun ordinaPerPrezzo() {

@@ -147,19 +147,6 @@ object Hud : Tema {
         return Ui.premibile(cornice, ONDA_SCURA, descrizione, azione)
     }
 
-    private fun stella(context: Context, preferito: Boolean, lato: Int, bordo: Int): Pair<FrameLayout, ImageView> {
-        val icona = Ui.icona(
-            context,
-            if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella,
-            if (preferito) CIANO else SECONDARIO,
-        )
-        val cornice = FrameLayout(context).apply {
-            background = Ui.bordo(bordo, 2, if (bordo == LINEA) PANNELLO else 0)
-            addView(icona, lpf(lato, lato, Gravity.CENTER))
-        }
-        return cornice to icona
-    }
-
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeHud(s, azioni)
 
     private class HomeHud(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
@@ -378,9 +365,7 @@ object Hud : Tema {
         private val prezzoScheda = orb(s, 40, CIANO, "", 700, 0, 46)
         private val distanzaScheda = orb(s, 40, TESTO, "", 700, 0, 46)
         private val aggiornatoScheda = orb(s, 40, TESTO, "", 700, 0, 46)
-        private lateinit var stellaScheda: ImageView
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -440,9 +425,6 @@ object Hud : Tema {
             testi.addView(dati)
             riga.addView(testi, lp(0, ADATTA, 1f))
             val comandi = Ui.colonna(s, 20)
-            val (cornice, icona) = stella(s, false, 56, LINEA_FORTE)
-            stellaScheda = icona
-            comandi.addView(Ui.premibile(cornice, ONDA, "Preferito") { selezionato?.let(azioni::cambiaPreferito) }, lp(120, 120))
             comandi.addView(tastoContorno(s, R.drawable.ic_chiudi, 52, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             riga.addView(comandi, lp(ADATTA, ADATTA))
             scheda.addView(riga, lpf(TUTTO, TUTTO, Gravity.CENTER_VERTICAL))
@@ -456,9 +438,8 @@ object Hud : Tema {
                 addView(valore)
             }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -477,8 +458,8 @@ object Hud : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", true, e.preferiti)
-                    if (e.vicini.isNotEmpty()) sezione("VICINI", false, e.vicini)
+                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
+                    if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("BENZINAI", "Nessun distributore entro 15 km.")
                 }
             }
@@ -493,19 +474,18 @@ object Hud : Tema {
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, conStella: Boolean, distributori: List<Distributore>) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
             val testata = Ui.riga(s, 14)
-            if (conStella) testata.addView(Ui.icona(s, R.drawable.ic_stella_piena, CIANO), lp(36, 36))
             testata.addView(orb(s, 40, TESTO, titolo, 700, 0, 48))
             colonna.addView(testata, lp(TUTTO, ADATTA))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -514,7 +494,7 @@ object Hud : Tema {
                 setPadding(28, 0, 28, 0)
             }
             val sinistra = Ui.colonna(s, 2)
-            sinistra.addView(cond(s, 40, TESTO, d.nome, true, 1, 46, true))
+            sinistra.addView(cond(s, 40, TESTO, if (luogo) d.comune else d.nome, true, 1, 46, true))
             sinistra.addView(cond(s, 28, SECONDARIO, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}", false, 0, 34))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             val destra = Ui.colonna(s, 4, Gravity.END)
@@ -525,10 +505,6 @@ object Hud : Tema {
             destra.addView(orb(s, 28, TESTO, Benzinai.distanza(d.distanzaKm), 400, 0, 32))
             corpo.addView(destra)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val (cornice, _) = stella(s, preferito, 56, LINEA)
-            val descrizione = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            riga.addView(Ui.premibile(cornice, ONDA, descrizione) { azioni.cambiaPreferito(d) }, lp(120, 120))
             return riga
         }
 
@@ -545,9 +521,6 @@ object Hud : Tema {
             prezzoScheda.text = Benzinai.prezzo(d.prezzo)
             distanzaScheda.text = Benzinai.distanza(d.distanzaKm).uppercase(italiano)
             aggiornatoScheda.text = Benzinai.quando(d.aggiornato, System.currentTimeMillis()).uppercase(italiano)
-            val preferito = d.id in preferiti
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            stellaScheda.imageTintList = android.content.res.ColorStateList.valueOf(if (preferito) CIANO else SECONDARIO)
         }
     }
 }

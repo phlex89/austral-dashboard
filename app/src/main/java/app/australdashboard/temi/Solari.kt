@@ -340,10 +340,7 @@ object Solari : Tema {
         private val prezzoScheda = piastra(s, "", 30, AMBRA, margine = 14, maiuscolo = true)
         private val distanzaScheda = piastra(s, "", 30, margine = 14, maiuscolo = true)
         private val quandoScheda = piastra(s, "", 30, SECONDARIO, margine = 14, maiuscolo = true)
-        private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, SECONDARIO)
-        private lateinit var stellaTasto: View
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -415,14 +412,6 @@ object Solari : Tema {
             riga.addView(prezzoScheda, lp(ADATTA, 56))
             riga.addView(distanzaScheda, lp(ADATTA, 56))
             riga.addView(quandoScheda, lp(ADATTA, 56))
-            val stella = FrameLayout(s).apply {
-                background = paletta(6)
-                addView(stellaScheda, lpf(56, 56, Gravity.CENTER))
-            }
-            riga.addView(
-                Ui.premibile(stella, ONDA, "Salva tra i preferiti") { selezionato?.let(azioni::cambiaPreferito) }.also { stellaTasto = it },
-                lp(120, 120),
-            )
             riga.addView(tasto(s, R.drawable.ic_chiudi, 52, "Chiudi scheda") { seleziona(null) }.vista, lp(120, 120).apply { leftMargin = 10 })
             corpo.addView(riga, lp(TUTTO, 120))
             scheda = corpo
@@ -430,9 +419,8 @@ object Solari : Tema {
             return scheda
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -451,8 +439,8 @@ object Solari : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti)
-                    if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini)
+                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
+                    if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("RISULTATI", "Nessun distributore entro 15 km.")
                 }
             }
@@ -469,16 +457,16 @@ object Solari : Tema {
             elencoView.addView(pannello, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
             colonna.addView(etichetta(s, titolo, 40, 3), lp(TUTTO, 48))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -487,7 +475,7 @@ object Solari : Tema {
                 setPadding(16, 0, 16, 0)
             }
             val nome = Ui.colonna(s, 6, Gravity.CENTER_VERTICAL)
-            nome.addView(piastra(s, d.nome, 32, margine = 14, maiuscolo = true).apply { maxWidth = 380 }, lp(ADATTA, 50))
+            nome.addView(piastra(s, if (luogo) d.comune else d.nome, 32, margine = 14, maiuscolo = true).apply { maxWidth = 380 }, lp(ADATTA, 50))
             nome.addView(piastra(s, d.marchio, 28, SECONDARIO, margine = 14, maiuscolo = true).apply { maxWidth = 380 }, lp(ADATTA, 40))
             corpo.addView(nome, lp(380, TUTTO))
             corpo.addView(cifre(s, Benzinai.prezzo(d.prezzo), 46, 72, 56, 4), lp(ADATTA, 72))
@@ -498,16 +486,6 @@ object Solari : Tema {
             quando.addView(piastra(s, Benzinai.quando(d.aggiornato, adesso), 28, SECONDARIO, margine = 14, maiuscolo = true).apply { maxWidth = 190 }, lp(ADATTA, 50))
             corpo.addView(quando, lp(190, TUTTO))
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val stella = FrameLayout(s).apply {
-                background = paletta(6)
-                addView(
-                    Ui.icona(s, if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella, if (preferito) AMBRA else SECONDARIO),
-                    lpf(56, 56, Gravity.CENTER),
-                )
-            }
-            val descrizione = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            riga.addView(Ui.premibile(stella, ONDA, descrizione) { azioni.cambiaPreferito(d) }, lp(120, 120))
             return riga
         }
 
@@ -537,10 +515,6 @@ object Solari : Tema {
             prezzoScheda.text = "${Benzinai.prezzo(d.prezzo)} €/l"
             distanzaScheda.text = Benzinai.distanza(d.distanzaKm)
             quandoScheda.text = Benzinai.quando(d.aggiornato, System.currentTimeMillis())
-            val preferito = d.id in preferiti
-            stellaTasto.contentDescription = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            stellaScheda.imageTintList = android.content.res.ColorStateList.valueOf(if (preferito) AMBRA else SECONDARIO)
         }
     }
 }

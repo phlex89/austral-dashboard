@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.view.View
 import app.australdashboard.Schermata
-import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
@@ -41,7 +40,7 @@ interface VistaHome {
 
 interface VistaBenzinai {
     val view: View
-    fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>)
+    fun mostra(elenco: ElencoBenzinai)
 }
 
 interface AzioniHome {
@@ -59,7 +58,6 @@ interface AzioniHome {
 interface AzioniBenzinai {
     fun indietro()
     fun ordina(ordine: Ordine)
-    fun cambiaPreferito(distributore: Distributore)
 }
 
 class AppHome(val nome: String, val sigla: String, private val pacchetti: List<String>) {

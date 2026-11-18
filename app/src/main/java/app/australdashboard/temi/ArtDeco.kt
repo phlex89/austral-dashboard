@@ -392,9 +392,7 @@ object ArtDeco : Tema {
         }
         private val dettagli = Ui.testo(s, 30, AVORIO, serif, 36)
         private val aggiornato = Ui.testo(s, 30, SABBIA, corsivo, 36)
-        private val stellaScheda = Ui.icona(s, R.drawable.ic_stella, SABBIA)
         private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var preferiti: Set<Long> = emptySet()
         private var selezionato: Distributore? = null
 
         override val view: View = costruisci()
@@ -462,10 +460,6 @@ object ArtDeco : Tema {
             scheda.addView(testi, lp(0, ADATTA, 1f))
             val comandi = Ui.riga(s, 20)
             comandi.addView(
-                tasto(s, stellaScheda, 52, false, "Preferito") { selezionato?.let(azioni::cambiaPreferito) },
-                lp(120, 120),
-            )
-            comandi.addView(
                 tasto(s, Ui.icona(s, R.drawable.ic_chiudi, ORO), 48, false, "Chiudi scheda") { seleziona(null) },
                 lp(120, 120),
             )
@@ -473,9 +467,8 @@ object ArtDeco : Tema {
             return scheda
         }
 
-        override fun mostra(elenco: ElencoBenzinai, preferiti: Set<Long>) {
+        override fun mostra(elenco: ElencoBenzinai) {
             ultimo = elenco
-            this.preferiti = preferiti
             disegna()
         }
 
@@ -494,8 +487,8 @@ object ArtDeco : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
-                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti)
-                    if (e.vicini.isNotEmpty()) sezione("NEI DINTORNI", e.vicini)
+                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
+                    if (e.vicini.isNotEmpty()) sezione("NEI DINTORNI", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
                 }
             }
@@ -511,7 +504,7 @@ object ArtDeco : Tema {
             elencoView.addView(box, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val blocco = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 22, Gravity.CENTER).apply {
                 addView(rombo(s, 16))
@@ -520,12 +513,12 @@ object ArtDeco : Tema {
             }
             blocco.addView(intestazione, lp(TUTTO, 48))
             val righe = Ui.colonna(s, 20)
-            distributori.forEach { righe.addView(riga(it), lp(TUTTO, 120)) }
+            distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             blocco.addView(righe, lp(TUTTO, ADATTA))
             elencoView.addView(blocco, lp(TUTTO, ADATTA))
         }
 
-        private fun riga(d: Distributore): View {
+        private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == selezionato?.id
@@ -534,7 +527,7 @@ object ArtDeco : Tema {
                 setPadding(32, 0, 32, 0)
             }
             val sinistra = Ui.colonna(s)
-            sinistra.addView(Ui.testo(s, 40, AVORIO, serif, 48, d.nome, maiuscolo = true))
+            sinistra.addView(Ui.testo(s, 40, AVORIO, serif, 48, if (luogo) d.comune else d.nome, maiuscolo = true))
             sinistra.addView(Ui.testo(s, 28, SABBIA, corsivo, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(Ui.testo(s, 30, SABBIA, serif, 36, Benzinai.distanza(d.distanzaKm)))
@@ -543,14 +536,6 @@ object ArtDeco : Tema {
             prezzo.addView(Ui.testo(s, 28, SABBIA, serif, 34, " €/l"))
             corpo.addView(prezzo)
             riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            val preferito = d.id in preferiti
-            val descrizione = if (preferito) "Rimuovi dai preferiti" else "Salva tra i preferiti"
-            val stella = Ui.icona(
-                s,
-                if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella,
-                if (preferito) ORO else SABBIA,
-            )
-            riga.addView(tasto(s, stella, 52, false, descrizione) { azioni.cambiaPreferito(d) }, lp(120, 120))
             return riga
         }
 
@@ -565,9 +550,6 @@ object ArtDeco : Tema {
             indirizzo.text = "${d.indirizzo} - ${d.comune}"
             dettagli.text = "${Benzinai.prezzo(d.prezzo)} €/l self · ${Benzinai.distanza(d.distanzaKm)} · "
             aggiornato.text = "aggiornato ${Benzinai.quando(d.aggiornato, System.currentTimeMillis())}"
-            val preferito = d.id in preferiti
-            stellaScheda.setImageResource(if (preferito) R.drawable.ic_stella_piena else R.drawable.ic_stella)
-            stellaScheda.imageTintList = android.content.res.ColorStateList.valueOf(if (preferito) ORO else SABBIA)
         }
     }
 }

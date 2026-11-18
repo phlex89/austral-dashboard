@@ -11,8 +11,7 @@ object Benzinai {
     private const val ANAGRAFICA = "https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv"
     private const val PREZZI = "https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv"
     private const val FILE_COMPATTO = "benzinai.txt"
-    private const val ARCHIVIO = "benzinai"
-    private const val CHIAVE_PREFERITI = "preferiti"
+    val preferiti = listOf("Torino", "Cellamare", "Valenzano")
 
     @Synchronized
     fun elenco(context: Context, luogo: Luogo, ordine: Ordine): ElencoBenzinai {
@@ -29,18 +28,7 @@ object Benzinai {
         if (compatto == null || compatto.impianti.isEmpty()) {
             return ElencoBenzinai.Errore("Prezzi non disponibili. Controlla la connessione.")
         }
-        return DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine)
-    }
-
-    fun preferiti(context: Context): Set<Long> =
-        archivio(context).getStringSet(CHIAVE_PREFERITI, emptySet())!!.mapNotNull { it.toLongOrNull() }.toSet()
-
-    fun cambiaPreferito(context: Context, id: Long): Boolean {
-        val attuali = preferiti(context).toMutableSet()
-        val ora = attuali.add(id)
-        if (!ora) attuali.remove(id)
-        archivio(context).edit().putStringSet(CHIAVE_PREFERITI, attuali.map { it.toString() }.toSet()).apply()
-        return ora
+        return DatiMimit.filtra(compatto.impianti, luogo, preferiti, ordine)
     }
 
     fun prezzo(valore: Double): String = DatiMimit.prezzo(valore)
@@ -48,8 +36,6 @@ object Benzinai {
     fun distanza(km: Double): String = DatiMimit.distanza(km)
 
     fun quando(aggiornato: Long, adesso: Long): String = DatiMimit.quando(aggiornato, adesso)
-
-    private fun archivio(context: Context) = context.getSharedPreferences(ARCHIVIO, Context.MODE_PRIVATE)
 
     private fun leggi(file: File): DatiMimit.Compatto? =
         if (!file.exists()) null else runCatching { file.bufferedReader().use(DatiMimit::leggiCompatto) }.getOrNull()
