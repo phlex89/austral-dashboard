@@ -54,9 +54,21 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - [x] Prova della catena di aggiornamento sull'emulatore.
 - [x] Guida, riferimento, decisioni.
 - [x] Rilascio con `./release.sh minor`: v0.4.0.
-- [ ] Prova sul box: Spotify parte con `:play`, il pannello Wi‑Fi si apre sopra la Home, il volume cambia l'audio che arriva all'auto.
+- [ ] Prove sul box (Prove manuali).
 
 **Rischi.** Il suffisso `:play` per far partire la playlist non è documentato da Spotify e l'emulatore non ha Spotify: si prova solo sul box; se non parte, la playlist si apre e serve un tocco su play. Non si sa se il volume del box cambia davvero l'audio verso l'auto o se conta solo quello dell'auto.
+
+## Prove manuali
+
+| Prova | Esito |
+|---|---|
+| Il box riceve la 0.4.0 senza conferma | da provare |
+| Una playlist condivisa da Spotify si salva e parte da sola con un tocco (`:play`) | da provare |
+| Il pannello Wi‑Fi si apre sopra la Home; Bluetooth apre le sue impostazioni | da provare |
+| «−» e «+» cambiano il volume che si sente in auto | da provare |
+| La pioggia compare nel meteo quando arriva entro due ore | da provare |
+| Rifornimenti: tastiera del box con la virgola, consumo dal secondo pieno | da provare |
+| Le frecce dei prezzi compaiono nei Benzinai dal secondo giorno di download | da provare |
 
 ## Diario
 
