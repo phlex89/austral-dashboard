@@ -7,6 +7,7 @@ data class Meteo(
     val minima: Int,
     val massima: Int,
     val codice: Int,
+    val pioggiaTraMinuti: Int? = null,
 )
 
 enum class Cielo { SERENO, POCO_NUVOLOSO, NUVOLOSO, NEBBIA, PIOGGIA, NEVE, TEMPORALE }
@@ -32,6 +33,7 @@ data class Distributore(
     val prezzo: Double,
     val aggiornato: Long,
     val distanzaKm: Double,
+    val prezzoPrima: Double? = null,
 )
 
 enum class Ordine { CONVIENE, PREZZO, DISTANZA }

@@ -270,4 +270,12 @@ class BenzinaiTest {
         assertEquals("11/11 08:10", Benzinai.quando(istante(11, 8, 10), adesso))
         assertEquals("ieri 23:59", Benzinai.quando(istante(17, 23, 59), istante(18, 0, 1)))
     }
+
+    @Test
+    fun prezziDiLeggeSoloGliIdRichiesti() {
+        val scrittore = StringWriter()
+        DatiMimit.scriviCompatto(scrittore, LocalDateTime.of(2026, 11, 17, 8, 40), listOf(d(1, 1.8, 45.0), d(2, 1.9, 45.1), d(3, 2.0, 45.2)))
+        val prezzi = DatiMimit.prezziDi(StringReader(scrittore.toString()), setOf(2L, 3L, 99L))
+        assertEquals(mapOf(2L to 1.9, 3L to 2.0), prezzi)
+    }
 }

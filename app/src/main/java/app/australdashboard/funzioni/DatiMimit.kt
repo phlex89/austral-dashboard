@@ -124,6 +124,21 @@ object DatiMimit {
         return Compatto(scaricato, impianti)
     }
 
+    fun prezziDi(lettore: Reader, ids: Set<Long>): Map<Long, Double> {
+        val prezzi = HashMap<Long, Double>()
+        if (ids.isEmpty()) return prezzi
+        BufferedReader(lettore).useLines { righe ->
+            righe.drop(1).forEach { riga ->
+                val c = riga.split('\t')
+                if (c.size != 9) return@forEach
+                val id = c[0].toLongOrNull() ?: return@forEach
+                if (id !in ids) return@forEach
+                prezzi[id] = c[7].toDoubleOrNull() ?: return@forEach
+            }
+        }
+        return prezzi
+    }
+
     fun filtra(tutti: List<Distributore>, luogo: Luogo, comuni: List<String>, ordine: Ordine): ElencoBenzinai.Pronto {
         val conDistanza = tutti.map { it.copy(distanzaKm = distanzaKm(luogo, it.luogo)) }
         val scelti = comuni.mapNotNull { comune ->

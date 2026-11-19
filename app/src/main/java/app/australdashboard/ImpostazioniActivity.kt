@@ -9,6 +9,7 @@ import android.widget.Button
 import app.australdashboard.aggiornamenti.Aggiornatore
 import app.australdashboard.funzioni.Benzinai
 import app.australdashboard.funzioni.Lettore
+import app.australdashboard.funzioni.Playlists
 import app.australdashboard.funzioni.Posizione
 import app.australdashboard.temi.Temi
 
@@ -18,6 +19,7 @@ class ImpostazioniActivity : Schermata() {
     private lateinit var musica: Button
     private lateinit var citta: Button
     private lateinit var comuni: Button
+    private lateinit var playlist: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,6 +34,8 @@ class ImpostazioniActivity : Schermata() {
         comuni = pulsante("") { startActivity(Intent(this, ComuniActivity::class.java)) }
         radice.addView(comuni)
         radice.addView(pulsante("App della Home") { startActivity(Intent(this, AppHomeActivity::class.java)) })
+        playlist = pulsante("") { startActivity(Intent(this, PlaylistActivity::class.java)) }
+        radice.addView(playlist)
         radice.addView(pulsante("Controlla aggiornamenti") { controllaOra() })
         esito = testo("")
         radice.addView(esito)
@@ -54,6 +58,7 @@ class ImpostazioniActivity : Schermata() {
         musica.visibility = if (Lettore.permessoConcesso(this)) View.GONE else View.VISIBLE
         citta.text = "Città di riserva: ${Posizione.cittaDiRiserva(this)?.first ?: "nessuna"}"
         comuni.text = "Comuni preferiti: ${Benzinai.preferiti(this).joinToString(", ").ifEmpty { "nessuno" }}"
+        playlist.text = "Playlist preferite: ${Playlists.elenco(this).joinToString(", ") { it.nome }.ifEmpty { "nessuna" }}"
     }
 
     private fun controllaOra() {

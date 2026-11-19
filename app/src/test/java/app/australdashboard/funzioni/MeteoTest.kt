@@ -1,6 +1,9 @@
 package app.australdashboard.funzioni
 
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class MeteoTest {
@@ -48,5 +51,47 @@ class MeteoTest {
         assertEquals("Neve", FonteMeteo.descrizione(71))
         assertEquals("Temporale", FonteMeteo.descrizione(95))
         assertEquals("Nuvoloso", FonteMeteo.descrizione(1234))
+    }
+
+    private val minuto = 60_000L
+    private val inizio = 1_000_000_000_000L
+
+    @Test
+    fun pioggiaAdessoDaZero() {
+        assertEquals(0, FonteMeteo.pioggiaTra(inizio, listOf(0.0, 0.5), inizio + 20 * minuto))
+    }
+
+    @Test
+    fun pioggiaFuturaArrotondataAiCinqueMinuti() {
+        assertEquals(20, FonteMeteo.pioggiaTra(inizio, listOf(0.0, 0.0, 0.3), inizio + 10 * minuto))
+        assertEquals(5, FonteMeteo.pioggiaTra(inizio, listOf(0.0, 0.3), inizio + 14 * minuto + 30_000))
+    }
+
+    @Test
+    fun pioggiaOltreDueOreONessunaDaNull() {
+        val mm = List(12) { if (it == 10) 1.0 else 0.0 }
+        assertNull(FonteMeteo.pioggiaTra(inizio, mm, inizio))
+        assertNull(FonteMeteo.pioggiaTra(inizio, emptyList(), inizio))
+        assertNull(FonteMeteo.pioggiaTra(inizio, listOf(0.05, 0.09), inizio))
+    }
+
+    @Test
+    fun pioggiaPassataIgnorata() {
+        assertNull(FonteMeteo.pioggiaTra(inizio, listOf(2.0, 0.0), inizio + 20 * minuto))
+    }
+
+    @Test
+    fun pioggiaConAdessoPrimaDellInizioDellaSerie() {
+        assertEquals(35, FonteMeteo.pioggiaTra(inizio, listOf(0.0, 1.0), inizio - 20 * minuto))
+    }
+
+    @Test
+    fun pioggiaDaJsonConvertePerFuso() {
+        val testo = risposta.dropLast(1) +
+            ""","minutely_15":{"time":["2026-11-18T19:15","2026-11-18T19:30"],"precipitation":[0.0,0.4]}}"""
+        val pioggia = FonteMeteo.pioggiaDaJson(testo)!!
+        assertEquals(LocalDateTime.of(2026, 11, 18, 18, 15).toEpochSecond(ZoneOffset.UTC) * 1000, pioggia.inizio)
+        assertEquals(listOf(0.0, 0.4), pioggia.mm)
+        assertNull(FonteMeteo.pioggiaDaJson(risposta))
     }
 }

@@ -11,10 +11,12 @@ object Benzinai {
     private const val ANAGRAFICA = "https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv"
     private const val PREZZI = "https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv"
     private const val FILE_COMPATTO = "benzinai.txt"
+    private const val FILE_PRIMA = "benzinai-prima.txt"
     private const val PREFERENZE = "benzinai"
     private const val ATTESA_DOPO_ERRORE_MS = 10 * 60 * 1000L
     private var memoria: DatiMimit.Compatto? = null
     private var ultimoErrore = 0L
+    private val prezziPrima = HashMap<Long, Double?>()
 
     fun preferiti(context: Context): List<String> =
         context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getString("comuni", "")!!
@@ -37,6 +39,7 @@ object Benzinai {
     @Synchronized
     fun libera() {
         memoria = null
+        prezziPrima.clear()
     }
 
     @Synchronized
@@ -49,6 +52,7 @@ object Benzinai {
             try {
                 compatto = scarica(context, file)
                 memoria = compatto
+                prezziPrima.clear()
             } catch (e: Exception) {
                 ultimoErrore = adesso
             }
@@ -56,7 +60,19 @@ object Benzinai {
         if (compatto == null || compatto.impianti.isEmpty()) {
             return ElencoBenzinai.Errore("Prezzi non disponibili. Controlla la connessione.")
         }
-        return DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine)
+        val pronto = DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine)
+        val richiesti = (pronto.preferiti + pronto.vicini).map { it.id }.toSet()
+        val mancanti = richiesti.filter { it !in prezziPrima }.toSet()
+        if (mancanti.isNotEmpty()) {
+            val letti = File(context.filesDir, FILE_PRIMA).takeIf { it.exists() }
+                ?.let { runCatching { it.bufferedReader().use { r -> DatiMimit.prezziDi(r, mancanti) } }.getOrNull() }
+                .orEmpty()
+            mancanti.forEach { prezziPrima[it] = letti[it] }
+        }
+        return pronto.copy(
+            preferiti = pronto.preferiti.map { it.copy(prezzoPrima = prezziPrima[it.id]) },
+            vicini = pronto.vicini.map { it.copy(prezzoPrima = prezziPrima[it.id]) },
+        )
     }
 
     fun prezzo(valore: Double): String = DatiMimit.prezzo(valore)
@@ -80,6 +96,7 @@ object Benzinai {
             if (impianti.isEmpty()) error("Nessun impianto nel file scaricato")
             val adesso = LocalDateTime.now()
             temporaneo.bufferedWriter().use { DatiMimit.scriviCompatto(it, adesso, impianti) }
+            if (file.exists()) file.renameTo(File(context.filesDir, FILE_PRIMA))
             if (!temporaneo.renameTo(file)) error("Salvataggio non riuscito")
             return DatiMimit.Compatto(adesso, impianti)
         } finally {

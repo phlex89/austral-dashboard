@@ -3,6 +3,8 @@ package app.australdashboard.funzioni
 import android.content.Context
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.Locale
 import kotlin.math.roundToInt
 import org.json.JSONObject
@@ -11,6 +13,11 @@ object FonteMeteo {
     private const val PREFERENZE = "meteo"
     private const val VALIDITA_MS = 30 * 60 * 1000L
     private const val ETA_MASSIMA_MS = 3 * 60 * 60 * 1000L
+    private const val PASSO_MS = 15 * 60 * 1000L
+    private const val ORIZZONTE_PIOGGIA_MS = 120 * 60 * 1000L
+    private const val SOGLIA_PIOGGIA_MM = 0.1
+
+    class Pioggia(val inizio: Long, val mm: List<Double>)
 
     fun ultimo(context: Context): Meteo? {
         val preferenze = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE)
@@ -21,7 +28,25 @@ object FonteMeteo {
             minima = preferenze.getInt("minima", 0),
             massima = preferenze.getInt("massima", 0),
             codice = preferenze.getInt("codice", 0),
+            pioggiaTraMinuti = preferenze.getString("pioggia_mm", null)?.let { mm ->
+                pioggiaTra(
+                    preferenze.getLong("pioggia_inizio", 0),
+                    mm.split(',').mapNotNull { it.toDoubleOrNull() },
+                    System.currentTimeMillis(),
+                )
+            },
         )
+    }
+
+    fun pioggiaTra(inizio: Long, mm: List<Double>, adesso: Long): Int? {
+        mm.forEachIndexed { i, valore ->
+            val passo = inizio + i * PASSO_MS
+            if (passo > adesso + ORIZZONTE_PIOGGIA_MS) return null
+            if (valore < SOGLIA_PIOGGIA_MM || passo + PASSO_MS <= adesso) return@forEachIndexed
+            if (passo <= adesso) return 0
+            return ((passo - adesso) / 300_000.0).roundToInt().times(5).coerceAtLeast(5)
+        }
+        return null
     }
 
     fun troppoVecchio(quando: Long, adesso: Long): Boolean = adesso - quando > ETA_MASSIMA_MS
@@ -36,19 +61,29 @@ object FonteMeteo {
             Locale.US,
             "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f" +
                 "&current=temperature_2m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1",
+                "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1" +
+                "&minutely_15=precipitation&forecast_minutely_15=12",
             luogo.lat,
             luogo.lon,
         )
-        val meteo = daJson(leggi(indirizzo))
-        context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit()
+        val testo = leggi(indirizzo)
+        val meteo = daJson(testo)
+        val pioggia = pioggiaDaJson(testo)
+        val adesso = System.currentTimeMillis()
+        val modifica = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit()
+        if (pioggia != null) {
+            modifica.putLong("pioggia_inizio", pioggia.inizio).putString("pioggia_mm", pioggia.mm.joinToString(","))
+        } else {
+            modifica.remove("pioggia_inizio").remove("pioggia_mm")
+        }
+        modifica
             .putInt("gradi", meteo.gradi)
             .putInt("minima", meteo.minima)
             .putInt("massima", meteo.massima)
             .putInt("codice", meteo.codice)
-            .putLong("quando", System.currentTimeMillis())
+            .putLong("quando", adesso)
             .apply()
-        meteo
+        if (pioggia == null) meteo else meteo.copy(pioggiaTraMinuti = pioggiaTra(pioggia.inizio, pioggia.mm, adesso))
     } catch (e: Exception) {
         null
     }
@@ -63,6 +98,17 @@ object FonteMeteo {
             massima = giorno.getJSONArray("temperature_2m_max").getDouble(0).roundToInt(),
             codice = attuale.getInt("weather_code"),
         )
+    }
+
+    fun pioggiaDaJson(testo: String): Pioggia? {
+        val radice = JSONObject(testo)
+        val serie = radice.optJSONObject("minutely_15") ?: return null
+        val orari = serie.optJSONArray("time") ?: return null
+        val valori = serie.optJSONArray("precipitation") ?: return null
+        if (orari.length() == 0 || valori.length() == 0 || !radice.has("utc_offset_seconds")) return null
+        val fuso = ZoneOffset.ofTotalSeconds(radice.getInt("utc_offset_seconds"))
+        val inizio = LocalDateTime.parse(orari.getString(0)).toEpochSecond(fuso) * 1000
+        return Pioggia(inizio, List(valori.length()) { valori.optDouble(it, 0.0) })
     }
 
     fun cielo(codice: Int): Cielo = when (codice) {

@@ -9,7 +9,7 @@
 | Home | Tasto casa della barra Ottocast | Ora e data, meteo, brano in ascolto con i comandi, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi |
 | Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano |
 | Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico. In alto a destra «Aggiorna app» apre il Play Store sulla pagina delle tue app, dove tocchi «Aggiorna tutto» |
-| Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, comuni preferiti, app della Home, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
+| Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, comuni preferiti, app della Home, playlist preferite, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
 | Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash |
 
 Un'app della Home che non è installata resta spenta. Toccando la copertina o il titolo del brano si apre l'app che lo suona; senza musica, «Apri Spotify» apre Spotify e il tasto play riprende l'ultima app musicale.
@@ -20,13 +20,14 @@ Se il launcher si chiude da solo, Diagnostica mostra in fondo quando è successo
 
 ## Prima configurazione
 
-**In breve.** Tre permessi e due scelte, una volta sola.
+**In breve.** Tre permessi e qualche scelta, una volta sola.
 
 1. Alla prima apertura della Home Android chiede la posizione: consenti. Serve al meteo e ai Benzinai.
 2. Impostazioni → **Consenti la lettura della musica** → attiva Austral Dashboard. Serve a mostrare il brano e a comandarlo; il pulsante sparisce quando il permesso c'è.
 3. Impostazioni → **Città di riserva**: scrivi la città, tocca **Cerca** e scegli. Si usa solo quando il box non sa dove si trova.
 4. Impostazioni → **Comuni preferiti**: apri prima una volta Benzinai, che scarica l'elenco; poi scrivi l'inizio del nome, tocca **Cerca** e scegli. Al massimo tre; **Togli** li rimuove.
 5. Impostazioni → **App della Home**: tocca una delle sei posizioni e scegli l'app tra quelle installate. La Home cambia subito.
+6. Playlist preferite, al massimo tre: in Spotify apri la playlist, **Condividi → Altro → Austral Dashboard**, correggi il nome se vuoi e tocca **Salva**. In Impostazioni → **Playlist preferite** le vedi e le togli.
 
 Per cambiare l'aspetto: Impostazioni → **Tema**, poi tocca quello che vuoi. La Home cambia subito.
 
