@@ -11,7 +11,7 @@
 | Rifornimenti | Benzinai → Rifornimenti | A ogni pieno scrivi euro, litri e contachilometri e tocchi «Salva». Sotto: spesa del mese, consumo medio in km/l, € ogni 100 km, gli ultimi 20 pieni con «Togli» |
 | Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico. In alto a destra «Aggiorna app» apre il Play Store sulla pagina delle tue app, dove tocchi «Aggiorna tutto» |
 | Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, comuni preferiti, app della Home, playlist preferite, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
-| Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash |
+| Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash. In fondo la sezione Audio: livelli del volume, tre pulsanti di prova e l'elenco dei cambi di volume, anche quelli fatti dalla barra Ottocast o dalla manopola dell'auto |
 
 Un'app della Home che non è installata resta spenta. Toccando la copertina o il titolo del brano si apre l'app che lo suona; senza musica, «Apri Spotify» apre Spotify e il tasto play riprende l'ultima app musicale.
 
