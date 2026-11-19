@@ -16,6 +16,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Niente interruttori per meteo e musica](#niente-interruttori-per-meteo-e-musica)
 - [La Home non blocca l'orientamento](#la-home-non-blocca-l-orientamento)
 - [«Aggiorna app» apre il Play Store](#aggiorna-app-apre-il-play-store)
+- [Funzioni di bordo: come funzionano e perché](#funzioni-di-bordo-come-funzionano-e-perche)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -134,3 +135,17 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 
 - La pagina si apre con l'intent `com.google.android.finsky.VIEW_MY_DOWNLOADS`, non documentato ma dichiarato dal Play Store (verificato nella versione 50.7 su un emulatore con Play Store). Se un giorno sparisce, il tasto apre il Play Store e basta.
 - Se il Play Store non c'è, il tasto non compare.
+
+## Funzioni di bordo: come funzionano e perché
+
+**In breve.** Le funzioni di M04 restano senza permessi speciali e senza dati nuovi da scaricare. Wi‑Fi e Bluetooth aprono i pannelli di Android, perché da Android 10 un'app non può accenderli o spegnerli da sola. Le playlist si aggiungono condividendole da Spotify, perché scrivere un link sullo schermo dell'auto è scomodo. La freccia del prezzo confronta con il download precedente, che il launcher già fa. Il registro dei pieni e la pioggia usano solo dati salvati sul box o la stessa richiesta del meteo.
+
+**Dettagli.**
+
+- Scelte dell'utente del 2026-11-19 tra le proposte: registro dei rifornimenti, andamento dei prezzi, scorciatoie Wi‑Fi, Bluetooth e volume, playlist preferite, pioggia in arrivo. Scartate: dati consumati, destinazioni preferite (il navigatore non si usa dal box), app recenti, tema giorno e notte. Le scadenze dell'auto restano un'idea (`doc/idee/scadenze-auto.md`).
+- Playlist: un link `open.spotify.com/<tipo>/<id>` si apre come `spotify:<tipo>:<id>:play`. Il suffisso `:play` non è documentato da Spotify; senza, la playlist si apre ma non parte. Se sul box non funziona, resta un tocco su play.
+- Volume: cambia `STREAM_MUSIC` del box, senza la barra di sistema, perché il livello è già sulla Home. Non è provato che il volume del box cambi l'audio che arriva all'auto via CarPlay.
+- Andamento: il confronto è con il penultimo download (`benzinai-prima.txt`), non con «ieri»: i prezzi si scaricano solo quando si apre Benzinai, al massimo una volta al giorno. Molti distributori comunicano il prezzo di rado, quindi la freccia compare su pochi.
+- Rifornimenti: consumo da pieno a pieno, perché senza il carburante nel serbatoio è l'unico calcolo onesto; il file resta sul box, mai nel repository.
+- Pioggia: `minutely_15` di Open‑Meteo nella stessa richiesta del meteo, 12 passi da 15 minuti; da 0,1 mm in un passo conta come pioggia. La serie salvata permette di aggiornare «tra N minuti» senza riscaricare.
+- Grafica: le tavole degli otto temi sono state aggiornate da Claude Design con il prompt in `doc/piani/M04-funzioni-di-bordo/FASE-2.md`; le ★ dei preferiti per distributore restano fuori come in M02.

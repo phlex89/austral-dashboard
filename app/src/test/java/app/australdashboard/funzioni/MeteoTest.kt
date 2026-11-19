@@ -94,4 +94,11 @@ class MeteoTest {
         assertEquals(listOf(0.0, 0.4), pioggia.mm)
         assertNull(FonteMeteo.pioggiaDaJson(risposta))
     }
+
+    @Test
+    fun testoPioggia() {
+        assertNull(FonteMeteo.testoPioggia(null))
+        assertEquals("Piove", FonteMeteo.testoPioggia(0))
+        assertEquals("Pioggia tra 20 min", FonteMeteo.testoPioggia(20))
+    }
 }

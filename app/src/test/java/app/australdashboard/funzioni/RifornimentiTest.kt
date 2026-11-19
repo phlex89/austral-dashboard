@@ -66,4 +66,10 @@ class RifornimentiTest {
         assertNull(Rifornimenti.daRiga("1\t2\t3"))
         assertNull(Rifornimenti.daRiga("a\t1.0\t1.0\t5"))
     }
+
+    @Test
+    fun spesaDelMese() {
+        assertEquals("90 € a novembre", Rifornimenti.spesaDelMese(pieni, 2026, 11))
+        assertNull(Rifornimenti.spesaDelMese(pieni, 2026, 12))
+    }
 }

@@ -27,7 +27,7 @@ Auto: all'accensione o dal tasto in Impostazioni → scarica → installa
 | [M01 · La catena di aggiornamento](doc/piani/M01-catena-aggiornamenti/PIANO.md) | Fatto sull'emulatore; manca il test sul box, previsto il 2026-11-19 |
 | [M02 · La Home vera, in otto temi](doc/piani/M02-home-a-temi/PIANO.md) | Otto temi con i dettagli delle tavole nuove, pubblicati nella v0.2.1; manca la prova sul box, prevista il 2026-11-19 |
 | [M03 · Catena robusta e rifiniture](doc/piani/M03-catena-robusta-e-rifiniture/PIANO.md) | 0.3.0 in uso sul box; pubblicata la 0.3.1, da ricevere sul box |
-| [M04 · Funzioni di bordo](doc/piani/M04-funzioni-di-bordo/PIANO.md) | Fase 1 fatta; la fase 2 aspetta le tavole aggiornate da Claude Design |
+| [M04 · Funzioni di bordo](doc/piani/M04-funzioni-di-bordo/PIANO.md) | Fatto sull'emulatore, da pubblicare e provare sul box |
 
 Prima installazione sul box, aggiornamenti e chiave di firma: [doc/GUIDA.md](doc/GUIDA.md).
 

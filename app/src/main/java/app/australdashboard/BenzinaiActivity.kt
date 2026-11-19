@@ -1,14 +1,17 @@
 package app.australdashboard
 
+import android.content.Intent
 import android.os.Bundle
 import app.australdashboard.funzioni.Benzinai
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.Luogo
 import app.australdashboard.funzioni.Ordine
 import app.australdashboard.funzioni.Posizione
+import app.australdashboard.funzioni.Rifornimenti
 import app.australdashboard.temi.AzioniBenzinai
 import app.australdashboard.temi.Temi
 import app.australdashboard.temi.VistaBenzinai
+import java.util.Calendar
 
 class BenzinaiActivity : Schermata(), AzioniBenzinai {
     private lateinit var vista: VistaBenzinai
@@ -50,6 +53,12 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         }.start()
     }
 
+    override fun onResume() {
+        super.onResume()
+        val adesso = Calendar.getInstance()
+        vista.mostraSpesa(Rifornimenti.spesaDelMese(Rifornimenti.elenco(this), adesso.get(Calendar.YEAR), adesso.get(Calendar.MONTH) + 1))
+    }
+
     override fun onDestroy() {
         Benzinai.libera()
         super.onDestroy()
@@ -61,4 +70,6 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         this.ordine = ordine
         carica()
     }
+
+    override fun rifornimenti() = startActivity(Intent(this, RifornimentiActivity::class.java))
 }

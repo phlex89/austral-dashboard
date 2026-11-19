@@ -2,6 +2,8 @@ package app.australdashboard.funzioni
 
 import android.content.Context
 import java.io.File
+import java.time.Month
+import java.time.format.TextStyle
 import java.util.Calendar
 import java.util.Locale
 
@@ -53,6 +55,13 @@ object Rifornimenti {
             val data = Calendar.getInstance().apply { timeInMillis = it.quando }
             data.get(Calendar.YEAR) == anno && data.get(Calendar.MONTH) + 1 == mese
         }.sumOf { it.euro }
+
+    fun spesaDelMese(elenco: List<Rifornimento>, anno: Int, mese: Int): String? {
+        val spesa = spesaMese(elenco, anno, mese)
+        if (spesa <= 0) return null
+        val nome = Month.of(mese).getDisplayName(TextStyle.FULL, Locale.ITALIAN)
+        return String.format(Locale.ITALY, "%.0f € a %s", spesa, nome)
+    }
 
     fun consumo(elenco: List<Rifornimento>): Double? {
         val (distanza, ordinati) = distanzaEResto(elenco) ?: return null

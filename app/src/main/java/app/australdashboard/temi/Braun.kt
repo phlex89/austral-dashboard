@@ -1,9 +1,11 @@
 package app.australdashboard.temi
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -19,12 +21,16 @@ import android.widget.TextView
 import app.australdashboard.R
 import app.australdashboard.Schermata
 import app.australdashboard.funzioni.Benzinai
+import app.australdashboard.funzioni.DatiMimit
 import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.Ordine
+import app.australdashboard.funzioni.Playlists
+import app.australdashboard.funzioni.StatoSistema
+import app.australdashboard.funzioni.StatoWifi
 import app.australdashboard.temi.Ui.ADATTA
 import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
@@ -71,6 +77,12 @@ object Braun : Tema {
             shape = GradientDrawable.OVAL
             setColor(riempimento)
             if (anello != 0) setStroke(3, anello)
+        }
+
+    private fun contorno(colore: Int): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setStroke(2, colore)
         }
 
     private fun arrotondato(riempimento: Int, raggio: Int, bordo: Int = 0, spessore: Int = 0): GradientDrawable =
@@ -157,6 +169,7 @@ object Braun : Tema {
         }
 
         override fun onDraw(canvas: Canvas) {
+            canvas.scale(width / 28f, height / 112f)
             pennello.color = TACCA
             canvas.drawRect(11f, 6f, 13f, 106f, pennello)
             if (!presente) return
@@ -179,22 +192,75 @@ object Braun : Tema {
         }
     }
 
+    private const val TACCHE = 15
+
+    private class Tacche(context: Context) : View(context) {
+        private val pennello = Paint()
+        var accese = 0
+            set(valore) {
+                field = valore
+                invalidate()
+            }
+
+        override fun onDraw(canvas: Canvas) {
+            for (i in 0 until TACCHE) {
+                pennello.color = if (i < accese) TESTO else TACCA
+                val x = i * 14f
+                canvas.drawRect(x, 0f, x + 6f, height.toFloat(), pennello)
+            }
+        }
+    }
+
+    private class Interruttore(context: Context, nome: String, descrizione: String, azione: () -> Unit) {
+        private val spia = View(context)
+        private val icona = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+        private val stato = Ui.adatta(Ui.testo(context, 28, SECONDARIO, normale, 32), 20, 28)
+        val view: View
+
+        init {
+            val tondo = cornice(context, Tipo.SCURO, 80, FrameLayout(context).apply { addView(icona, lpf(44, 44, Gravity.CENTER)) })
+            val etichetta = Ui.riga(context, 8).apply {
+                addView(spia, lp(12, 12))
+                addView(Ui.adatta(Ui.testo(context, 30, TESTO, normale, 34, nome), 20, 30), lp(0, 38, 1f))
+            }
+            val testi = Ui.colonna(context, 0, Gravity.CENTER_VERTICAL).apply {
+                addView(etichetta, lp(TUTTO, 38))
+                addView(stato, lp(TUTTO, 36))
+            }
+            val riga = Ui.riga(context, 14).apply {
+                addView(tondo, lp(104, 104))
+                addView(testi, lp(0, ADATTA, 1f))
+            }
+            view = Ui.premibile(FrameLayout(context).apply { addView(riga, lpf(TUTTO, TUTTO)) }, ONDA, descrizione, azione)
+        }
+
+        fun imposta(spiaNuova: Drawable, risorsa: Int, tinta: Int, testo: String, colore: Int) {
+            spia.background = spiaNuova
+            icona.setImageResource(risorsa)
+            icona.imageTintList = ColorStateList.valueOf(tinta)
+            stato.text = testo
+            stato.setTextColor(colore)
+        }
+    }
+
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeBraun(s, azioni)
 
     private class HomeBraun(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, TESTO)
-        private val cielo = Ui.testo(s, 32, TESTO, normale, 38, "In attesa")
-        private val gradi = Ui.testo(s, 124, TESTO, leggero, 124, "--°").apply { letterSpacing = -0.032f }
-        private val estremi = Ui.testo(s, 28, SECONDARIO, normale, 34, " ")
+        private val cielo = Ui.adatta(Ui.testo(s, 32, TESTO, normale, 38, "In attesa"), 20, 32)
+        private val gradi = Ui.testo(s, 104, TESTO, leggero, 0, "--°").apply { letterSpacing = -0.0288f }
+        private val estremi = Ui.adatta(Ui.testo(s, 28, SECONDARIO, normale, 34, " "), 20, 28)
+        private val pioggia = Ui.adatta(Ui.testo(s, 28, ARANCIO, normale, 34), 20, 28)
+        private val rigaPioggia = Ui.riga(s, 10)
         private val scala = ScalaOre(s)
         private val termometro = Termometro(s)
-        private val ora = Ui.testo(s, 212, TESTO, leggero, 200).apply {
-            letterSpacing = -0.0377f
+        private val ora = Ui.testo(s, 186, TESTO, leggero).apply {
+            letterSpacing = -0.043f
             gravity = Gravity.END
         }
         private val data = Ui.testo(s, 32, SECONDARIO, normale, 38).apply { gravity = Gravity.END }
-        private val inAscolto = Ui.riga(s, 28).apply { setPadding(24, 24, 28, 24) }
-        private val fermo = Ui.riga(s, 28).apply { setPadding(44, 24, 28, 24) }
+        private val inAscolto = Ui.riga(s, 24).apply { setPadding(20, 20, 28, 20) }
+        private val fermo = Ui.riga(s, 24).apply { setPadding(20, 20, 28, 20) }
         private val copertina = ImageView(s).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = arrotondato(TASTO, 12)
@@ -208,50 +274,74 @@ object Braun : Tema {
             addView(View(s).apply { background = ovale(ARANCIO) }, lp(12, 12))
             addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "in riproduzione"))
         }
-        private val titolo = Ui.testo(s, 46, TESTO, normale, 54)
-        private val artista = Ui.testo(s, 30, SECONDARIO, normale, 36)
+        private val titolo = Ui.testo(s, 44, TESTO, normale, 50)
+        private val artista = Ui.testo(s, 28, SECONDARIO, normale, 34)
         private lateinit var play: Tasto
+        private val wifi = Interruttore(s, "Wi-Fi", "Wi-Fi") { azioni.wifi() }
+        private val bluetooth = Interruttore(s, "Bluetooth", "Bluetooth") { azioni.bluetooth() }
+        private val tacche = Tacche(s)
+        private val volume = Ui.testo(s, 56, TESTO, leggero, 56).apply {
+            gravity = Gravity.END
+            minWidth = 62
+        }
 
         override val view: View = costruisci()
 
         private fun costruisci(): View {
-            val radice = Ui.colonna(s, 24).apply {
+            val radice = Ui.colonna(s).apply {
                 setBackgroundColor(CORPO)
                 setPadding(32, 32, 32, 32)
             }
-            radice.addView(display(), lp(TUTTO, 300))
-            radice.addView(modulo(), lp(TUTTO, 250))
-            radice.addView(tastierino(), lp(TUTTO, 0, 1f))
+            radice.addView(display(), lp(TUTTO, 256))
+            radice.addView(modulo(), lp(TUTTO, 170).apply { topMargin = 12 })
+            val playlist = Playlists.elenco(s)
+            if (playlist.isNotEmpty()) radice.addView(preselezioni(playlist), lp(TUTTO, 120).apply { topMargin = 12 })
+            radice.addView(tastierino(), lp(TUTTO, 0, 1f).apply { topMargin = 20 })
+            radice.addView(sistema(), lp(TUTTO, 120).apply { topMargin = 20 })
             return radice
         }
+
+        private fun margineInterlinea(testo: TextView, linea: Int): Int =
+            -(testo.paint.getFontMetricsInt(null) - linea) / 2
 
         private fun display(): View {
             val riquadro = Ui.colonna(s).apply {
                 background = arrotondato(DISPLAY, 28, FILETTO, 2)
-                setPadding(40, 24, 40, 22)
+                setPadding(42, 24, 42, 20)
             }
             val contenuto = Ui.riga(s, 0, Gravity.NO_GRAVITY)
-            val sinistra = Ui.colonna(s, 4, Gravity.CENTER_VERTICAL)
-            val rigaCielo = Ui.riga(s, 12)
-            rigaCielo.addView(iconaMeteo, lp(48, 48))
-            rigaCielo.addView(cielo)
-            sinistra.addView(rigaCielo)
-            val rigaGradi = Ui.riga(s, 24)
-            rigaGradi.addView(gradi)
-            rigaGradi.addView(termometro, lp(28, 112))
-            sinistra.addView(rigaGradi)
-            sinistra.addView(estremi)
-            contenuto.addView(sinistra, lp(380, TUTTO))
+            val sinistra = Ui.riga(s, 24)
+            val rigaGradi = Ui.riga(s, 20)
+            val margineGradi = margineInterlinea(gradi, 104)
+            rigaGradi.addView(gradi, lp(ADATTA, ADATTA).apply {
+                topMargin = margineGradi
+                bottomMargin = margineGradi
+            })
+            rigaGradi.addView(termometro, lp(25, 100))
+            sinistra.addView(rigaGradi, lp(ADATTA, ADATTA))
+            val colonnaMeteo = Ui.colonna(s, 2, Gravity.CENTER_VERTICAL)
+            val rigaCielo = Ui.riga(s, 10)
+            rigaCielo.addView(iconaMeteo, lp(40, 40))
+            rigaCielo.addView(cielo, lp(0, 42, 1f))
+            colonnaMeteo.addView(rigaCielo, lp(TUTTO, 42))
+            colonnaMeteo.addView(estremi, lp(TUTTO, 36))
+            rigaPioggia.addView(View(s).apply { background = ovale(ARANCIO) }, lp(12, 12))
+            rigaPioggia.addView(pioggia, lp(0, 36, 1f))
+            rigaPioggia.visibility = View.GONE
+            colonnaMeteo.addView(rigaPioggia, lp(TUTTO, 36))
+            sinistra.addView(colonnaMeteo, lp(0, ADATTA, 1f))
+            contenuto.addView(sinistra, lp(460, TUTTO))
             contenuto.addView(View(s).apply { setBackgroundColor(FILETTO) }, lp(2, TUTTO).apply {
                 leftMargin = 40
                 rightMargin = 40
             })
             val destra = Ui.colonna(s, 0, Gravity.CENTER_VERTICAL)
+            val margineOra = margineInterlinea(ora, 146)
             destra.addView(ora, lp(TUTTO, ADATTA).apply {
-                topMargin = -39
-                bottomMargin = -39
+                topMargin = margineOra
+                bottomMargin = margineOra
             })
-            destra.addView(data, lp(TUTTO, ADATTA).apply { topMargin = 10 })
+            destra.addView(data, lp(TUTTO, ADATTA))
             contenuto.addView(destra, lp(0, TUTTO, 1f))
             Ui.senzaRitaglio(riquadro, contenuto, destra, sinistra, rigaGradi)
             riquadro.addView(contenuto, lp(TUTTO, 0, 1f))
@@ -263,37 +353,72 @@ object Braun : Tema {
             val sezione = FrameLayout(s).apply { background = arrotondato(MODULO, 28) }
 
             inAscolto.gravity = Gravity.CENTER_VERTICAL
-            cornicecopertina.addView(copertina, lpf(186, 186))
+            cornicecopertina.addView(copertina, lpf(118, 118))
             Ui.premibile(cornicecopertina, ONDA, "Apri Spotify") { azioni.apriMusica() }
-            inAscolto.addView(cornicecopertina, lp(198, 198))
-            val info = Ui.colonna(s, 4, Gravity.CENTER_VERTICAL)
+            inAscolto.addView(cornicecopertina, lp(130, 130))
+            val info = Ui.colonna(s, 2, Gravity.CENTER_VERTICAL)
             info.addView(spia)
             info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 2 })
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(0, TUTTO, 1f))
-            val comandi = Ui.riga(s, 24)
-            comandi.addView(tasto(s, 44, 100, R.drawable.ic_precedente, Tipo.SCURO, TESTO, "Brano precedente") { azioni.precedente() }.view, lp(130, 130))
-            play = tasto(s, 56, 118, R.drawable.ic_pausa, Tipo.PLAY, CORPO, "Pausa") { azioni.playPausa() }
-            comandi.addView(play.view, lp(150, 150))
-            comandi.addView(tasto(s, 44, 100, R.drawable.ic_successivo, Tipo.SCURO, TESTO, "Brano successivo") { azioni.successivo() }.view, lp(130, 130))
+            val comandi = Ui.riga(s, 22)
+            comandi.addView(tasto(s, 40, 92, R.drawable.ic_precedente, Tipo.SCURO, TESTO, "Brano precedente") { azioni.precedente() }.view, lp(120, 120))
+            play = tasto(s, 48, 100, R.drawable.ic_pausa, Tipo.PLAY, CORPO, "Pausa") { azioni.playPausa() }
+            comandi.addView(play.view, lp(130, 130))
+            comandi.addView(tasto(s, 40, 92, R.drawable.ic_successivo, Tipo.SCURO, TESTO, "Brano successivo") { azioni.successivo() }.view, lp(120, 120))
             inAscolto.addView(comandi)
 
             fermo.gravity = Gravity.CENTER_VERTICAL
-            fermo.addView(Ui.testo(s, 64, TESTO, leggero, 72, "Spotify"), lp(0, ADATTA, 1f))
+            fermo.addView(Ui.testo(s, 56, TESTO, leggero, 64, "Spotify").apply { setPadding(20, 0, 0, 0) }, lp(0, ADATTA, 1f))
             val apri = Ui.testo(s, 32, TESTO, normale, 38, "Apri Spotify").apply {
                 gravity = Gravity.CENTER
-                background = arrotondato(TASTO, 65, ANELLO, 3)
+                background = arrotondato(TASTO, 60, ANELLO, 3)
                 clipToOutline = true
                 setPadding(48, 0, 48, 0)
             }
-            fermo.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(ADATTA, 130))
-            fermo.addView(tasto(s, 56, 118, R.drawable.ic_play, Tipo.PLAY, CORPO, "Riproduci") { azioni.playPausa() }.view, lp(150, 150))
+            fermo.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(ADATTA, 120))
+            fermo.addView(tasto(s, 48, 100, R.drawable.ic_play, Tipo.PLAY, CORPO, "Riproduci") { azioni.playPausa() }.view, lp(130, 130))
 
             sezione.addView(inAscolto, lpf(TUTTO, TUTTO))
             sezione.addView(fermo, lpf(TUTTO, TUTTO))
             mostraMusica(null)
             return sezione
+        }
+
+        private fun preselezioni(playlist: List<app.australdashboard.funzioni.Playlist>): View {
+            val riga = Ui.riga(s, 20)
+            playlist.forEachIndexed { i, p ->
+                val corpo = Ui.riga(s, 16).apply {
+                    background = arrotondato(TASTO, 24, ANELLO, 3)
+                    clipToOutline = true
+                    setPadding(16, 0, 20, 0)
+                }
+                corpo.addView(Ui.testo(s, 32, TESTO, leggero, 0, "${i + 1}").apply {
+                    gravity = Gravity.CENTER
+                    background = conca(Tipo.SCURO)
+                }, lp(56, 56))
+                corpo.addView(
+                    Ui.adatta(Ui.testo(s, 28, TESTO, normale, 32, p.nome, righe = 3).apply { gravity = Gravity.CENTER_VERTICAL }, 18, 28),
+                    lp(0, 104, 1f),
+                )
+                riga.addView(Ui.premibile(corpo, ONDA, "Riproduci la playlist ${p.nome}") { azioni.playlist(p) }, lp(0, TUTTO, 1f))
+            }
+            return riga
+        }
+
+        private fun sistema(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(wifi.view, lp(276, 120))
+            riga.addView(bluetooth.view, lp(276, 120))
+            riga.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 80))
+            riga.addView(tasto(s, 44, 92, R.drawable.ic_meno, Tipo.SCURO, TESTO, "Abbassa il volume") { azioni.volume(false) }.view, lp(120, 120))
+            val centro = Ui.riga(s, 14).apply { gravity = Gravity.CENTER }
+            centro.addView(tacche, lp(TACCHE * 14 - 8, 40))
+            centro.addView(volume, lp(ADATTA, ADATTA))
+            riga.addView(centro, lp(0, TUTTO, 1f))
+            riga.addView(tasto(s, 44, 92, R.drawable.ic_piu, Tipo.SCURO, TESTO, "Alza il volume") { azioni.volume(true) }.view, lp(120, 120))
+            return riga
         }
 
         private fun tastierino(): View {
@@ -302,13 +427,13 @@ object Braun : Tema {
                 cellaApp(app[0]),
                 cellaApp(app[1]),
                 cellaApp(app[2]),
-                cellaServizio(R.drawable.ic_griglia, 56, "Tutte le app", null) { azioni.tutteLeApp() },
-                cellaServizio(R.drawable.ic_benzinaio, 56, "Benzinai", null) { azioni.benzinai() },
+                cellaServizio(R.drawable.ic_griglia, 48, "Tutte le app", null) { azioni.tutteLeApp() },
+                cellaServizio(R.drawable.ic_benzinaio, 48, "Benzinai", null) { azioni.benzinai() },
                 cellaApp(app[3]),
                 cellaApp(app[4]),
                 cellaApp(app[5]),
-                cellaServizio(R.drawable.ic_cursori, 56, "Impostazioni Android", null) { azioni.impostazioniAndroid() },
-                cellaServizio(R.drawable.ic_ingranaggio, 60, "Launcher", "Impostazioni del launcher") { azioni.impostazioniLauncher() },
+                cellaServizio(R.drawable.ic_cursori, 48, "Impostazioni Android", null) { azioni.impostazioniAndroid() },
+                cellaServizio(R.drawable.ic_ingranaggio, 52, "Launcher", "Impostazioni del launcher") { azioni.impostazioniLauncher() },
             )
             val colonna = Ui.colonna(s, 20)
             for (r in 0 until 2) {
@@ -328,8 +453,8 @@ object Braun : Tema {
         }
 
         private fun cella(tondo: View, nome: String): LinearLayout {
-            val colonna = Ui.colonna(s, 14, Gravity.CENTER)
-            colonna.addView(tondo, lp(150, 150))
+            val colonna = Ui.colonna(s, 6, Gravity.CENTER)
+            colonna.addView(tondo, lp(120, 120))
             colonna.addView(
                 Ui.testo(s, 28, TESTO, normale, 32, nome, righe = 2).apply { gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL },
                 lp(TUTTO, 64),
@@ -339,7 +464,7 @@ object Braun : Tema {
         }
 
         private fun cellaApp(app: AppHome): View {
-            val tondo = cornice(s, Tipo.SCURO, 118, Ui.testo(s, 58, TESTO, leggero, 0, app.sigla).apply { gravity = Gravity.CENTER })
+            val tondo = cornice(s, Tipo.SCURO, 92, Ui.testo(s, 46, TESTO, leggero, 0, app.sigla).apply { gravity = Gravity.CENTER })
             val installata = app.intent(s) != null
             Ui.premibile(tondo, ONDA, app.nome) { if (installata) azioni.apri(app) }
             val cella = cella(tondo, app.nome)
@@ -348,7 +473,7 @@ object Braun : Tema {
         }
 
         private fun cellaServizio(icona: Int, lato: Int, nome: String, descrizione: String?, azione: () -> Unit): View {
-            val t = tasto(s, lato, 118, icona, Tipo.CHIARO, CORPO, descrizione ?: nome, azione)
+            val t = tasto(s, lato, 92, icona, Tipo.CHIARO, CORPO, descrizione ?: nome, azione)
             return cella(t.view, nome)
         }
 
@@ -361,6 +486,9 @@ object Braun : Tema {
 
         override fun mostraMeteo(meteo: Meteo?) {
             termometro.imposta(meteo)
+            val testoPioggia = FonteMeteo.testoPioggia(meteo?.pioggiaTraMinuti)
+            rigaPioggia.visibility = if (testoPioggia != null) View.VISIBLE else View.GONE
+            pioggia.text = testoPioggia.orEmpty()
             if (meteo == null) {
                 iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
                 cielo.text = "In attesa"
@@ -385,6 +513,25 @@ object Braun : Tema {
             play.icona.setImageResource(if (musica.inRiproduzione) R.drawable.ic_pausa else R.drawable.ic_play)
             play.view.contentDescription = if (musica.inRiproduzione) "Pausa" else "Riproduci"
         }
+
+        override fun mostraSistema(stato: StatoSistema) {
+            when (stato.wifi) {
+                StatoWifi.SPENTO -> wifi.imposta(contorno(TACCA), R.drawable.ic_wifi_spento, SECONDARIO, "spento", SECONDARIO)
+                StatoWifi.ACCESO -> wifi.imposta(contorno(ARANCIO), R.drawable.ic_wifi, TESTO, "acceso", SECONDARIO)
+                StatoWifi.CONNESSO -> wifi.imposta(ovale(ARANCIO), R.drawable.ic_wifi, TESTO, "connesso", ARANCIO)
+            }
+            if (stato.bluetooth) {
+                bluetooth.imposta(ovale(ARANCIO), R.drawable.ic_bluetooth, TESTO, "acceso", ARANCIO)
+            } else {
+                bluetooth.imposta(contorno(TACCA), R.drawable.ic_bluetooth_spento, SECONDARIO, "spento", SECONDARIO)
+            }
+            volume.text = stato.volume.toString()
+            tacche.accese = if (stato.volumeMassimo > 0) {
+                Math.round(stato.volume * TACCHE.toFloat() / stato.volumeMassimo).coerceIn(0, TACCHE)
+            } else {
+                0
+            }
+        }
     }
 
     override fun benzinai(s: Schermata, azioni: AzioniBenzinai): VistaBenzinai = BenzinaiBraun(s, azioni)
@@ -393,16 +540,14 @@ object Braun : Tema {
         private val ordini = LinkedHashMap<Ordine, TextView>()
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: View
-        private val nomeScheda = Ui.testo(s, 30, SECONDARIO, normale, 36)
+        private val spesa = Ui.testo(s, 28, SECONDARIO, normale, 32).apply { visibility = View.GONE }
+        private val nomeScheda = Ui.testo(s, 28, SECONDARIO, normale, 34)
         private val indirizzo = Ui.adatta(
-            Ui.testo(s, 60, TESTO, leggero, contenuto = "", maiuscolo = true, righe = 2).apply {
-                letterSpacing = 0.0167f
-                gravity = Gravity.CENTER_VERTICAL
-            },
-            30,
-            60,
+            Ui.testo(s, 56, TESTO, leggero, 62, maiuscolo = true).apply { letterSpacing = 0.018f },
+            28,
+            56,
         )
-        private val dettagli = Ui.testo(s, 30, TESTO, normale, 36)
+        private val dettagli = Ui.testo(s, 28, TESTO, normale, 34)
         private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
@@ -413,30 +558,54 @@ object Braun : Tema {
                 setPadding(32, 32, 32, 32)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
+            radice.addView(ordinamenti(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(elencoView)
             }
             radice.addView(FrameLayout(s).apply { addView(scorrimento) }, lp(TUTTO, 0, 1f))
-            radice.addView(boxScheda(), lp(TUTTO, 300))
+            radice.addView(boxScheda(), lp(TUTTO, 182))
             return radice
+        }
+
+        override fun mostraSpesa(testo: String?) {
+            spesa.text = testo.orEmpty()
+            spesa.visibility = if (testo != null) View.VISIBLE else View.GONE
         }
 
         private fun intestazione(): View {
             val riga = Ui.riga(s, 28)
-            riga.addView(tasto(s, 48, 92, R.drawable.ic_indietro, Tipo.SCURO, TESTO, "Indietro") { azioni.indietro() }.view, lp(120, 120))
-            riga.addView(Ui.testo(s, 68, TESTO, leggero, 76, "Benzinai"), lp(0, ADATTA, 1f))
-            val gruppo = Ui.riga(s, 20)
+            riga.addView(tasto(s, 44, 92, R.drawable.ic_indietro, Tipo.SCURO, TESTO, "Indietro") { azioni.indietro() }.view, lp(120, 120))
+            riga.addView(Ui.testo(s, 64, TESTO, leggero, 72, "Benzinai"), lp(0, ADATTA, 1f))
+            val pillola = Ui.riga(s, 16).apply {
+                background = arrotondato(TASTO, 60, ANELLO, 3)
+                clipToOutline = true
+                setPadding(30, 0, 40, 0)
+            }
+            pillola.addView(Ui.icona(s, R.drawable.ic_rifornimenti, TESTO), lp(44, 44))
+            val testi = Ui.colonna(s, 0, Gravity.CENTER_VERTICAL)
+            testi.addView(Ui.testo(s, 32, TESTO, normale, 38, "Rifornimenti"))
+            testi.addView(spesa)
+            pillola.addView(testi)
+            riga.addView(Ui.premibile(pillola, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, 120))
+            return riga
+        }
+
+        private fun ordinamenti(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "Ordina per"), lp(ADATTA, ADATTA).apply {
+                leftMargin = 12
+                rightMargin = 8
+            })
             for ((ordine, nome) in Ui.ORDINI) {
                 val pulsante = Ui.testo(s, 32, TESTO, normale, 38, nome).apply {
                     gravity = Gravity.CENTER
                     clipToOutline = true
                 }
                 ordini[ordine] = pulsante
-                gruppo.addView(Ui.premibile(pulsante, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(180, 120))
+                riga.addView(Ui.premibile(pulsante, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, 120, 1f))
             }
-            riga.addView(gruppo, lp(ADATTA, TUTTO))
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
         }
@@ -454,19 +623,17 @@ object Braun : Tema {
         private fun boxScheda(): View {
             val riquadro = Ui.riga(s, 28).apply {
                 background = arrotondato(DISPLAY, 28, FILETTO, 2)
-                setPadding(36, 26, 36, 26)
+                setPadding(36, 0, 30, 0)
             }
-            val testi = Ui.colonna(s, 8, Gravity.CENTER_VERTICAL)
+            val testi = Ui.colonna(s, 0, Gravity.CENTER_VERTICAL)
             val rigaNome = Ui.riga(s, 12)
             rigaNome.addView(View(s).apply { background = ovale(ARANCIO) }, lp(12, 12))
             rigaNome.addView(nomeScheda, lp(0, ADATTA, 1f))
             testi.addView(rigaNome, lp(TUTTO, ADATTA))
-            testi.addView(indirizzo, lp(TUTTO, 136))
+            testi.addView(indirizzo, lp(TUTTO, 62))
             testi.addView(dettagli)
             riquadro.addView(testi, lp(0, ADATTA, 1f))
-            val comandi = Ui.riga(s, 20)
-            comandi.addView(tasto(s, 48, 92, R.drawable.ic_chiudi, Tipo.SCURO, TESTO, "Chiudi scheda") { seleziona(null) }.view, lp(120, 120))
-            riquadro.addView(comandi)
+            riquadro.addView(tasto(s, 44, 92, R.drawable.ic_chiudi, Tipo.SCURO, TESTO, "Chiudi scheda") { seleziona(null) }.view, lp(120, 120))
             riquadro.visibility = View.GONE
             scheda = riquadro
             return riquadro
@@ -510,9 +677,9 @@ object Braun : Tema {
         }
 
         private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
-            val colonna = Ui.colonna(s, 12)
+            val colonna = Ui.colonna(s, 10)
             val intestazioneSezione = Ui.riga(s, 20)
-            intestazioneSezione.addView(Ui.testo(s, 40, TESTO, normale, 48, titolo))
+            intestazioneSezione.addView(Ui.testo(s, 40, TESTO, normale, 44, titolo))
             intestazioneSezione.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(0, 2, 1f))
             intestazioneSezione.setPadding(12, 0, 0, 0)
             colonna.addView(intestazioneSezione, lp(TUTTO, ADATTA))
@@ -524,7 +691,6 @@ object Braun : Tema {
 
         private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
-            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = arrotondato(MODULO, 28, if (scelto) ARANCIO else MODULO, 3)
@@ -532,15 +698,24 @@ object Braun : Tema {
                 setPadding(32, 0, 32, 0)
             }
             val sinistra = Ui.colonna(s, 2)
-            sinistra.addView(Ui.testo(s, 40, TESTO, normale, 46, if (luogo) d.comune else d.nome, maiuscolo = true))
+            sinistra.addView(Ui.testo(s, 40, TESTO, normale, 46, if (luogo) d.comune else d.nome))
             sinistra.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 56))
-            corpo.addView(Ui.testo(s, 30, SECONDARIO, normale, 36, Benzinai.distanza(d.distanzaKm)).apply {
-                gravity = Gravity.END
-                minWidth = 96
-            }, lp(ADATTA, ADATTA))
+            corpo.addView(
+                Ui.adatta(Ui.testo(s, 30, SECONDARIO, normale, 36, Benzinai.distanza(d.distanzaKm)).apply { gravity = Gravity.END }, 22, 30),
+                lp(96, 42),
+            )
             corpo.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 56))
+            val blocco = Ui.riga(s, 14)
+            val andamento = DatiMimit.andamento(d)
+            if (andamento != null) {
+                val variazione = Ui.riga(s, 6)
+                variazione.addView(Ui.icona(s, if (andamento.salito) R.drawable.ic_su else R.drawable.ic_giu, SECONDARIO), lp(18, 18))
+                variazione.addView(Ui.testo(s, 28, TESTO, normale, 32, andamento.differenza))
+                variazione.contentDescription = "Prezzo ${if (andamento.salito) "salito" else "sceso"} di ${andamento.differenza}"
+                blocco.addView(variazione)
+            }
             val prezzo = Ui.riga(s, 0, Gravity.TOP)
             val testoPrezzo = SpannableStringBuilder(Benzinai.prezzo(d.prezzo)).apply {
                 if (isNotEmpty()) setSpan(RelativeSizeSpan(42f / 64f), length - 1, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -550,9 +725,9 @@ object Braun : Tema {
                 text = testoPrezzo
             })
             prezzo.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, " €/l"))
-            corpo.addView(prezzo)
-            riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            return riga
+            blocco.addView(prezzo)
+            corpo.addView(blocco)
+            return Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }
         }
 
         private fun aggiornaScheda() {
@@ -562,7 +737,7 @@ object Braun : Tema {
                 return
             }
             scheda.visibility = View.VISIBLE
-            nomeScheda.text = "${d.nome.uppercase(Locale.ITALIAN)} · ${d.marchio}"
+            nomeScheda.text = "${d.nome} · ${d.marchio}"
             indirizzo.text = "${d.indirizzo} - ${d.comune}"
             val prezzo = "${Benzinai.prezzo(d.prezzo)} €/l self"
             val centro = " · ${Benzinai.distanza(d.distanzaKm)} · "

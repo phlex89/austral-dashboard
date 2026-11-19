@@ -278,4 +278,16 @@ class BenzinaiTest {
         val prezzi = DatiMimit.prezziDi(StringReader(scrittore.toString()), setOf(2L, 3L, 99L))
         assertEquals(mapOf(2L to 1.9, 3L to 2.0), prezzi)
     }
+
+    @Test
+    fun andamento() {
+        val salito = DatiMimit.andamento(d(1, 1.861, 45.0).copy(prezzoPrima = 1.849))!!
+        assertTrue(salito.salito)
+        assertEquals("0,012", salito.differenza)
+        val sceso = DatiMimit.andamento(d(1, 1.844, 45.0).copy(prezzoPrima = 1.849))!!
+        assertFalse(sceso.salito)
+        assertEquals("0,005", sceso.differenza)
+        assertNull(DatiMimit.andamento(d(1, 1.849, 45.0).copy(prezzoPrima = 1.849)))
+        assertNull(DatiMimit.andamento(d(1, 1.849, 45.0)))
+    }
 }

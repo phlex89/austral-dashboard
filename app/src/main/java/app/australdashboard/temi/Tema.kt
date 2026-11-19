@@ -11,6 +11,8 @@ import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.Ordine
+import app.australdashboard.funzioni.Playlist
+import app.australdashboard.funzioni.StatoSistema
 import java.util.Date
 
 interface Tema {
@@ -36,11 +38,13 @@ interface VistaHome {
     fun mostraOra(adesso: Date)
     fun mostraMeteo(meteo: Meteo?)
     fun mostraMusica(musica: Musica?)
+    fun mostraSistema(stato: StatoSistema)
 }
 
 interface VistaBenzinai {
     val view: View
     fun mostra(elenco: ElencoBenzinai)
+    fun mostraSpesa(testo: String?)
 }
 
 interface AzioniHome {
@@ -53,11 +57,16 @@ interface AzioniHome {
     fun precedente()
     fun playPausa()
     fun successivo()
+    fun wifi()
+    fun bluetooth()
+    fun volume(su: Boolean)
+    fun playlist(playlist: Playlist)
 }
 
 interface AzioniBenzinai {
     fun indietro()
     fun ordina(ordine: Ordine)
+    fun rifornimenti()
 }
 
 class StatoBenzinai {

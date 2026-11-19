@@ -2,12 +2,13 @@
 
 ## Per cominciare
 
-**In breve.** Austral Dashboard è il launcher del box Ottocast in auto. La Home mostra ora, meteo, il brano in ascolto, sei app e quattro servizi; l'aspetto dipende dal tema scelto in Impostazioni.
+**In breve.** Austral Dashboard è il launcher del box Ottocast in auto. La Home mostra ora, meteo, il brano in ascolto, le playlist preferite, sei app, quattro servizi, Wi‑Fi, Bluetooth e volume; l'aspetto dipende dal tema scelto in Impostazioni.
 
 | Schermata | Come ci arrivi | Cosa trovi |
 |---|---|---|
-| Home | Tasto casa della barra Ottocast | Ora e data, meteo, brano in ascolto con i comandi, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi |
-| Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano |
+| Home | Tasto casa della barra Ottocast | Ora e data, meteo con la pioggia in arrivo, brano in ascolto con i comandi, fino a tre playlist preferite, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi, Wi‑Fi, Bluetooth e volume |
+| Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano. Accanto al prezzo, ▲ o ▼ con la differenza dal download precedente. In alto «Rifornimenti» con la spesa del mese |
+| Rifornimenti | Benzinai → Rifornimenti | A ogni pieno scrivi euro, litri e contachilometri e tocchi «Salva». Sotto: spesa del mese, consumo medio in km/l, € ogni 100 km, gli ultimi 20 pieni con «Togli» |
 | Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico. In alto a destra «Aggiorna app» apre il Play Store sulla pagina delle tue app, dove tocchi «Aggiorna tutto» |
 | Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, comuni preferiti, app della Home, playlist preferite, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
 | Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash |
@@ -15,6 +16,10 @@
 Un'app della Home che non è installata resta spenta. Toccando la copertina o il titolo del brano si apre l'app che lo suona; senza musica, «Apri Spotify» apre Spotify e il tasto play riprende l'ultima app musicale.
 
 «Conviene» mette in cima il distributore con cui spendi meno contando un pieno da 40 litri e il viaggio di andata e ritorno. I prezzi si scaricano quando apri Benzinai, al massimo una volta al giorno, dopo la pubblicazione del mattino.
+
+Wi‑Fi apre il pannello delle reti di Android, Bluetooth le sue impostazioni; «−» e «+» cambiano il volume di un passo. Una playlist si fa partire con un tocco. «Piove» o «Pioggia tra 20 min» compare nel meteo solo se la pioggia arriva entro due ore.
+
+Il consumo si calcola da pieno a pieno: fai sempre il pieno e scrivi il contachilometri di ogni rifornimento. Servono almeno due pieni.
 
 Se il launcher si chiude da solo, Diagnostica mostra in fondo quando è successo, con quale versione e l'errore: è quello che serve per correggerlo.
 

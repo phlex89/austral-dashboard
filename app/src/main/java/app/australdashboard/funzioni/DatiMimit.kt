@@ -139,6 +139,15 @@ object DatiMimit {
         return prezzi
     }
 
+    class Andamento(val salito: Boolean, val differenza: String)
+
+    fun andamento(d: Distributore): Andamento? {
+        val prima = d.prezzoPrima ?: return null
+        val millesimi = Math.round((d.prezzo - prima) * 1000)
+        if (millesimi == 0L) return null
+        return Andamento(millesimi > 0, String.format(Locale.ITALY, "%.3f", Math.abs(millesimi) / 1000.0))
+    }
+
     fun filtra(tutti: List<Distributore>, luogo: Luogo, comuni: List<String>, ordine: Ordine): ElencoBenzinai.Pronto {
         val conDistanza = tutti.map { it.copy(distanzaKm = distanzaKm(luogo, it.luogo)) }
         val scelti = comuni.mapNotNull { comune ->

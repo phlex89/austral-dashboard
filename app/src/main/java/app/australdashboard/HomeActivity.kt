@@ -18,6 +18,9 @@ import android.view.Window
 import app.australdashboard.aggiornamenti.AggiornamentoJob
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Lettore
+import app.australdashboard.funzioni.Playlist
+import app.australdashboard.funzioni.Playlists
+import app.australdashboard.funzioni.Sistema
 import app.australdashboard.funzioni.Posizione
 import app.australdashboard.temi.AppHome
 import app.australdashboard.temi.AzioniHome
@@ -31,6 +34,7 @@ class HomeActivity : Schermata(), AzioniHome {
     private var temaCostruito = ""
     private var appCostruite = ""
     private var lettore: Lettore? = null
+    private var smettiDiOsservare: (() -> Unit)? = null
 
     private val frameListener = Window.OnFrameMetricsAvailableListener { _, metriche, _ ->
         if (metriche.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == 0L) {
@@ -64,16 +68,17 @@ class HomeActivity : Schermata(), AzioniHome {
     private fun costruisci() {
         val tema = Temi.scelto(this)
         temaCostruito = tema.id
-        appCostruite = AppHome.firma(this)
+        appCostruite = firma()
         vista = tema.home(this, this)
         vista.mostraOra(Date())
         vista.mostraMeteo(FonteMeteo.ultimo(this))
+        vista.mostraSistema(Sistema.stato(this))
         setContentView(vista.view)
     }
 
     override fun onStart() {
         super.onStart()
-        if (Temi.scelto(this).id != temaCostruito || AppHome.firma(this) != appCostruite) costruisci()
+        if (Temi.scelto(this).id != temaCostruito || firma() != appCostruite) costruisci()
         vista.mostraOra(Date())
         registerReceiver(orologio, IntentFilter().apply {
             addAction(Intent.ACTION_TIME_TICK)
@@ -81,6 +86,8 @@ class HomeActivity : Schermata(), AzioniHome {
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
         })
         lettore = Lettore(this) { vista.mostraMusica(it) }.also { it.avvia() }
+        vista.mostraSistema(Sistema.stato(this))
+        smettiDiOsservare = Sistema.osserva(this) { principale.post { vista.mostraSistema(Sistema.stato(this)) } }
         if (!Posizione.permessoConcesso(this) && !permessoChiesto) {
             permessoChiesto = true
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 1)
@@ -92,6 +99,8 @@ class HomeActivity : Schermata(), AzioniHome {
         principale.removeCallbacks(controlloMeteo)
         lettore?.ferma()
         lettore = null
+        smettiDiOsservare?.invoke()
+        smettiDiOsservare = null
         unregisterReceiver(orologio)
         super.onStop()
     }
@@ -151,6 +160,19 @@ class HomeActivity : Schermata(), AzioniHome {
     override fun successivo() {
         lettore?.successivo()
     }
+
+    override fun wifi() = Sistema.apriWifi(this)
+
+    override fun bluetooth() = Sistema.apriBluetooth(this)
+
+    override fun volume(su: Boolean) {
+        Sistema.volume(this, su)
+        vista.mostraSistema(Sistema.stato(this))
+    }
+
+    override fun playlist(playlist: Playlist) = Playlists.apri(this, playlist)
+
+    private fun firma() = AppHome.firma(this) + "|" + Playlists.aTesto(Playlists.elenco(this))
 
     private fun misuraPrimoFrame(creazione: Long) {
         val osservatore = window.decorView.viewTreeObserver

@@ -1,6 +1,7 @@
 package app.australdashboard.temi
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -8,6 +9,7 @@ import android.graphics.drawable.LayerDrawable
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.AbsoluteSizeSpan
+import android.text.style.BackgroundColorSpan
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -17,12 +19,16 @@ import android.widget.TextView
 import app.australdashboard.R
 import app.australdashboard.Schermata
 import app.australdashboard.funzioni.Benzinai
+import app.australdashboard.funzioni.DatiMimit
 import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.Ordine
+import app.australdashboard.funzioni.Playlists
+import app.australdashboard.funzioni.StatoSistema
+import app.australdashboard.funzioni.StatoWifi
 import app.australdashboard.temi.Ui.ADATTA
 import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
@@ -41,6 +47,7 @@ object Brutalismo : Tema {
     private const val TESTO = 0xFFF0F0F0.toInt()
     private const val SECONDARIO = 0xFFA3A3A3.toInt()
     private const val ROSSO = 0xFFFF3D2E.toInt()
+    private const val GRIGIO = 0xFF4A4A4A.toInt()
     private const val ONDA = 0x33F0F0F0
     private const val ONDA_SCURA = 0x33161616
     private const val BORDO = 4
@@ -48,9 +55,41 @@ object Brutalismo : Tema {
     private val nero: Typeface by lazy {
         Typeface.create(Typeface.create("sans-serif-condensed", Typeface.NORMAL), 900, false)
     }
+    private val condensato: Typeface by lazy {
+        Typeface.create(Typeface.create("sans-serif-condensed", Typeface.NORMAL), 700, false)
+    }
     private val mono: Typeface get() = Ui.monoGrassetto
 
     override fun palette(context: Context) = Palette(SFONDO, TESTO, ROSSO, TESTO, nero, mono)
+
+    private enum class Livello { SPENTO, ACCESO, PIENO }
+
+    private class TastoSistema(context: Context, nome: String) {
+        private val icona = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+        private val etichetta = Ui.testo(context, 28, TESTO, Ui.monoGrassetto, 30, nome)
+        val cornice = FrameLayout(context).apply {
+            val colonna = Ui.colonna(context, 4, Gravity.CENTER)
+            colonna.addView(icona, lp(52, 52))
+            colonna.addView(etichetta, lp(ADATTA, 30))
+            addView(colonna, lpf(TUTTO, TUTTO))
+        }
+
+        fun imposta(risorsa: Int, livello: Livello) {
+            val colore = when (livello) {
+                Livello.SPENTO -> SECONDARIO
+                Livello.ACCESO -> TESTO
+                Livello.PIENO -> SFONDO
+            }
+            cornice.background = when (livello) {
+                Livello.SPENTO -> Ui.bordo(GRIGIO, BORDO)
+                Livello.ACCESO -> Ui.bordo(TESTO, BORDO)
+                Livello.PIENO -> Ui.pieno(TESTO)
+            }
+            icona.setImageResource(risorsa)
+            icona.imageTintList = ColorStateList.valueOf(colore)
+            etichetta.setTextColor(colore)
+        }
+    }
 
     private fun tasto(
         context: Context,
@@ -93,7 +132,7 @@ object Brutalismo : Tema {
 
         override fun onDraw(canvas: Canvas) {
             val l = width.toFloat()
-            pennello.color = 0xFF4A4A4A.toInt()
+            pennello.color = GRIGIO
             canvas.drawRect(0f, 6f, l, 18f, pennello)
             val f = frazione ?: return
             val x = (f * l).coerceIn(5f, l - 5f)
@@ -120,12 +159,13 @@ object Brutalismo : Tema {
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, TESTO)
         private val cielo = Ui.adatta(Ui.testo(s, 32, TESTO, mono, 38, "IN ATTESA", maiuscolo = true), 20, 32)
         private val estremi = Ui.adatta(Ui.testo(s, 28, SECONDARIO, mono, 34, " "), 20, 28)
+        private val pioggia = Ui.adatta(Ui.testo(s, 28, SFONDO, mono, 34), 20, 28).apply { visibility = View.GONE }
         private val inAscolto = Ui.colonna(s)
         private val fermo = Ui.colonna(s)
         private val copertina = ImageView(s).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
         private val statoMusica = Ui.testo(s, 28, SECONDARIO, mono, 34, "IN ONDA /")
-        private val titolo = Ui.testo(s, 54, TESTO, nero, 50, maiuscolo = true, righe = 3)
-        private val artista = Ui.testo(s, 28, TESTO, mono, 34, maiuscolo = true, righe = 2)
+        private val titolo = Ui.testo(s, 54, TESTO, nero, 50, maiuscolo = true)
+        private val artista = Ui.testo(s, 28, TESTO, mono, 34, maiuscolo = true)
         private val giorni = "LMMGVSD".map { lettera ->
             Ui.testo(s, 28, SFONDO, mono, 28, lettera.toString()).apply {
                 gravity = Gravity.CENTER
@@ -138,52 +178,61 @@ object Brutalismo : Tema {
             scaleX = 0f
         }
         private val barraMeteo = BarraMeteo(s)
-        private val filettoAscolto = View(s).apply { setBackgroundColor(TESTO) }
-        private val filettoFermo = View(s).apply { setBackgroundColor(TESTO) }
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, SFONDO)
+        private val wifi = TastoSistema(s, "WIFI")
+        private val bluetooth = TastoSistema(s, "BT")
+        private val volume = Ui.adatta(Ui.testo(s, 52, TESTO, nero, 52, "-").apply { gravity = Gravity.CENTER }, 30, 52)
+        private val volumeMassimo = Ui.adatta(Ui.testo(s, 28, SECONDARIO, mono, 30, "/-").apply { gravity = Gravity.CENTER }, 16, 28)
 
         override val view: View = costruisci()
 
         private fun costruisci(): View {
-            val radice = Ui.colonna(s, 20).apply {
+            val radice = Ui.riga(s, 20, Gravity.NO_GRAVITY).apply {
                 setBackgroundColor(SFONDO)
                 setPadding(24, 24, 24, 24)
             }
-            radice.addView(servizi(), lp(TUTTO, 120))
-            val corpo = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val sinistra = Ui.colonna(s, 20)
-            sinistra.addView(bloccoOra(), lp(TUTTO, 290))
-            sinistra.addView(bloccoMeteo(), lp(TUTTO, 196))
+            sinistra.addView(bloccoOra(), lp(TUTTO, 268))
+            sinistra.addView(bloccoMeteo(), lp(TUTTO, 204))
             sinistra.addView(bloccoMusica(), lp(TUTTO, 0, 1f))
-            corpo.addView(sinistra, lp(520, TUTTO))
-            corpo.addView(app(), lp(0, TUTTO, 1f))
-            radice.addView(corpo, lp(TUTTO, 0, 1f))
-            Ui.senzaRitaglio(radice, corpo, sinistra)
+            val playlist = rigaPlaylist()
+            if (playlist != null) sinistra.addView(playlist, lp(TUTTO, 126))
+            sinistra.addView(rigaSistema(), lp(TUTTO, 120))
+            val destra = Ui.colonna(s, 20)
+            destra.addView(servizi(), lp(TUTTO, 306))
+            destra.addView(app(), lp(TUTTO, 0, 1f))
+            radice.addView(sinistra, lp(616, TUTTO))
+            radice.addView(destra, lp(0, TUTTO, 1f))
+            Ui.senzaRitaglio(radice, sinistra)
             return radice
         }
 
-        private fun servizi(): View {
-            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val voci = listOf(
-                Triple("A", "Benzinai", azioni::benzinai),
-                Triple("B", "Tutte le app", azioni::tutteLeApp),
-                Triple("C", "Impostazioni Android", azioni::impostazioniAndroid),
-            )
-            val pesi = listOf(1f, 1.1f, 1.5f)
-            voci.forEachIndexed { i, (lettera, nome, azione) ->
-                val cella = Ui.riga(s, 16).apply {
-                    background = Ui.bordo(TESTO, BORDO)
-                    setPadding(20, 0, 20, 0)
-                    addView(etichetta(s, lettera))
-                    addView(Ui.testo(s, 28, TESTO, mono, 32, nome, maiuscolo = true, righe = 2), lp(0, ADATTA, 1f))
-                }
-                riga.addView(Ui.premibile(cella, ONDA, nome) { azione() }, lp(0, TUTTO, pesi[i]))
+        private fun cella(lettera: String, nome: String, icona: Int, lato: Int, azione: () -> Unit): View {
+            val colonna = Ui.colonna(s).apply {
+                background = Ui.bordo(TESTO, BORDO)
+                setPadding(16, 14, 16, 14)
             }
-            riga.addView(
-                tasto(s, R.drawable.ic_ingranaggio, TESTO, 60, "Impostazioni del launcher") { azioni.impostazioniLauncher() },
-                lp(120, TUTTO),
-            )
-            return riga
+            val alto = Ui.riga(s)
+            alto.addView(etichetta(s, lettera))
+            alto.addView(View(s), lp(0, 1, 1f))
+            alto.addView(Ui.icona(s, icona, TESTO), lp(lato, lato))
+            colonna.addView(alto, lp(TUTTO, 44))
+            colonna.addView(View(s), lp(1, 0, 1f))
+            colonna.addView(Ui.testo(s, 28, TESTO, mono, 32, nome, maiuscolo = true, righe = 2), lp(TUTTO, ADATTA))
+            return Ui.premibile(colonna, ONDA, nome) { azione() }
+        }
+
+        private fun servizi(): View {
+            val griglia = Ui.colonna(s, 20)
+            val prima = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            prima.addView(cella("A", "Benzinai", R.drawable.ic_benzinaio, 44, azioni::benzinai), lp(0, TUTTO, 1f))
+            prima.addView(cella("B", "Tutte le app", R.drawable.ic_griglia, 44, azioni::tutteLeApp), lp(0, TUTTO, 1f))
+            val seconda = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            seconda.addView(cella("C", "Impostazioni Android", R.drawable.ic_cursori, 44, azioni::impostazioniAndroid), lp(0, TUTTO, 1f))
+            seconda.addView(cella("D", "Launcher", R.drawable.ic_ingranaggio, 48, azioni::impostazioniLauncher), lp(0, TUTTO, 1f))
+            griglia.addView(prima, lp(TUTTO, 0, 1f))
+            griglia.addView(seconda, lp(TUTTO, 0, 1f))
+            return griglia
         }
 
         private fun bloccoOra(): View {
@@ -196,8 +245,8 @@ object Brutalismo : Tema {
             blocco.addView(intestazione, lp(TUTTO, 34))
             blocco.addView(ora, lp(TUTTO, ADATTA).apply {
                 leftMargin = -6
-                topMargin = -32
-                bottomMargin = -33
+                topMargin = -40
+                bottomMargin = -40
             })
             blocco.addView(View(s), lp(1, 0, 1f))
             blocco.addView(data)
@@ -216,11 +265,14 @@ object Brutalismo : Tema {
                 setPadding(20, 14, 20, 14)
             }
             blocco.addView(gradi)
-            val colonna = Ui.colonna(s, 2)
-            colonna.addView(iconaMeteo, lp(52, 52))
-            colonna.addView(cielo, lp(TUTTO, 38))
+            val colonna = Ui.colonna(s)
+            val rigaCielo = Ui.riga(s, 12)
+            rigaCielo.addView(iconaMeteo, lp(44, 44))
+            rigaCielo.addView(cielo, lp(0, 38, 1f))
+            colonna.addView(rigaCielo, lp(TUTTO, 44))
             colonna.addView(estremi, lp(TUTTO, 34))
-            colonna.addView(barraMeteo, lp(TUTTO, 24).apply { topMargin = 6 })
+            colonna.addView(barraMeteo, lp(TUTTO, 24).apply { topMargin = 4 })
+            colonna.addView(pioggia, lp(TUTTO, 34).apply { topMargin = 8 })
             blocco.addView(colonna, lp(0, ADATTA, 1f))
             Ui.senzaRitaglio(blocco)
             return blocco
@@ -232,55 +284,61 @@ object Brutalismo : Tema {
             val alto = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }
             copertina.setBackgroundColor(SECONDARIO)
-            alto.addView(copertina, lp(236, 236))
+            alto.addView(copertina, lp(140, 140))
             val info = Ui.colonna(s)
             info.addView(statoMusica)
             info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 6 })
             info.addView(View(s), lp(1, 0, 1f))
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
-            alto.addView(info, lp(0, 236, 1f))
-            inAscolto.addView(alto, lp(TUTTO, 236))
+            alto.addView(info, lp(0, 140, 1f))
+            inAscolto.addView(alto, lp(TUTTO, 140))
+            inAscolto.addView(View(s), lp(1, 0, 1f))
+            inAscolto.addView(filetto(), lp(TUTTO, 4).apply { leftMargin = -18; rightMargin = -18 })
             inAscolto.addView(View(s), lp(1, 0, 1f))
             val comandi = Ui.riga(s, 20, Gravity.TOP)
-            comandi.addView(tasto(s, R.drawable.ic_precedente, TESTO, 56, "Brano precedente") { azioni.precedente() }, lp(0, 140, 1f))
+            comandi.addView(tasto(s, R.drawable.ic_precedente, TESTO, 56, "Brano precedente") { azioni.precedente() }, lp(0, 130, 1f))
             val play = FrameLayout(s).apply {
                 setBackgroundColor(ROSSO)
                 addView(iconaPlay, lpf(64, 64, Gravity.CENTER))
             }
             comandi.addView(
-                rilievo(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }),
-                lp(0, 140, 1f).apply { rightMargin = 8 },
+                rilievo(Ui.premibile(play, ONDA, "Riproduci o metti in pausa") { azioni.playPausa() }),
+                lp(0, 130, 1f).apply { rightMargin = 8 },
             )
-            comandi.addView(tasto(s, R.drawable.ic_successivo, TESTO, 56, "Brano successivo") { azioni.successivo() }, lp(0, 140, 1f))
+            comandi.addView(tasto(s, R.drawable.ic_successivo, TESTO, 56, "Brano successivo") { azioni.successivo() }, lp(0, 130, 1f))
             Ui.senzaRitaglio(comandi, inAscolto)
-            inAscolto.addView(comandi, lp(TUTTO, 148))
+            inAscolto.addView(comandi, lp(TUTTO, 138))
 
             val intestazione = Ui.colonna(s)
             intestazione.addView(Ui.testo(s, 28, SECONDARIO, mono, 34, "MUSICA /"))
             intestazione.addView(
                 Ui.adatta(Ui.testo(s, 120, TESTO, nero, 110, "Spotify", maiuscolo = true).apply { letterSpacing = -0.033f }, 60, 120),
-                lp(TUTTO, 110),
+                lp(TUTTO, ADATTA).apply { topMargin = -15; bottomMargin = -15 },
             )
+            Ui.senzaRitaglio(intestazione)
             fermo.addView(intestazione)
+            fermo.addView(View(s), lp(1, 0, 1f))
+            fermo.addView(filetto(), lp(TUTTO, 4).apply { leftMargin = -18; rightMargin = -18 })
             fermo.addView(View(s), lp(1, 0, 1f))
             val basso = Ui.riga(s, 20, Gravity.TOP)
             val apri = Ui.testo(s, 30, TESTO, mono, 34, "Apri Spotify", maiuscolo = true).apply {
                 gravity = Gravity.CENTER
                 background = Ui.bordo(TESTO, BORDO)
             }
-            basso.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(0, 140, 2f))
-            basso.addView(rilievo(tastoPieno(s, R.drawable.ic_play, 64, "Riproduci") { azioni.playPausa() }), lp(0, 140, 1f).apply { rightMargin = 8 })
+            basso.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(0, 130, 2f))
+            basso.addView(rilievo(tastoPieno(s, R.drawable.ic_play, 64, "Riproduci") { azioni.playPausa() }), lp(0, 130, 1f).apply { rightMargin = 8 })
             Ui.senzaRitaglio(basso, fermo)
-            fermo.addView(basso, lp(TUTTO, 148))
+            fermo.addView(basso, lp(TUTTO, 138))
 
             sezione.addView(inAscolto, lpf(TUTTO, TUTTO).apply { setMargins(18, 18, 18, 18) })
             sezione.addView(fermo, lpf(TUTTO, TUTTO).apply { setMargins(18, 18, 18, 18) })
-            sezione.addView(filettoAscolto, lpf(TUTTO, 4, Gravity.BOTTOM).apply { setMargins(4, 0, 4, 194) })
-            sezione.addView(filettoFermo, lpf(TUTTO, 4, Gravity.BOTTOM).apply { setMargins(4, 0, 4, 240) })
+            Ui.senzaRitaglio(sezione)
             mostraMusica(null)
             return sezione
         }
+
+        private fun filetto(): View = View(s).apply { setBackgroundColor(TESTO) }
 
         private fun rilievo(tasto: View): View = FrameLayout(s).apply {
             addView(View(s).apply {
@@ -292,26 +350,62 @@ object Brutalismo : Tema {
             Ui.senzaRitaglio(this)
         }
 
+        private fun rigaPlaylist(): View? {
+            val elenco = Playlists.elenco(s)
+            if (elenco.isEmpty()) return null
+            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            elenco.forEach { p ->
+                val colonna = Ui.colonna(s, 4, Gravity.CENTER_VERTICAL).apply {
+                    background = Ui.bordo(TESTO, BORDO)
+                    setPadding(12, 0, 12, 0)
+                }
+                colonna.addView(Ui.icona(s, R.drawable.ic_play, ROSSO), lp(22, 22))
+                colonna.addView(
+                    Ui.testo(s, 28, TESTO, condensato, 30, p.nome, maiuscolo = true, righe = 3),
+                    lp(TUTTO, ADATTA),
+                )
+                riga.addView(
+                    Ui.premibile(colonna, ONDA, "Riproduci la playlist ${p.nome}") { azioni.playlist(p) },
+                    lp(0, TUTTO, 1f),
+                )
+            }
+            return riga
+        }
+
+        private fun rigaSistema(): View {
+            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            riga.addView(Ui.premibile(wifi.cornice, ONDA, "Wi-Fi") { azioni.wifi() }, lp(120, 120))
+            riga.addView(Ui.premibile(bluetooth.cornice, ONDA, "Bluetooth") { azioni.bluetooth() }, lp(120, 120))
+            riga.addView(tasto(s, R.drawable.ic_meno, TESTO, 60, "Abbassa il volume") { azioni.volume(false) }, lp(120, 120))
+            val livello = Ui.colonna(s, 0, Gravity.CENTER)
+            livello.addView(volume, lp(TUTTO, 52))
+            livello.addView(volumeMassimo, lp(TUTTO, 30))
+            riga.addView(livello, lp(56, TUTTO))
+            riga.addView(tasto(s, R.drawable.ic_piu, TESTO, 60, "Alza il volume") { azioni.volume(true) }, lp(120, 120))
+            return riga
+        }
+
         private fun app(): View {
             val colonna = Ui.colonna(s, 20)
             AppHome.elenco(s).forEachIndexed { i, app ->
-                val riga = Ui.riga(s, 22).apply {
+                val riga = Ui.riga(s, 18).apply {
+                    clipChildren = false
                     background = Ui.bordo(TESTO, BORDO)
-                    setPadding(16, 0, 20, 0)
+                    setPadding(10, 0, 16, 0)
                 }
                 riga.addView(
-                    Ui.testo(s, 84, SFONDO, nero, 84, app.sigla).apply {
+                    Ui.testo(s, 72, SFONDO, nero, 72, app.sigla).apply {
                         setBackgroundColor(TESTO)
                         gravity = Gravity.CENTER
                     },
-                    lp(110, 110),
+                    lp(92, 92),
                 )
                 riga.addView(
-                    Ui.adatta(Ui.testo(s, 68, TESTO, nero, 64, app.nome, maiuscolo = true).apply { letterSpacing = -0.015f }, 36, 68),
-                    lp(0, 70, 1f),
+                    Ui.adatta(Ui.testo(s, 56, TESTO, nero, 56, app.nome, maiuscolo = true).apply { letterSpacing = -0.018f }, 32, 56),
+                    lp(0, ADATTA, 1f).apply { topMargin = -5; bottomMargin = -5 },
                 )
-                riga.addView(Ui.testo(s, 28, SECONDARIO, mono, 32, "%02d".format(i + 1)), lp(ADATTA, ADATTA).apply { rightMargin = -6 })
-                riga.addView(Ui.icona(s, R.drawable.brutalismo_freccia, TESTO), lp(36, 36))
+                riga.addView(Ui.testo(s, 28, SECONDARIO, mono, 32, "%02d".format(i + 1)), lp(ADATTA, ADATTA).apply { rightMargin = -4 })
+                riga.addView(Ui.icona(s, R.drawable.brutalismo_freccia, TESTO), lp(32, 32))
                 val installata = app.intent(s) != null
                 if (!installata) riga.alpha = 0.35f
                 Ui.premibile(riga, ONDA, app.nome) { if (installata) azioni.apri(app) }
@@ -334,6 +428,16 @@ object Brutalismo : Tema {
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
+            val testoPioggia = FonteMeteo.testoPioggia(meteo?.pioggiaTraMinuti)
+            if (testoPioggia == null) {
+                pioggia.visibility = View.GONE
+            } else {
+                val t = " ${testoPioggia.uppercase(Locale.ITALIAN)} "
+                pioggia.text = SpannableString(t).apply {
+                    setSpan(BackgroundColorSpan(TESTO), 0, t.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                pioggia.visibility = View.VISIBLE
+            }
             if (meteo == null) {
                 iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
                 gradi.text = "--°"
@@ -353,8 +457,6 @@ object Brutalismo : Tema {
 
         override fun mostraMusica(musica: Musica?) {
             inAscolto.visibility = if (musica != null) View.VISIBLE else View.GONE
-            filettoAscolto.visibility = inAscolto.visibility
-            filettoFermo.visibility = if (musica == null) View.VISIBLE else View.GONE
             fermo.visibility = if (musica == null) View.VISIBLE else View.GONE
             if (musica == null) return
             statoMusica.text = if (musica.inRiproduzione) "IN ONDA /" else "IN PAUSA /"
@@ -363,6 +465,18 @@ object Brutalismo : Tema {
             artista.text = musica.artista
             if (musica.copertina != null) copertina.setImageBitmap(musica.copertina) else copertina.setImageDrawable(null)
             iconaPlay.setImageResource(if (musica.inRiproduzione) R.drawable.ic_pausa else R.drawable.ic_play)
+        }
+
+        override fun mostraSistema(stato: StatoSistema) {
+            when (stato.wifi) {
+                StatoWifi.SPENTO -> wifi.imposta(R.drawable.ic_wifi_spento, Livello.SPENTO)
+                StatoWifi.ACCESO -> wifi.imposta(R.drawable.ic_wifi, Livello.ACCESO)
+                StatoWifi.CONNESSO -> wifi.imposta(R.drawable.ic_wifi, Livello.PIENO)
+            }
+            if (stato.bluetooth) bluetooth.imposta(R.drawable.ic_bluetooth, Livello.PIENO)
+            else bluetooth.imposta(R.drawable.ic_bluetooth_spento, Livello.SPENTO)
+            volume.text = stato.volume.toString()
+            volumeMassimo.text = "/${stato.volumeMassimo}"
         }
     }
 
@@ -373,16 +487,17 @@ object Brutalismo : Tema {
         private val elencoView = Ui.colonna(s, 20)
         private val scheda = Ui.riga(s, 24).apply {
             background = LayerDrawable(arrayOf(Ui.pieno(ROSSO), Ui.pieno(TESTO))).apply { setLayerInset(1, 20, 0, 0, 0) }
-            setPadding(44, 20, 24, 20)
+            setPadding(44, 12, 24, 12)
             visibility = View.GONE
         }
         private val schedaEtichetta = Ui.testo(s, 28, SFONDO, mono, 34, maiuscolo = true)
         private val indirizzo = Ui.adatta(
-            Ui.testo(s, 88, SFONDO, nero, contenuto = "", righe = 2).apply { ellipsize = null; letterSpacing = -0.02f },
-            44,
-            88,
+            Ui.testo(s, 72, SFONDO, nero, 68, contenuto = "").apply { letterSpacing = -0.028f },
+            30,
+            72,
         )
-        private val dettagli = Ui.testo(s, 30, SFONDO, mono, 36, maiuscolo = true)
+        private val dettagli = Ui.testo(s, 28, SFONDO, mono, 34, maiuscolo = true)
+        private val spesa = Ui.testo(s, 28, SECONDARIO, mono, 32, maiuscolo = true).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
@@ -393,31 +508,47 @@ object Brutalismo : Tema {
                 setPadding(24, 24, 24, 24)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
+            radice.addView(ordinamenti(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(elencoView)
             }
             radice.addView(FrameLayout(s).apply { addView(scorrimento) }, lp(TUTTO, 0, 1f))
-            radice.addView(costruisciScheda(), lp(TUTTO, 300))
+            radice.addView(costruisciScheda(), lp(TUTTO, 186))
             Ui.senzaRitaglio(radice, elencoView)
             return radice
         }
 
         private fun intestazione(): View {
             val riga = Ui.riga(s, 24)
+            Ui.senzaRitaglio(riga)
             riga.addView(tasto(s, R.drawable.ic_indietro, TESTO, 60, "Indietro") { azioni.indietro() }, lp(120, 120))
             riga.addView(
-                Ui.adatta(Ui.testo(s, 112, TESTO, nero, 100, "BENZINAI").apply { letterSpacing = -0.036f }, 56, 112),
-                lp(0, 100, 1f),
+                Ui.adatta(Ui.testo(s, 104, TESTO, nero, 92, "BENZINAI").apply { letterSpacing = -0.038f }, 56, 104),
+                lp(0, ADATTA, 1f).apply { topMargin = -15; bottomMargin = -15 },
             )
-            val gruppo = Ui.riga(s, 20)
+            val testi = Ui.colonna(s, 2)
+            testi.addView(Ui.testo(s, 40, TESTO, nero, 40, "RIFORNIMENTI"))
+            testi.addView(spesa)
+            val cornice = Ui.riga(s, 16).apply {
+                background = Ui.bordo(TESTO, BORDO)
+                setPadding(20, 0, 20, 0)
+            }
+            cornice.addView(Ui.icona(s, R.drawable.ic_rifornimenti, TESTO), lp(52, 52))
+            cornice.addView(testi, lp(ADATTA, ADATTA))
+            riga.addView(Ui.premibile(cornice, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, TUTTO))
+            return riga
+        }
+
+        private fun ordinamenti(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(etichetta(s, "ORDINA PER"))
             for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = Ui.testo(s, 30, TESTO, mono, 34, nome, maiuscolo = true).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
-                gruppo.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(200, 120))
+                riga.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, TUTTO, 1f))
             }
-            riga.addView(gruppo, lp(ADATTA, TUTTO))
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
         }
@@ -434,18 +565,21 @@ object Brutalismo : Tema {
         private fun costruisciScheda(): View {
             val testi = Ui.colonna(s)
             testi.addView(schedaEtichetta)
-            testi.addView(indirizzo, lp(TUTTO, 0, 1f).apply { topMargin = 6 })
+            testi.addView(indirizzo, lp(TUTTO, 68))
             testi.addView(dettagli)
-            scheda.addView(testi, lp(0, TUTTO, 1f))
-            val comandi = Ui.colonna(s, 20)
-            comandi.addView(tasto(s, R.drawable.ic_chiudi, SFONDO, 56, "Chiudi scheda", onda = ONDA_SCURA) { seleziona(null) }, lp(120, 120))
-            scheda.addView(comandi, lp(ADATTA, TUTTO))
+            scheda.addView(testi, lp(0, ADATTA, 1f))
+            scheda.addView(tasto(s, R.drawable.ic_chiudi, SFONDO, 56, "Chiudi scheda", onda = ONDA_SCURA) { seleziona(null) }, lp(120, 120))
             return scheda
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
             stato.ultimo = elenco
             disegna()
+        }
+
+        override fun mostraSpesa(testo: String?) {
+            spesa.text = testo ?: ""
+            spesa.visibility = if (testo.isNullOrEmpty()) View.GONE else View.VISIBLE
         }
 
         private fun seleziona(d: Distributore?) {
@@ -464,12 +598,7 @@ object Brutalismo : Tema {
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("★ ${e.preferiti.size}", "Preferiti", e.preferiti, true)
-                    val per = when (e.ordine) {
-                        Ordine.CONVIENE -> "PER CONVENIENZA"
-                        Ordine.PREZZO -> "PER PREZZO"
-                        Ordine.DISTANZA -> "PER DISTANZA"
-                    }
-                    if (e.vicini.isNotEmpty()) sezione(per, "Vicini", e.vicini, false)
+                    if (e.vicini.isNotEmpty()) sezione(null, "Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
                 }
             }
@@ -486,10 +615,10 @@ object Brutalismo : Tema {
             elencoView.addView(blocco, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(pillola: String, titolo: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(pillola: String?, titolo: String, distributori: List<Distributore>, luogo: Boolean) {
             val colonna = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 16)
-            intestazione.addView(etichetta(s, pillola))
+            if (pillola != null) intestazione.addView(etichetta(s, pillola))
             intestazione.addView(Ui.testo(s, 44, TESTO, nero, 48, titolo, maiuscolo = true))
             intestazione.addView(View(s).apply { setBackgroundColor(TESTO) }, lp(0, 4, 1f))
             if (!luogo) intestazione.addView(Ui.testo(s, 28, SECONDARIO, mono, 32, "€/L SELF"))
@@ -520,6 +649,17 @@ object Brutalismo : Tema {
             sinistra.addView(Ui.testo(s, 28, SECONDARIO, mono, 34, "${d.marchio} / AGG. ${Benzinai.quando(d.aggiornato, adesso)}", maiuscolo = true))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(Ui.testo(s, 32, TESTO, mono, 38, Benzinai.distanza(d.distanzaKm), maiuscolo = true), lp(ADATTA, ADATTA))
+            DatiMimit.andamento(d)?.let { a ->
+                val variazione = Ui.riga(s, 6).apply {
+                    contentDescription = "Prezzo ${if (a.salito) "salito" else "sceso"} di ${a.differenza}"
+                }
+                variazione.addView(
+                    Ui.icona(s, if (a.salito) R.drawable.ic_su else R.drawable.ic_giu, TESTO),
+                    lp(22, 22),
+                )
+                variazione.addView(Ui.testo(s, 28, TESTO, mono, 34, a.differenza), lp(ADATTA, ADATTA))
+                corpo.addView(variazione, lp(ADATTA, ADATTA))
+            }
             corpo.addView(Ui.testo(s, 88, TESTO, nero, 80).apply {
                 letterSpacing = -0.034f
                 text = prezzoConMillesimo(d.prezzo)

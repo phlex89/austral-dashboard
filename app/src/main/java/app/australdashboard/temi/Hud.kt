@@ -1,7 +1,9 @@
 package app.australdashboard.temi
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Path
@@ -18,6 +20,7 @@ import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
@@ -28,12 +31,16 @@ import android.widget.TextView
 import app.australdashboard.R
 import app.australdashboard.Schermata
 import app.australdashboard.funzioni.Benzinai
+import app.australdashboard.funzioni.DatiMimit
 import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.Ordine
+import app.australdashboard.funzioni.Playlists
+import app.australdashboard.funzioni.StatoSistema
+import app.australdashboard.funzioni.StatoWifi
 import app.australdashboard.temi.Ui.ADATTA
 import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
@@ -61,6 +68,7 @@ object Hud : Tema {
     private const val CIANO = 0xFF3FD5FF.toInt()
     private const val ONDA = 0x333FD5FF
     private const val ONDA_SCURA = 0x3303070D
+    private const val TACCHE_VOLUME = 15
 
     private fun orbitron(context: Context): Typeface = Ui.font(context, R.font.orbitron)
 
@@ -82,7 +90,7 @@ object Hud : Tema {
         px: Int,
         colore: Int,
         contenuto: String = "",
-        peso: Int = 400,
+        peso: Int = 500,
         spaziatura: Int = 0,
         interlinea: Int = px,
     ): TextView = Ui.testo(context, px, colore, orbitron(context, peso), interlinea, contenuto).apply {
@@ -138,9 +146,16 @@ object Hud : Tema {
         vista.clipToOutline = true
     }
 
-    private fun tastoContorno(context: Context, icona: Int, lato: Int, descrizione: String, azione: () -> Unit): View {
+    private fun tastoContorno(
+        context: Context,
+        icona: Int,
+        lato: Int,
+        descrizione: String,
+        sfondo: Int = Color.TRANSPARENT,
+        azione: () -> Unit,
+    ): View {
         val cornice = FrameLayout(context).apply {
-            background = Ui.bordo(LINEA, 2)
+            background = Ui.bordo(LINEA, 2, sfondo)
             addView(Ui.icona(context, icona, TESTO), lpf(lato, lato, Gravity.CENTER))
         }
         return Ui.premibile(cornice, ONDA, descrizione, azione).also { angoli(it, CIANO) }
@@ -155,34 +170,76 @@ object Hud : Tema {
         return Ui.premibile(cornice, ONDA_SCURA, descrizione, azione)
     }
 
+    private class Interruttore(private val s: Schermata, etichetta: String, private val nome: String, azione: () -> Unit) {
+        private val icona = Ui.icona(s, R.drawable.ic_wifi, TESTO)
+        private val scritta = cond(s, 28, TESTO, etichetta, true, 0, 30).apply { gravity = Gravity.CENTER }
+        val view = FrameLayout(s)
+        private val angoliAccesi: Squadrette
+
+        init {
+            val colonna = Ui.colonna(s, 4, Gravity.CENTER)
+            colonna.addView(icona, lp(48, 48))
+            colonna.addView(scritta, lp(ADATTA, ADATTA))
+            view.addView(colonna, lpf(TUTTO, TUTTO))
+            Ui.premibile(view, ONDA, nome) { azione() }
+            angoliAccesi = angoli(view, LINEA_FORTE, 14f)
+        }
+
+        fun mostra(livello: Int, risorsa: Int, stato: String) {
+            val colore = when (livello) {
+                0 -> SECONDARIO
+                1 -> TESTO
+                else -> SFONDO
+            }
+            view.background = when (livello) {
+                0 -> Ui.bordo(LINEA, 2, PANNELLO)
+                1 -> Ui.bordo(LINEA_FORTE, 2, PANNELLO)
+                else -> Ui.pieno(CIANO)
+            }
+            angoliAccesi.acceso = livello == 1
+            angoliAccesi.invalidateSelf()
+            icona.setImageResource(risorsa)
+            icona.imageTintList = ColorStateList.valueOf(colore)
+            scritta.setTextColor(colore)
+            view.contentDescription = "$nome, $stato"
+        }
+    }
+
     override fun home(s: Schermata, azioni: AzioniHome): VistaHome = HomeHud(s, azioni)
 
     private class HomeHud(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
-        private val quadrante = Quadrante(s, orbitron(s))
-        private val ora = orb(s, 124, TESTO, "", 700, 0, 124)
+        private val quadrante = Quadrante(s)
+        private val ora = orb(s, 140, TESTO, "", 700, 0, 140)
         private val data = cond(s, 34, SECONDARIO, "", false, 0, 40)
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, CIANO)
         private val cielo = cond(s, 30, TESTO, "In attesa", true, 0, 34, true, 2)
         private val gradi = Ui.adatta(orb(s, 96, TESTO, "--°", 700, 0, 100), 56, 96)
+        private val rigaPioggia = Ui.riga(s, 10)
+        private val testoPioggia = Ui.adatta(cond(s, 28, TESTO, "", true, 0, 32, true, 2), 18, 28)
         private val termometro = Termometro(s)
         private val lettereGiorno = ArrayList<TextView>()
         private val filettiGiorno = ArrayList<View>()
         private var giornoCorrente = -1
-        private val inAscolto = Ui.riga(s, 28)
+        private val interruttoreWifi = Interruttore(s, "WI-FI", "Wi-Fi") { azioni.wifi() }
+        private val interruttoreBluetooth = Interruttore(s, "BT", "Bluetooth") { azioni.bluetooth() }
+        private val numeroVolume = orb(s, 32, TESTO, "00", 700, 0, 32)
+        private val tacche = ArrayList<View>()
+        private val inAscolto = Ui.riga(s, 24)
         private val fermo = Ui.riga(s, 28)
         private val copertina = ImageView(s).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             setBackgroundColor(LINEA)
         }
-        private val statoMusica = orb(s, 28, CIANO, "IN RIPRODUZIONE", 400, 3, 34)
+        private val statoMusica = orb(s, 28, CIANO, "IN RIPRODUZIONE", 500, 3, 34)
         private val titolo = cond(s, 50, TESTO, "", true, 0, 56)
         private val artista = cond(s, 32, SECONDARIO, "", false, 0, 38)
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, SFONDO)
+        private val playlist = Playlists.elenco(s)
 
         override val view: View = costruisci()
 
         private fun costruisci(): View {
-            val radice = Ui.colonna(s, 24).apply {
+            val radice = Ui.colonna(s).apply {
                 setBackgroundColor(SFONDO)
                 setPadding(24, 24, 24, 24)
             }
@@ -191,35 +248,76 @@ object Hud : Tema {
             primaRiga.addView(boxOra(), lp(640, TUTTO))
             primaRiga.addView(servizi(), lp(250, TUTTO))
             radice.addView(primaRiga, lp(TUTTO, 640))
-            radice.addView(boxMusica(), lp(TUTTO, 230))
-            radice.addView(boxApp(), lp(TUTTO, 0, 1f))
+            if (playlist.isEmpty()) {
+                radice.addView(boxMusica(), lp(TUTTO, 0, 240f).apply { topMargin = 24 })
+                radice.addView(boxApp(), lp(TUTTO, 0, 222f).apply { topMargin = 20 })
+            } else {
+                radice.addView(boxMusica(), lp(TUTTO, 170).apply { topMargin = 24 })
+                radice.addView(rigaPlaylist(), lp(TUTTO, 120).apply { topMargin = 20 })
+                radice.addView(boxApp(), lp(TUTTO, 0, 1f).apply { topMargin = 20 })
+            }
             return radice
         }
 
         private fun boxMeteo(): View {
             val colonna = Ui.colonna(s, 12).apply { setPadding(24, 24, 24, 24) }
+            Ui.senzaRitaglio(colonna)
             pannello(colonna)
-            colonna.addView(orb(s, 28, SECONDARIO, "METEO", 400, 3, 34))
+            colonna.addView(orb(s, 28, SECONDARIO, "METEO", 500, 3, 34))
             val rigaCielo = Ui.riga(s, 12)
             rigaCielo.addView(iconaMeteo, lp(52, 52))
             rigaCielo.addView(cielo, lp(0, ADATTA, 1f))
             colonna.addView(rigaCielo, lp(TUTTO, ADATTA))
-            colonna.addView(gradi, lp(202, 100))
+            colonna.addView(gradi, lp(202, ADATTA))
+            rigaPioggia.addView(Ui.icona(s, R.drawable.hud_pioggia, CIANO), lp(40, 40))
+            testoPioggia.gravity = Gravity.CENTER_VERTICAL
+            rigaPioggia.addView(testoPioggia, lp(0, 64, 1f))
+            rigaPioggia.visibility = View.GONE
+            colonna.addView(rigaPioggia, lp(TUTTO, ADATTA))
             colonna.addView(View(s), lp(TUTTO, 0, 1f))
-            colonna.addView(termometro, lp(202, 300))
+            colonna.addView(termometro, lp(202, 290).apply { topMargin = -12 })
             return colonna
         }
 
         private fun boxOra(): View {
-            val testi = Ui.colonna(s, 10, Gravity.CENTER)
-            testi.addView(orb(s, 28, SECONDARIO, "ORA LOCALE", 400, 4, 34).apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 34))
-            testi.addView(ora.apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 124))
+            val testi = Ui.colonna(s, 8, Gravity.CENTER)
+            testi.addView(orb(s, 28, SECONDARIO, "ORA LOCALE", 500, 4, 34).apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 34))
+            testi.addView(ora.apply { gravity = Gravity.CENTER_HORIZONTAL; translationY = -20f }, lp(TUTTO, 140))
             testi.addView(data.apply { gravity = Gravity.CENTER_HORIZONTAL }, lp(TUTTO, 40))
             testi.addView(striscia(), lp(ADATTA, 36).apply { gravity = Gravity.CENTER_HORIZONTAL })
             return FrameLayout(s).apply {
                 addView(quadrante, lpf(TUTTO, TUTTO))
                 addView(testi, lpf(TUTTO, TUTTO))
+                addView(livelloVolume(), lpf(TUTTO, 34, Gravity.BOTTOM).apply {
+                    leftMargin = 140
+                    rightMargin = 140
+                    bottomMargin = 3
+                })
+                addView(interruttoreWifi.view, lpf(120, 120, Gravity.TOP or Gravity.START))
+                addView(interruttoreBluetooth.view, lpf(120, 120, Gravity.TOP or Gravity.END))
+                addView(
+                    tastoContorno(s, R.drawable.ic_meno, 56, "Abbassa il volume", PANNELLO) { azioni.volume(false) },
+                    lpf(120, 120, Gravity.BOTTOM or Gravity.START),
+                )
+                addView(
+                    tastoContorno(s, R.drawable.ic_piu, 56, "Alza il volume", PANNELLO) { azioni.volume(true) },
+                    lpf(120, 120, Gravity.BOTTOM or Gravity.END),
+                )
             }
+        }
+
+        private fun livelloVolume(): View {
+            val riga = Ui.riga(s, 14, Gravity.CENTER)
+            riga.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            riga.addView(numeroVolume, lp(ADATTA, ADATTA))
+            val scala = Ui.riga(s, 5)
+            repeat(TACCHE_VOLUME) {
+                val tacca = View(s).apply { setBackgroundColor(LINEA) }
+                tacche.add(tacca)
+                scala.addView(tacca, lp(14, 24))
+            }
+            riga.addView(scala, lp(ADATTA, ADATTA))
+            return riga
         }
 
         private fun striscia(): View {
@@ -227,7 +325,7 @@ object Hud : Tema {
             riga.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             for (sigla in "LMMGVSD") {
                 val cella = FrameLayout(s)
-                val lettera = orb(s, 28, SECONDARIO, sigla.toString(), 400, 0, 28).apply { gravity = Gravity.CENTER }
+                val lettera = orb(s, 28, SECONDARIO, sigla.toString(), 500, 0, 28).apply { gravity = Gravity.CENTER }
                 val filetto = View(s).apply { setBackgroundColor(LINEA) }
                 cella.addView(lettera, lpf(TUTTO, 33, Gravity.TOP))
                 cella.addView(filetto, lpf(TUTTO, 3, Gravity.BOTTOM))
@@ -253,23 +351,23 @@ object Hud : Tema {
                 cella.addView(
                     Ui.icona(s, icona, CIANO),
                     lpf(48, 48, Gravity.TOP or Gravity.START).apply {
-                        leftMargin = 20
-                        topMargin = 14
+                        leftMargin = 22
+                        topMargin = 20
                     },
                 )
                 cella.addView(
-                    orb(s, 28, SECONDARIO, numero, 400, 0, 30),
+                    orb(s, 28, SECONDARIO, numero, 500, 0, 30),
                     lpf(ADATTA, ADATTA, Gravity.TOP or Gravity.END).apply {
-                        rightMargin = 18
-                        topMargin = 16
+                        rightMargin = 20
+                        topMargin = 18
                     },
                 )
                 cella.addView(
                     cond(s, 30, TESTO, nome, true, 1, 32, true, 2),
                     lpf(TUTTO, ADATTA, Gravity.BOTTOM).apply {
-                        leftMargin = 20
-                        rightMargin = 20
-                        bottomMargin = 14
+                        leftMargin = 22
+                        rightMargin = 22
+                        bottomMargin = 20
                     },
                 )
                 colonna.addView(Ui.premibile(cella, ONDA, descrizione) { azione() }.also { angoli(it, CIANO) }, lp(TUTTO, 0, 1f))
@@ -281,36 +379,36 @@ object Hud : Tema {
             val box = FrameLayout(s)
             pannello(box)
 
-            inAscolto.setPadding(20, 0, 28, 0)
+            inAscolto.setPadding(16, 0, 24, 0)
             val cornice = FrameLayout(s).apply {
                 setPadding(8, 8, 8, 8)
-                foreground = Squadrette(TESTO, 22f, 3f)
+                foreground = Squadrette(TESTO, 20f, 3f)
             }
-            cornice.addView(Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }, lpf(186, 186))
-            inAscolto.addView(cornice, lp(202, 202))
+            cornice.addView(Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }, lpf(130, 130))
+            inAscolto.addView(cornice, lp(146, 146).apply { rightMargin = -8 })
             val info = Ui.colonna(s)
             val rigaStato = Ui.riga(s, 12)
             rigaStato.addView(View(s).apply { setBackgroundColor(CIANO) }, lp(14, 14))
             rigaStato.addView(statoMusica)
             info.addView(rigaStato)
-            info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 6 })
+            info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 4 })
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(0, ADATTA, 1f))
             val comandi = Ui.riga(s, 20)
-            comandi.addView(tastoContorno(s, R.drawable.ic_precedente, 52, "Brano precedente") { azioni.precedente() }, lp(140, 140))
+            comandi.addView(tastoContorno(s, R.drawable.ic_precedente, 52, "Brano precedente") { azioni.precedente() }, lp(130, 130))
             val play = FrameLayout(s).apply {
                 background = Smusso(CIANO, 0, 0f, 20f)
                 addView(iconaPlay, lpf(60, 60, Gravity.CENTER))
             }
             smussa(play, 20)
-            comandi.addView(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }, lp(180, 140))
-            comandi.addView(tastoContorno(s, R.drawable.ic_successivo, 52, "Brano successivo") { azioni.successivo() }, lp(140, 140))
+            comandi.addView(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }, lp(170, 130))
+            comandi.addView(tastoContorno(s, R.drawable.ic_successivo, 52, "Brano successivo") { azioni.successivo() }, lp(130, 130))
             inAscolto.addView(comandi)
 
-            fermo.setPadding(40, 0, 28, 0)
+            fermo.setPadding(40, 0, 24, 0)
             val testi = Ui.colonna(s)
-            testi.addView(orb(s, 28, SECONDARIO, "SORGENTE AUDIO", 400, 3, 34))
+            testi.addView(orb(s, 28, SECONDARIO, "SORGENTE AUDIO", 500, 3, 34))
             testi.addView(orb(s, 64, TESTO, "SPOTIFY", 700, 0, 72))
             fermo.addView(testi, lp(0, ADATTA, 1f))
             val apri = cond(s, 34, TESTO, "Apri Spotify", true, 1, 40, true).apply {
@@ -319,8 +417,8 @@ object Hud : Tema {
                 setPadding(40, 0, 40, 0)
             }
             val cornicaApri = FrameLayout(s).apply { addView(apri, lpf(ADATTA, TUTTO)) }
-            fermo.addView(Ui.premibile(cornicaApri, ONDA, null) { azioni.apriMusica() }.also { angoli(it, CIANO) }, lp(ADATTA, 140))
-            fermo.addView(tastoPieno(s, R.drawable.ic_play, 60, "Riproduci") { azioni.playPausa() }, lp(180, 140))
+            fermo.addView(Ui.premibile(cornicaApri, ONDA, null) { azioni.apriMusica() }.also { angoli(it, CIANO) }, lp(ADATTA, 130))
+            fermo.addView(tastoPieno(s, R.drawable.ic_play, 60, "Riproduci") { azioni.playPausa() }, lp(170, 130))
 
             box.addView(inAscolto, lpf(TUTTO, TUTTO, Gravity.CENTER_VERTICAL))
             box.addView(fermo, lpf(TUTTO, TUTTO, Gravity.CENTER_VERTICAL))
@@ -328,32 +426,63 @@ object Hud : Tema {
             return box
         }
 
+        private fun rigaPlaylist(): View {
+            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            for (p in playlist) {
+                val corpo = Ui.riga(s, 14).apply {
+                    background = Ui.bordo(LINEA, 2, PANNELLO)
+                    setPadding(20, 0, 20, 0)
+                }
+                corpo.addView(Ui.icona(s, R.drawable.hud_playlist, CIANO), lp(40, 40))
+                corpo.addView(cond(s, 30, TESTO, p.nome, true, 0, 34, false, 3), lp(0, ADATTA, 1f))
+                angoli(Ui.premibile(corpo, ONDA, "Riproduci la playlist ${p.nome}") { azioni.playlist(p) }, LINEA_FORTE, 14f)
+                riga.addView(corpo, lp(0, TUTTO, 1f))
+            }
+            return riga
+        }
+
         private fun boxApp(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            AppHome.elenco(s).forEachIndexed { i, app ->
+            AppHome.elenco(s).forEach { app ->
                 val cella = FrameLayout(s).apply { background = Ui.bordo(LINEA, 2, PANNELLO) }
                 val lettera = FrameLayout(s).apply {
-                    background = Smusso(0, CIANO, 2f, 18f)
-                    addView(orb(s, 56, CIANO, app.sigla, 700, 0, 56), lpf(ADATTA, ADATTA, Gravity.CENTER))
+                    background = Smusso(0, CIANO, 2f, 14f)
+                    addView(orb(s, 44, CIANO, app.sigla, 700, 0, 44), lpf(ADATTA, ADATTA, Gravity.CENTER))
                 }
-                smussa(lettera, 18)
-                val centro = Ui.colonna(s, 14, Gravity.CENTER)
-                centro.addView(lettera, lp(110, 110))
-                centro.addView(cond(s, 30, TESTO, app.nome, true, 1, 34, true, 2).apply { gravity = Gravity.CENTER })
-                cella.addView(centro, lpf(TUTTO, TUTTO))
-                cella.addView(
-                    orb(s, 28, SECONDARIO, "0${i + 1}", 400, 0, 30),
-                    lpf(ADATTA, ADATTA, Gravity.TOP or Gravity.END).apply {
-                        rightMargin = 18
-                        topMargin = 16
-                    },
+                smussa(lettera, 14)
+                val centro = Ui.colonna(s, 10, Gravity.CENTER).apply { setPadding(6, 0, 6, 0) }
+                centro.addView(lettera, lp(80, 80))
+                centro.addView(
+                    Ui.adatta(cond(s, 28, TESTO, app.nome, true, 0, 32, true), 16, 28).apply { gravity = Gravity.CENTER },
+                    lp(TUTTO, 32),
                 )
+                cella.addView(centro, lpf(TUTTO, TUTTO))
                 val installata = app.intent(s) != null
                 if (!installata) cella.alpha = 0.35f
                 angoli(Ui.premibile(cella, ONDA, app.nome) { if (installata) azioni.apri(app) }, LINEA_FORTE, 14f)
                 riga.addView(cella, lp(0, TUTTO, 1f))
             }
             return riga
+        }
+
+        override fun mostraSistema(stato: StatoSistema) {
+            when (stato.wifi) {
+                StatoWifi.SPENTO -> interruttoreWifi.mostra(0, R.drawable.ic_wifi_spento, "spento")
+                StatoWifi.ACCESO -> interruttoreWifi.mostra(1, R.drawable.ic_wifi, "acceso, non connesso")
+                StatoWifi.CONNESSO -> interruttoreWifi.mostra(2, R.drawable.ic_wifi, "connesso")
+            }
+            if (stato.bluetooth) {
+                interruttoreBluetooth.mostra(2, R.drawable.ic_bluetooth, "acceso")
+            } else {
+                interruttoreBluetooth.mostra(0, R.drawable.ic_bluetooth_spento, "spento")
+            }
+            numeroVolume.text = "%02d".format(stato.volume)
+            val accese = if (stato.volumeMassimo > 0) {
+                (stato.volume * TACCHE_VOLUME / stato.volumeMassimo.toFloat()).roundToInt().coerceIn(0, TACCHE_VOLUME)
+            } else {
+                0
+            }
+            tacche.forEachIndexed { i, tacca -> tacca.setBackgroundColor(if (i < accese) CIANO else LINEA) }
         }
 
         override fun mostraOra(adesso: Date) {
@@ -370,7 +499,7 @@ object Hud : Tema {
                 lettereGiorno.forEachIndexed { i, lettera ->
                     val oggi = i == giorno
                     lettera.setTextColor(if (oggi) CIANO else SECONDARIO)
-                    lettera.typeface = orbitron(s, if (oggi) 700 else 400)
+                    lettera.typeface = orbitron(s, if (oggi) 700 else 500)
                     filettiGiorno[i].setBackgroundColor(if (oggi) CIANO else LINEA)
                 }
             }
@@ -378,6 +507,9 @@ object Hud : Tema {
 
         override fun mostraMeteo(meteo: Meteo?) {
             termometro.mostra(meteo)
+            val pioggia = FonteMeteo.testoPioggia(meteo?.pioggiaTraMinuti)
+            testoPioggia.text = pioggia ?: ""
+            rigaPioggia.visibility = if (pioggia != null) View.VISIBLE else View.GONE
             if (meteo == null) {
                 iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
                 gradi.text = "--°"
@@ -409,11 +541,10 @@ object Hud : Tema {
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: FrameLayout
         private val angoliOrdine = HashMap<Ordine, Squadrette>()
-        private val etichetta = orb(s, 28, SECONDARIO, "", 400, 3, 34)
-        private val indirizzo = Ui.adatta(cond(s, 72, TESTO, "", true, 1, 76, true), 34, 72)
-        private val prezzoScheda = orb(s, 40, CIANO, "", 700, 0, 46)
-        private val distanzaScheda = orb(s, 40, TESTO, "", 700, 0, 46)
-        private val aggiornatoScheda = orb(s, 40, TESTO, "", 700, 0, 46)
+        private val etichetta = orb(s, 28, SECONDARIO, "", 500, 3, 34)
+        private val indirizzo = Ui.adatta(cond(s, 64, TESTO, "", true, 1, 66, true), 34, 64)
+        private val dettaglioScheda = cond(s, 30, TESTO, "", false, 0, 36)
+        private val spesa = cond(s, 28, SECONDARIO, "", false, 0, 32).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
@@ -424,30 +555,46 @@ object Hud : Tema {
                 setPadding(24, 24, 24, 24)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
+            radice.addView(rigaOrdini(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(elencoView)
             }
             radice.addView(FrameLayout(s).apply { addView(scorrimento) }, lp(TUTTO, 0, 1f))
-            radice.addView(boxScheda(), lp(TUTTO, 320))
+            radice.addView(boxScheda(), lp(TUTTO, 186))
             return radice
         }
 
         private fun intestazione(): View {
             val riga = Ui.riga(s, 24)
             riga.addView(tastoContorno(s, R.drawable.ic_indietro, 52, "Indietro") { azioni.indietro() }, lp(120, 120))
-            riga.addView(orb(s, 60, TESTO, "BENZINAI", 700, 0, 66), lp(0, ADATTA, 1f))
-            val gruppo = Ui.riga(s, 20)
+            riga.addView(orb(s, 56, TESTO, "BENZINAI", 700, 0, 62), lp(0, ADATTA, 1f))
+            val rifornimenti = Ui.riga(s, 16).apply {
+                background = Ui.bordo(LINEA, 2, PANNELLO)
+                setPadding(24, 0, 24, 0)
+            }
+            rifornimenti.addView(Ui.icona(s, R.drawable.ic_rifornimenti, CIANO), lp(48, 48))
+            val testi = Ui.colonna(s, 2)
+            testi.addView(cond(s, 32, TESTO, "Rifornimenti", true, 2, 36, true))
+            testi.addView(spesa)
+            rifornimenti.addView(testi, lp(ADATTA, ADATTA))
+            angoli(Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti() }, CIANO)
+            riga.addView(rifornimenti, lp(ADATTA, TUTTO))
+            return riga
+        }
+
+        private fun rigaOrdini(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(orb(s, 28, SECONDARIO, "ORDINA PER", 500, 3, 34), lp(ADATTA, ADATTA))
             for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = cond(s, 32, TESTO, nome, true, 2, 36, true).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
                 val cornice = FrameLayout(s).apply { addView(tasto, lpf(TUTTO, TUTTO)) }
                 val premibile = Ui.premibile(cornice, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }
                 angoliOrdine[ordine] = angoli(premibile, CIANO)
-                gruppo.addView(premibile, lp(200, 120))
+                riga.addView(premibile, lp(0, TUTTO, 1f))
             }
-            riga.addView(gruppo, lp(ADATTA, TUTTO))
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
         }
@@ -466,33 +613,26 @@ object Hud : Tema {
         private fun boxScheda(): View {
             scheda = FrameLayout(s)
             pannello(scheda, 40, 4)
-            val riga = Ui.riga(s, 28).apply { setPadding(32, 26, 32, 26) }
-            val testi = Ui.colonna(s, 12)
+            val riga = Ui.riga(s, 28).apply { setPadding(28, 0, 28, 0) }
+            val testi = Ui.colonna(s, 4)
             testi.addView(etichetta)
-            testi.addView(indirizzo, lp(TUTTO, 76))
-            val dati = Ui.riga(s, 56, Gravity.NO_GRAVITY)
-            dati.addView(dato("SELF €/L", prezzoScheda))
-            dati.addView(dato("DISTANZA", distanzaScheda))
-            dati.addView(dato("AGGIORNATO", aggiornatoScheda))
-            testi.addView(dati)
+            testi.addView(indirizzo, lp(TUTTO, 66))
+            testi.addView(dettaglioScheda)
             riga.addView(testi, lp(0, ADATTA, 1f))
-            val comandi = Ui.colonna(s, 20)
-            comandi.addView(tastoContorno(s, R.drawable.ic_chiudi, 52, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
-            riga.addView(comandi, lp(ADATTA, ADATTA))
+            riga.addView(tastoContorno(s, R.drawable.ic_chiudi, 52, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             scheda.addView(riga, lpf(TUTTO, TUTTO, Gravity.CENTER_VERTICAL))
             scheda.visibility = View.GONE
             return scheda
         }
 
-        private fun dato(titolo: String, valore: TextView): View =
-            Ui.colonna(s, 2).apply {
-                addView(orb(s, 28, SECONDARIO, titolo, 400, 2, 32))
-                addView(valore)
-            }
-
         override fun mostra(elenco: ElencoBenzinai) {
             stato.ultimo = elenco
             disegna()
+        }
+
+        override fun mostraSpesa(testo: String?) {
+            spesa.text = testo ?: ""
+            spesa.visibility = if (testo != null) View.VISIBLE else View.GONE
         }
 
         private fun seleziona(d: Distributore?) {
@@ -510,8 +650,8 @@ object Hud : Tema {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
-                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", "%02d".format(e.preferiti.size), e.preferiti, true)
-                    if (e.vicini.isNotEmpty()) sezione("VICINI", "ORDINE: ${e.ordine.name}", e.vicini, false)
+                    if (e.preferiti.isNotEmpty()) sezione("PREFERITI", "%02d".format(e.preferiti.size), e.preferiti, true, true)
+                    if (e.vicini.isNotEmpty()) sezione("VICINI", "ORDINE: ${e.ordine.name}", e.vicini, false, false)
                     if (tutti.isEmpty()) messaggio("BENZINAI", "Nessun distributore entro 15 km.")
                 }
             }
@@ -521,14 +661,15 @@ object Hud : Tema {
         private fun messaggio(titolo: String, testo: String) {
             val colonna = Ui.colonna(s, 12).apply { setPadding(32, 26, 32, 26) }
             pannello(colonna)
-            colonna.addView(orb(s, 28, SECONDARIO, titolo, 400, 3, 34))
+            colonna.addView(orb(s, 28, SECONDARIO, titolo, 500, 3, 34))
             colonna.addView(cond(s, 44, TESTO, testo, false, 0, 50, false, 3), lp(TUTTO, ADATTA))
             elencoView.addView(colonna, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, contatore: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(titolo: String, contatore: String, distributori: List<Distributore>, luogo: Boolean, stella: Boolean) {
             val colonna = Ui.colonna(s, 12)
             val testata = Ui.riga(s, 16)
+            if (stella) testata.addView(Ui.icona(s, R.drawable.hud_stella, CIANO), lp(36, 36))
             testata.addView(orb(s, 40, TESTO, titolo, 700, 0, 48))
             testata.addView(View(s).apply { setBackgroundColor(LINEA) }, lp(0, 2, 1f))
             testata.addView(orb(s, 28, SECONDARIO, contatore, 500, 0, 32))
@@ -541,18 +682,19 @@ object Hud : Tema {
 
         private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
-            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = if (scelto) Ui.bordo(CIANO, 3, PANNELLO) else Ui.bordo(LINEA, 2, PANNELLO)
                 setPadding(24, 0, 28, 0)
             }
-            corpo.addView(orb(s, 28, SECONDARIO, "%02d".format(posizione), 400, 0, 32), lp(48, ADATTA))
+            corpo.addView(orb(s, 28, SECONDARIO, "%02d".format(posizione), 500, 0, 32), lp(52, ADATTA))
             val sinistra = Ui.colonna(s, 2)
             sinistra.addView(cond(s, 40, TESTO, if (luogo) d.comune else d.nome, true, 1, 46, true))
             sinistra.addView(cond(s, 28, SECONDARIO, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}", false, 0, 34))
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             val destra = Ui.colonna(s, 4, Gravity.END)
+            val rigaPrezzo = Ui.riga(s, 14)
+            DatiMimit.andamento(d)?.let { rigaPrezzo.addView(andamento(it), lp(ADATTA, ADATTA)) }
             val prezzo = Ui.riga(s, 0, Gravity.BOTTOM)
             val cifre = Benzinai.prezzo(d.prezzo)
             prezzo.addView(
@@ -563,18 +705,25 @@ object Hud : Tema {
                 },
             )
             prezzo.addView(cond(s, 28, SECONDARIO, " €/l", false, 0, 32))
-            destra.addView(prezzo)
+            rigaPrezzo.addView(prezzo)
+            destra.addView(rigaPrezzo)
             val rigaDistanza = Ui.riga(s, 14)
             val barra = FrameLayout(s).apply { setBackgroundColor(LINEA) }
             val riempimento = (110 * (d.distanzaKm / 5.0).coerceIn(0.0, 1.0)).roundToInt()
             barra.addView(View(s).apply { setBackgroundColor(TESTO) }, lpf(riempimento, 8, Gravity.START))
             rigaDistanza.addView(barra, lp(110, 8))
-            rigaDistanza.addView(orb(s, 28, TESTO, Benzinai.distanza(d.distanzaKm), 400, 0, 32))
+            rigaDistanza.addView(orb(s, 28, TESTO, Benzinai.distanza(d.distanzaKm), 500, 0, 32))
             destra.addView(rigaDistanza)
             corpo.addView(destra)
-            riga.addView(Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            return riga
+            return Ui.premibile(corpo, ONDA, d.nome) { seleziona(d) }
         }
+
+        private fun andamento(a: DatiMimit.Andamento): View =
+            Ui.riga(s, 6).apply {
+                contentDescription = "Prezzo ${if (a.salito) "salito" else "sceso"} di ${a.differenza}"
+                addView(Ui.icona(s, if (a.salito) R.drawable.ic_su else R.drawable.ic_giu, TESTO), lp(20, 20))
+                addView(orb(s, 28, TESTO, a.differenza, 500, 0, 32))
+            }
 
         private fun aggiornaScheda() {
             val d = stato.selezionato
@@ -586,9 +735,14 @@ object Hud : Tema {
             val italiano = Locale.ITALIAN
             etichetta.text = "INDIRIZZO · ${d.nome.uppercase(italiano)} · ${d.marchio.uppercase(italiano)}"
             indirizzo.text = "${d.indirizzo} - ${d.comune}"
-            prezzoScheda.text = Benzinai.prezzo(d.prezzo)
-            distanzaScheda.text = Benzinai.distanza(d.distanzaKm).uppercase(italiano)
-            aggiornatoScheda.text = Benzinai.quando(d.aggiornato, System.currentTimeMillis()).uppercase(italiano)
+            val prezzo = "${Benzinai.prezzo(d.prezzo)} €/l self"
+            val aggiornato = "aggiornato ${Benzinai.quando(d.aggiornato, System.currentTimeMillis())}"
+            val testo = "$prezzo · ${Benzinai.distanza(d.distanzaKm)} · $aggiornato"
+            dettaglioScheda.text = SpannableString(testo).apply {
+                setSpan(ForegroundColorSpan(CIANO), 0, prezzo.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(StyleSpan(Typeface.BOLD), 0, prezzo.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(ForegroundColorSpan(SECONDARIO), testo.length - aggiornato.length, testo.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
         }
     }
 }
@@ -676,7 +830,7 @@ private class Smusso(
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }
 
-private class Quadrante(context: Context, carattere: Typeface) : View(context) {
+private class Quadrante(context: Context) : View(context) {
     private var ore = 0
     private var minuti = 0
 
@@ -690,8 +844,7 @@ private class Quadrante(context: Context, carattere: Typeface) : View(context) {
 
     private val tacche = FloatArray(60 * 4)
     private val taccheCorrenti = FloatArray(60 * 4)
-    private val arcoEsterno = RectF(58f, 58f, 582f, 582f)
-    private val arcoOre = RectF(94f, 94f, 546f, 546f)
+    private val arcoOre = RectF(60f, 60f, 580f, 580f)
     private val cerchio = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 2f
@@ -699,41 +852,32 @@ private class Quadrante(context: Context, carattere: Typeface) : View(context) {
     }
     private val segmento = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 10f
+        strokeWidth = 8f
         strokeCap = Paint.Cap.BUTT
     }
     private val tacca = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.BUTT
     }
-    private val numeri = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = carattere
-        textSize = 28f
-        color = 0xFF8FB3CF.toInt()
-        textAlign = Paint.Align.CENTER
-    }
-    private val baseNumeri = -(numeri.fontMetrics.ascent + numeri.fontMetrics.descent) / 2f
 
     init {
         for (i in 0 until 60) {
             val angolo = Math.toRadians(i * 6.0 - 90.0)
-            val interno = if (i % 5 == 0) 282.0 else 294.0
+            val interno = if (i % 5 == 0) 270.0 else 274.0
             tacche[i * 4] = (320 + interno * cos(angolo)).toFloat()
             tacche[i * 4 + 1] = (320 + interno * sin(angolo)).toFloat()
-            tacche[i * 4 + 2] = (320 + 312.0 * cos(angolo)).toFloat()
-            tacche[i * 4 + 3] = (320 + 312.0 * sin(angolo)).toFloat()
-            taccheCorrenti[i * 4] = (320 + 276.0 * cos(angolo)).toFloat()
-            taccheCorrenti[i * 4 + 1] = (320 + 276.0 * sin(angolo)).toFloat()
-            taccheCorrenti[i * 4 + 2] = (320 + 316.0 * cos(angolo)).toFloat()
-            taccheCorrenti[i * 4 + 3] = (320 + 316.0 * sin(angolo)).toFloat()
+            tacche[i * 4 + 2] = (320 + 282.0 * cos(angolo)).toFloat()
+            tacche[i * 4 + 3] = (320 + 282.0 * sin(angolo)).toFloat()
+            taccheCorrenti[i * 4] = (320 + 266.0 * cos(angolo)).toFloat()
+            taccheCorrenti[i * 4 + 1] = (320 + 266.0 * sin(angolo)).toFloat()
+            taccheCorrenti[i * 4 + 2] = (320 + 284.0 * cos(angolo)).toFloat()
+            taccheCorrenti[i * 4 + 3] = (320 + 284.0 * sin(angolo)).toFloat()
         }
     }
 
     override fun onDraw(canvas: Canvas) {
         val scala = width / 640f
         canvas.scale(scala, scala)
-        for (quarto in 0 until 4) canvas.drawArc(arcoEsterno, -81f + 90f * quarto, 72f, false, cerchio)
-        canvas.drawCircle(320f, 320f, 206f, cerchio)
         for (i in 0 until 24) {
             segmento.color = when {
                 i < ore -> 0xFF8FB3CF.toInt()
@@ -742,6 +886,7 @@ private class Quadrante(context: Context, carattere: Typeface) : View(context) {
             }
             canvas.drawArc(arcoOre, -88.5f + 15f * i, 12f, false, segmento)
         }
+        canvas.drawCircle(320f, 320f, 250f, cerchio)
         for (i in 0 until 60) {
             if (i == minuti) {
                 tacca.color = 0xFFE6F4FF.toInt()
@@ -753,10 +898,6 @@ private class Quadrante(context: Context, carattere: Typeface) : View(context) {
             tacca.strokeWidth = if (i % 5 == 0) 5f else 3f
             canvas.drawLine(tacche[i * 4], tacche[i * 4 + 1], tacche[i * 4 + 2], tacche[i * 4 + 3], tacca)
         }
-        canvas.drawText("00", 320f, 62f + baseNumeri, numeri)
-        canvas.drawText("15", 578f, 320f + baseNumeri, numeri)
-        canvas.drawText("30", 320f, 578f + baseNumeri, numeri)
-        canvas.drawText("45", 62f, 320f + baseNumeri, numeri)
     }
 }
 
@@ -800,9 +941,9 @@ private class Termometro(context: Context) : View(context) {
         val scala = width / 202f
         canvas.scale(scala, scala)
         asse.strokeWidth = 3f
-        canvas.drawLine(46f, 16f, 46f, 284f, asse)
+        canvas.drawLine(46f, 16.4f, 46f, 274f, asse)
         for (i in 0..16) {
-            val y = 284f - 16.75f * i
+            val y = 274f - 16.1f * i
             val lunga = i % 8 == 0
             asse.strokeWidth = if (lunga) 3f else 2f
             canvas.drawLine(if (lunga) 34f else 39f, y, 46f, y, asse)
@@ -810,8 +951,8 @@ private class Termometro(context: Context) : View(context) {
         val m = meteo ?: return
         val passo = maxOf(1, ceil((m.massima - m.minima + 2) / 16.0).toInt())
         val base = ((m.minima + m.massima) / 2.0 / (4 * passo)).roundToInt() * 4 * passo - 8 * passo
-        val pxPerGrado = 268f / (16 * passo)
-        fun y(gradi: Int): Float = (284f - (gradi - base) * pxPerGrado).coerceIn(16f, 284f)
+        val pxPerGrado = 257.6f / (16 * passo)
+        fun y(gradi: Int): Float = (274f - (gradi - base) * pxPerGrado).coerceIn(16.4f, 274f)
         for (i in 0..2) {
             val gradi = base + 8 * passo * i
             canvas.drawText("$gradi", 28f, y(gradi) + baseNumeri, numeri)

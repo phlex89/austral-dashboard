@@ -49,6 +49,12 @@ object FonteMeteo {
         return null
     }
 
+    fun testoPioggia(minuti: Int?): String? = when {
+        minuti == null -> null
+        minuti <= 0 -> "Piove"
+        else -> "Pioggia tra $minuti min"
+    }
+
     fun troppoVecchio(quando: Long, adesso: Long): Boolean = adesso - quando > ETA_MASSIMA_MS
 
     fun daAggiornare(context: Context): Boolean {

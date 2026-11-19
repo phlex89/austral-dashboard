@@ -2,6 +2,7 @@ package app.australdashboard.temi
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Outline
 import android.graphics.Paint
@@ -27,12 +28,16 @@ import android.widget.TextView
 import app.australdashboard.R
 import app.australdashboard.Schermata
 import app.australdashboard.funzioni.Benzinai
+import app.australdashboard.funzioni.DatiMimit
 import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.Ordine
+import app.australdashboard.funzioni.Playlists
+import app.australdashboard.funzioni.StatoSistema
+import app.australdashboard.funzioni.StatoWifi
 import app.australdashboard.temi.Ui.ADATTA
 import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
@@ -66,6 +71,7 @@ object Synthwave : Tema {
 
     private val tipoDritto: Typeface = Typeface.create("sans-serif-condensed", Typeface.NORMAL)
     private val tipoDrittoGrassetto: Typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
+    private val tipoDrittoMedio: Typeface by lazy { Typeface.create(tipoDritto, 500, false) }
     private val normale: Typeface by lazy { corpo(400) }
     private val medio: Typeface by lazy { corpo(500) }
     private val grassetto: Typeface by lazy { corpo(700) }
@@ -210,10 +216,79 @@ object Synthwave : Tema {
         }
     }
 
+    private class Tacche(context: Context) : View(context) {
+        var accese = 0
+            set(valore) {
+                field = valore
+                invalidate()
+            }
+        private val paint = Paint().apply { isAntiAlias = true }
+        private val riquadro = RectF()
+
+        override fun onMeasure(larghezza: Int, altezza: Int) {
+            setMeasuredDimension(294, 28)
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            for (i in 0 until 15) {
+                paint.color = if (i < accese) colore(i / 14f) else CONTORNO
+                riquadro.set(i * 20f, 0f, i * 20f + 14f, 28f)
+                canvas.drawRoundRect(riquadro, 7f, 7f, paint)
+            }
+        }
+
+        private fun colore(t: Float): Int = Color.rgb(
+            (Color.red(ROSA) + (Color.red(ARANCIO) - Color.red(ROSA)) * t).toInt(),
+            (Color.green(ROSA) + (Color.green(ARANCIO) - Color.green(ROSA)) * t).toInt(),
+            (Color.blue(ROSA) + (Color.blue(ARANCIO) - Color.blue(ROSA)) * t).toInt(),
+        )
+    }
+
+    private class Interruttore(
+        s: Schermata,
+        private val nome: String,
+        private val iconaSpenta: Int,
+        private val iconaAccesa: Int,
+    ) {
+        private val icona = Ui.icona(s, iconaSpenta, SECONDARIO)
+        private val titolo = Ui.adatta(Ui.testo(s, 30, TESTO, medio, 36, nome), 20, 30)
+        private val stato = Ui.adatta(Ui.testo(s, 28, TESTO, normale, 34, " "), 20, 28)
+        val view: View = Ui.riga(s, 12).apply {
+            setPadding(22, 0, 22, 0)
+            addView(icona, lp(44, 44))
+            val testi = Ui.colonna(s)
+            testi.addView(titolo, lp(130, 36))
+            testi.addView(stato, lp(130, 34))
+            addView(testi, lp(130, ADATTA))
+            arrotonda(this, 60f)
+        }
+
+        fun spento() = imposta(superficie(60f, CONTORNO, 2), iconaSpenta, SECONDARIO, SECONDARIO, SECONDARIO, normale, "spento")
+
+        fun acceso() = imposta(superficie(60f, ROSA, 2), iconaAccesa, ROSA, TESTO, TESTO, normale, "acceso")
+
+        fun pieno(testo: String) = imposta(tramonto(60f), iconaAccesa, NOTTE, NOTTE, NOTTE, grassetto, testo)
+
+        private fun imposta(fondo: GradientDrawable, res: Int, coloreIcona: Int, coloreTitolo: Int, coloreStato: Int, fontStato: Typeface, testo: String) {
+            view.background = fondo
+            icona.setImageResource(res)
+            icona.imageTintList = android.content.res.ColorStateList.valueOf(coloreIcona)
+            titolo.setTextColor(coloreTitolo)
+            stato.setTextColor(coloreStato)
+            stato.typeface = fontStato
+            stato.text = testo
+            view.contentDescription = "$nome, $testo"
+        }
+
+        init {
+            spento()
+        }
+    }
+
     private fun tondo(context: Context, icona: Int, latoIcona: Int, colore: Int, descrizione: String, azione: () -> Unit): View {
         val cerchio = FrameLayout(context).apply {
             background = superficie(0f, CONTORNO, ovale = true)
-            addView(View(context).apply { background = anello(2, ANELLO) }, lpf(TUTTO, TUTTO).apply { setMargins(10, 10, 10, 10) })
+            addView(View(context).apply { background = anello(2, ANELLO) }, lpf(TUTTO, TUTTO).apply { setMargins(7, 7, 7, 7) })
             addView(Ui.icona(context, icona, colore), lpf(latoIcona, latoIcona, Gravity.CENTER))
         }
         arrotonda(cerchio, -1f)
@@ -244,7 +319,9 @@ object Synthwave : Tema {
 
     private class HomeSynthwave(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
         private val aw = audiowide(s)
-        private val ora = sfumato(s, 150, aw, 150)
+        private val playlist = Playlists.elenco(s)
+        private val ora = sfumato(s, 150, aw, 150).apply { translationY = -22f }
+        private val misuraTitolo = Paint().apply { typeface = aw; textSize = 54f }
         private val data = Ui.testo(s, 34, TESTO, normale, 40).apply { letterSpacing = 0.06f }
         private val giorni = Ui.riga(s, 4).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES }
         private val lettere = "LMMGVSD".map { lettera ->
@@ -259,32 +336,40 @@ object Synthwave : Tema {
         private val gradi = Ui.testo(s, 104, TESTO, aw, 104, "--°")
         private val cielo = Ui.testo(s, 36, TESTO, medio, 42, "In attesa")
         private val estremi = Ui.testo(s, 30, SECONDARIO, normale, 36, " ")
+        private val pioggia = Ui.testo(s, 28, ARANCIO, grassetto, 34).apply { visibility = View.GONE }
         private val inAscolto = Ui.riga(s, 24)
-        private val fermo = Ui.colonna(s, 28, Gravity.CENTER_VERTICAL).apply { setPadding(20, 0, 0, 0) }
+        private val fermo = Ui.colonna(s, 24, Gravity.CENTER_VERTICAL).apply { setPadding(20, 0, 0, 0) }
         private val copertina = ImageView(s).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(0xFFE0874F.toInt(), 0xFF5B2240.toInt()))
         }
         private val etichetta = Ui.adatta(Ui.testo(s, 28, SECONDARIO, normale, maiuscolo = true).apply { letterSpacing = 0.14f }, 18, 28)
-        private val titolo = Ui.adatta(Ui.testo(s, 54, TESTO, aw, righe = 2), 28, 54)
+        private val titolo = Ui.adatta(Ui.testo(s, 54, TESTO, aw, 62, righe = 2), 28, 54)
         private val artista = Ui.testo(s, 38, SECONDARIO, normale, 44)
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, NOTTE)
         private lateinit var playIn: View
+        private val wifi = Interruttore(s, "Wi-Fi", R.drawable.ic_wifi_spento, R.drawable.ic_wifi)
+        private val bluetooth = Interruttore(s, "Bluetooth", R.drawable.ic_bluetooth_spento, R.drawable.ic_bluetooth)
+        private val tacche = Tacche(s).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES }
+        private val cifra = Ui.adatta(Ui.testo(s, 48, TESTO, aw, contenuto = "0"), 30, 48).apply {
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        }
 
         override val view: View = costruisci()
 
         private fun costruisci(): View {
-            val radice = Ui.colonna(s, 24).apply {
+            val radice = Ui.colonna(s).apply {
                 setBackgroundColor(NOTTE)
                 setPadding(28, 28, 28, 28)
             }
-            radice.addView(fasciaOra(), lp(TUTTO, 220))
-            radice.addView(orizzonte, lp(TUTTO, 42).apply { topMargin = -20 })
+            radice.addView(fasciaOra(), lp(TUTTO, 196))
+            radice.addView(orizzonte, lp(TUTTO, 42).apply { topMargin = 2 })
             val centro = Ui.riga(s, 24, Gravity.NO_GRAVITY)
             centro.addView(sezioneMusica(), lp(0, TUTTO, 1f))
             centro.addView(servizi(), lp(260, TUTTO))
-            radice.addView(centro, lp(TUTTO, 560))
-            radice.addView(app(), lp(TUTTO, 0, 1f))
+            radice.addView(centro, lp(TUTTO, 560).apply { topMargin = 16 })
+            radice.addView(app(), lp(TUTTO, 0, 1f).apply { topMargin = 20 })
+            radice.addView(sistema(), lp(TUTTO, 120).apply { topMargin = 20 })
             return radice
         }
 
@@ -306,13 +391,15 @@ object Synthwave : Tema {
             testi.addView(cielo)
             testi.addView(estremi)
             testi.addView(tubo, lp(TUTTO, 16).apply { topMargin = 6 })
+            testi.addView(pioggia, lp(ADATTA, ADATTA).apply { topMargin = 4 })
             destra.addView(testi, lp(ADATTA, ADATTA))
             riga.addView(destra, lp(ADATTA, ADATTA))
             return riga
         }
 
         private fun sezioneMusica(): View {
-            val sezione = FrameLayout(s)
+            val sezione = Ui.colonna(s, 20, Gravity.CENTER_VERTICAL)
+            val fascia = FrameLayout(s)
 
             arrotonda(copertina, 22f)
             Ui.premibile(copertina, ONDA_SCURA, "Apri l'app della musica") { azioni.apriMusica() }
@@ -323,27 +410,30 @@ object Synthwave : Tema {
                 addView(frame, lpf(TUTTO, TUTTO))
             }
             inAscolto.gravity = Gravity.CENTER_VERTICAL
-            inAscolto.addView(doppia, lp(468, 468))
+            inAscolto.addView(doppia, lp(420, 420))
             val info = Ui.colonna(s)
             val blocco = Ui.colonna(s)
             blocco.addView(etichetta, lp(TUTTO, 34))
-            blocco.addView(titolo, lp(TUTTO, 128).apply { topMargin = 10 })
+            blocco.addView(titolo, lp(TUTTO, 134).apply { topMargin = 10 })
             blocco.addView(artista, lp(TUTTO, ADATTA).apply { topMargin = 8 })
             Ui.premibile(blocco, ONDA, null) { azioni.apriMusica() }
             info.addView(blocco, lp(TUTTO, ADATTA))
             info.addView(View(s), lp(TUTTO, 0, 1f))
             info.addView(Righe(s), lp(TUTTO, 19))
             info.addView(View(s), lp(TUTTO, 0, 1f))
-            val comandi = Ui.riga(s, 16)
+            val comandi = Ui.riga(s, 20)
             comandi.addView(tondo(s, R.drawable.ic_precedente, 44, TESTO, "Brano precedente") { azioni.precedente() }, lp(120, 120))
             playIn = cerchioPlay(s, iconaPlay, "Pausa") { azioni.playPausa() }
             comandi.addView(playIn, lp(140, 140))
             comandi.addView(tondo(s, R.drawable.ic_successivo, 44, TESTO, "Brano successivo") { azioni.successivo() }, lp(120, 120))
             info.addView(comandi, lp(ADATTA, 140))
-            inAscolto.addView(info, lp(0, 468, 1f))
+            inAscolto.addView(info, lp(0, 420, 1f))
 
             fermo.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "SORGENTE AUDIO").apply { letterSpacing = 0.14f })
-            fermo.addView(Ui.adatta(sfumato(s, 150, aw, contenuto = "Spotify"), 70, 150), lp(TUTTO, 150))
+            fermo.addView(
+                Ui.adatta(sfumato(s, 130, aw, contenuto = "Spotify"), 70, 130),
+                lp(TUTTO, 166).apply { topMargin = -13; bottomMargin = -13 },
+            )
             fermo.addView(Righe(s), lp(520, 19))
             val riga = Ui.riga(s, 24)
             riga.addView(cerchioPlay(s, Ui.icona(s, R.drawable.ic_play, NOTTE), "Riproduci") { azioni.playPausa() }, lp(140, 140))
@@ -356,10 +446,31 @@ object Synthwave : Tema {
             riga.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(ADATTA, 120))
             fermo.addView(riga, lp(ADATTA, ADATTA))
 
-            sezione.addView(inAscolto, lpf(TUTTO, TUTTO))
-            sezione.addView(fermo, lpf(TUTTO, TUTTO))
+            fascia.addView(inAscolto, lpf(TUTTO, TUTTO))
+            fascia.addView(fermo, lpf(TUTTO, TUTTO))
+            sezione.addView(fascia, lp(TUTTO, 420))
+            if (playlist.isNotEmpty()) sezione.addView(righePlaylist(), lp(TUTTO, 120))
             mostraMusica(null)
             return sezione
+        }
+
+        private fun righePlaylist(): View {
+            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            for (p in playlist) {
+                val cerchio = FrameLayout(s).apply {
+                    background = anello(2, ROSA)
+                    addView(Ui.icona(s, R.drawable.ic_play, ROSA), lpf(26, 26, Gravity.CENTER))
+                }
+                val pulsante = Ui.riga(s, 14).apply {
+                    background = superficie(28f, CONTORNO, 2)
+                    setPadding(18, 0, 18, 0)
+                    addView(cerchio, lp(56, 56))
+                    addView(Ui.testo(s, 28, TESTO, medio, 32, p.nome, righe = 3), lp(0, ADATTA, 1f))
+                }
+                arrotonda(pulsante, 28f)
+                riga.addView(Ui.premibile(pulsante, ONDA, "Riproduci la playlist ${p.nome}") { azioni.playlist(p) }, lp(0, TUTTO, 1f))
+            }
+            return riga
         }
 
         private fun servizi(): View {
@@ -393,15 +504,15 @@ object Synthwave : Tema {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             for (app in AppHome.elenco(s)) {
                 val interno = FrameLayout(s).apply {
-                    background = GradientDrawable().apply { setColor(SUPERFICIE); cornerRadius = 30f }
-                    addView(Ui.testo(s, 54, TESTO, aw, 54, app.sigla).apply { gravity = Gravity.CENTER }, lpf(TUTTO, ADATTA, Gravity.CENTER))
+                    background = GradientDrawable().apply { setColor(SUPERFICIE); cornerRadius = 24f }
+                    addView(Ui.testo(s, 44, TESTO, aw, 44, app.sigla).apply { gravity = Gravity.CENTER }, lpf(TUTTO, ADATTA, Gravity.CENTER))
                 }
-                val anello = cornice(s, 34f, 4, interno)
-                val cella = Ui.colonna(s, 14, Gravity.CENTER)
-                cella.addView(anello, lp(130, 130))
+                val anello = cornice(s, 28f, 4, interno)
+                val cella = Ui.colonna(s, 8, Gravity.CENTER)
+                cella.addView(anello, lp(100, 100))
                 cella.addView(
                     Ui.adatta(Ui.testo(s, 30, TESTO, medio, contenuto = app.nome), 20, 30).apply { gravity = Gravity.CENTER },
-                    lp(TUTTO, 34),
+                    lp(TUTTO, 36),
                 )
                 val installata = app.intent(s) != null
                 if (!installata) cella.alpha = 0.35f
@@ -409,6 +520,34 @@ object Synthwave : Tema {
                 riga.addView(cella, lp(0, TUTTO, 1f))
             }
             return riga
+        }
+
+        private fun sistema(): View {
+            val riga = Ui.riga(s, 20)
+            Ui.premibile(wifi.view, ONDA, null) { azioni.wifi() }
+            Ui.premibile(bluetooth.view, ONDA, null) { azioni.bluetooth() }
+            riga.addView(wifi.view, lp(230, 120))
+            riga.addView(bluetooth.view, lp(230, 120))
+            riga.addView(tondo(s, R.drawable.ic_meno, 44, TESTO, "Abbassa il volume") { azioni.volume(false) }, lp(120, 120))
+            val livello = Ui.riga(s, 14, Gravity.CENTER)
+            livello.addView(tacche, lp(294, 28))
+            livello.addView(cifra, lp(74, 62))
+            riga.addView(livello, lp(0, TUTTO, 1f))
+            riga.addView(tondo(s, R.drawable.ic_piu, 44, TESTO, "Alza il volume") { azioni.volume(true) }, lp(120, 120))
+            return riga
+        }
+
+        override fun mostraSistema(stato: StatoSistema) {
+            when (stato.wifi) {
+                StatoWifi.SPENTO -> wifi.spento()
+                StatoWifi.ACCESO -> wifi.acceso()
+                StatoWifi.CONNESSO -> wifi.pieno("connesso")
+            }
+            if (stato.bluetooth) bluetooth.pieno("acceso") else bluetooth.spento()
+            val massimo = stato.volumeMassimo
+            tacche.accese = if (massimo > 0) Math.round(stato.volume * 15f / massimo).coerceIn(0, 15) else 0
+            cifra.text = stato.volume.toString()
+            tacche.contentDescription = "Volume ${stato.volume} su $massimo"
         }
 
         override fun mostraOra(adesso: Date) {
@@ -427,6 +566,9 @@ object Synthwave : Tema {
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
+            val testoPioggia = FonteMeteo.testoPioggia(meteo?.pioggiaTraMinuti)
+            pioggia.text = testoPioggia
+            pioggia.visibility = if (testoPioggia != null) View.VISIBLE else View.GONE
             if (meteo == null) {
                 iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
                 gradi.text = "--°"
@@ -456,6 +598,11 @@ object Synthwave : Tema {
             val stato = if (musica.inRiproduzione) "IN RIPRODUZIONE" else "IN PAUSA"
             etichetta.text = "${musica.app} · $stato"
             titolo.text = musica.titolo
+            val altezzaTitolo = if (misuraTitolo.measureText(musica.titolo) <= 456f) 70 else 134
+            if (titolo.layoutParams.height != altezzaTitolo) {
+                titolo.layoutParams.height = altezzaTitolo
+                titolo.requestLayout()
+            }
             artista.text = musica.artista
             if (musica.copertina != null) copertina.setImageBitmap(musica.copertina) else copertina.setImageDrawable(null)
             iconaPlay.setImageResource(if (musica.inRiproduzione) R.drawable.ic_pausa else R.drawable.ic_play)
@@ -470,9 +617,10 @@ object Synthwave : Tema {
         private val ordini = LinkedHashMap<Ordine, TextView>()
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: View
-        private val nomeScheda = Ui.testo(s, 30, SECONDARIO, normale, 36)
-        private val indirizzo = Ui.adatta(Ui.testo(s, 76, TESTO, grassetto, maiuscolo = true, righe = 2), 34, 76)
-        private val dettagli = Ui.testo(s, 30, TESTO, normale, 36)
+        private val nomeScheda = Ui.testo(s, 28, SECONDARIO, normale, 34)
+        private val indirizzo = Ui.adatta(Ui.testo(s, 60, TESTO, grassetto, maiuscolo = true), 30, 60)
+        private val dettagli = Ui.testo(s, 28, TESTO, tipoDritto, 34)
+        private val spesa = Ui.testo(s, 28, SECONDARIO, tipoDritto, 32).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
@@ -483,28 +631,52 @@ object Synthwave : Tema {
                 setPadding(28, 28, 28, 28)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
+            radice.addView(ordinamento(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(elencoView)
             }
             radice.addView(FrameLayout(s).apply { addView(scorrimento) }, lp(TUTTO, 0, 1f))
-            radice.addView(boxScheda(), lp(TUTTO, 320))
+            radice.addView(boxScheda(), lp(TUTTO, 178))
             return radice
         }
 
         private fun intestazione(): View {
             val riga = Ui.riga(s, 28)
-            riga.addView(tondo(s, R.drawable.ic_indietro, 48, TESTO, "Indietro") { azioni.indietro() }, lp(120, 120))
-            riga.addView(Ui.adatta(sfumato(s, 70, aw, contenuto = "Benzinai"), 36, 70), lp(0, TUTTO, 1f))
-            val gruppo = Ui.riga(s, 20)
+            riga.addView(tondo(s, R.drawable.ic_indietro, 44, TESTO, "Indietro") { azioni.indietro() }, lp(120, 120))
+            riga.addView(Ui.adatta(sfumato(s, 60, aw, contenuto = "Benzinai"), 30, 60).apply { gravity = Gravity.CENTER_VERTICAL }, lp(0, TUTTO, 1f))
+            val testi = Ui.colonna(s)
+            testi.addView(Ui.testo(s, 32, TESTO, grassetto, 38, "Rifornimenti"))
+            testi.addView(spesa)
+            val rifornimenti = Ui.riga(s, 14).apply {
+                background = superficie(60f, ROSA, 2)
+                setPadding(28, 0, 36, 0)
+                addView(Ui.icona(s, R.drawable.ic_rifornimenti, ROSA), lp(44, 44))
+                addView(testi, lp(ADATTA, ADATTA))
+            }
+            arrotonda(rifornimenti, 60f)
+            riga.addView(Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, 120))
+            return riga
+        }
+
+        override fun mostraSpesa(testo: String?) {
+            spesa.text = testo
+            spesa.visibility = if (testo != null) View.VISIBLE else View.GONE
+        }
+
+        private fun ordinamento(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(
+                Ui.testo(s, 28, SECONDARIO, normale, 34, "Ordina per").apply { letterSpacing = 0.07f },
+                lp(ADATTA, ADATTA).apply { leftMargin = 12; rightMargin = 8 },
+            )
             for ((ordine, nome) in Ui.ORDINI) {
                 val pillola = Ui.testo(s, 32, TESTO, medio, 38, nome).apply { gravity = Gravity.CENTER }
                 arrotonda(pillola, 60f)
                 ordini[ordine] = pillola
-                gruppo.addView(Ui.premibile(pillola, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(190, 120))
+                riga.addView(Ui.premibile(pillola, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, 120, 1f))
             }
-            riga.addView(gruppo, lp(ADATTA, TUTTO))
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
         }
@@ -520,18 +692,15 @@ object Synthwave : Tema {
         }
 
         private fun boxScheda(): View {
-            val testi = Ui.colonna(s, 8)
-            testi.addView(nomeScheda)
-            testi.addView(indirizzo, lp(TUTTO, 156))
-            testi.addView(Righe(s), lp(360, 19).apply { topMargin = 4; bottomMargin = 4 })
-            testi.addView(dettagli)
-            val comandi = Ui.riga(s, 20)
-            comandi.addView(tondo(s, R.drawable.ic_chiudi, 48, TESTO, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
+            val testi = Ui.colonna(s)
+            testi.addView(nomeScheda, lp(TUTTO, ADATTA))
+            testi.addView(indirizzo, lp(TUTTO, 70).apply { topMargin = -3; bottomMargin = -3 })
+            testi.addView(dettagli, lp(TUTTO, ADATTA))
             val interno = Ui.riga(s, 28).apply {
                 background = GradientDrawable().apply { setColor(SUPERFICIE); cornerRadius = 28f }
-                setPadding(36, 12, 36, 12)
+                setPadding(34, 0, 28, 0)
                 addView(testi, lp(0, ADATTA, 1f))
-                addView(comandi, lp(ADATTA, ADATTA))
+                addView(tondo(s, R.drawable.ic_chiudi, 44, TESTO, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             }
             scheda = cornice(s, 32f, 4, interno)
             scheda.visibility = View.GONE
@@ -589,25 +758,34 @@ object Synthwave : Tema {
 
         private fun riga(d: Distributore, luogo: Boolean, numero: Int): View {
             val adesso = System.currentTimeMillis()
-            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             val scelto = d.id == stato.selezionato?.id
-            val corpoRiga = Ui.riga(s, 24).apply {
+            val corpoRiga = Ui.riga(s, 20).apply {
                 background = superficie(24f, if (scelto) ROSA else CONTORNO)
-                setPadding(28, 0, 32, 0)
+                setPadding(26, 0, 30, 0)
             }
-            corpoRiga.addView(Ui.testo(s, 28, SECONDARIO, aw, 32, String.format(Locale.ITALY, "%02d", numero)).apply { ellipsize = null; minWidth = 44 }, lp(ADATTA, ADATTA))
+            corpoRiga.addView(Ui.testo(s, 28, SECONDARIO, aw, 32, String.format(Locale.ITALY, "%02d", numero)).apply { ellipsize = null }, lp(44, ADATTA))
             val sinistra = Ui.colonna(s, 2)
-            sinistra.addView(Ui.adatta(Ui.testo(s, 42, TESTO, medio, contenuto = if (luogo) d.comune else d.nome, maiuscolo = true), 24, 42), lp(TUTTO, 48))
-            sinistra.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"), lp(TUTTO, 34))
+            sinistra.addView(Ui.adatta(Ui.testo(s, 42, TESTO, medio, contenuto = if (luogo) d.comune else d.nome), 24, 42), lp(TUTTO, 50))
+            sinistra.addView(Ui.testo(s, 28, SECONDARIO, tipoDritto, 34, "${d.marchio} · aggiornato ${Benzinai.quando(d.aggiornato, adesso)}"), lp(TUTTO, 34))
             corpoRiga.addView(sinistra, lp(0, ADATTA, 1f))
-            corpoRiga.addView(Ui.testo(s, 32, TESTO, medio, 38, Benzinai.distanza(d.distanzaKm)))
+            corpoRiga.addView(Ui.testo(s, 32, TESTO, normale, 38, Benzinai.distanza(d.distanzaKm)))
+            DatiMimit.andamento(d)?.let { andamento ->
+                val variazione = Ui.riga(s, 6).apply {
+                    contentDescription = (if (andamento.salito) "Prezzo salito di " else "Prezzo sceso di ") + andamento.differenza
+                    addView(
+                        Ui.icona(s, if (andamento.salito) R.drawable.ic_su else R.drawable.ic_giu, ARANCIO),
+                        lp(18, 18),
+                    )
+                    addView(Ui.testo(s, 28, TESTO, tipoDrittoMedio, 32, andamento.differenza).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO })
+                }
+                corpoRiga.addView(variazione, lp(ADATTA, ADATTA))
+            }
             val prezzo = Ui.riga(s, 8, Gravity.NO_GRAVITY)
             prezzo.addView(sfumato(s, 52, aw, 60).apply { text = millesimo(Benzinai.prezzo(d.prezzo)) })
-            prezzo.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "€/l"))
+            prezzo.addView(Ui.testo(s, 28, SECONDARIO, tipoDritto, 34, "€/l"))
             corpoRiga.addView(prezzo, lp(ADATTA, ADATTA))
             arrotonda(corpoRiga, 24f)
-            riga.addView(Ui.premibile(corpoRiga, ONDA, d.nome) { seleziona(d) }, lp(0, TUTTO, 1f))
-            return riga
+            return Ui.premibile(corpoRiga, ONDA, d.nome) { seleziona(d) }
         }
 
         private fun millesimo(prezzo: String): CharSequence = SpannableString(prezzo).apply {
@@ -626,7 +804,7 @@ object Synthwave : Tema {
             val prezzo = "${Benzinai.prezzo(d.prezzo)} €/l self"
             val testo = SpannableStringBuilder(prezzo).apply {
                 setSpan(ForegroundColorSpan(ARANCIO), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                setSpan(TypefaceSpan(grassetto), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                setSpan(TypefaceSpan(tipoDrittoGrassetto), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 append(" · ${Benzinai.distanza(d.distanzaKm)} · ")
                 val inizio = length
                 append("aggiornato ${Benzinai.quando(d.aggiornato, System.currentTimeMillis())}")

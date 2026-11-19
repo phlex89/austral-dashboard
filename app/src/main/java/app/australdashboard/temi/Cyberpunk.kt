@@ -1,6 +1,7 @@
 package app.australdashboard.temi
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
@@ -20,17 +21,23 @@ import android.view.View
 import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import app.australdashboard.R
 import app.australdashboard.Schermata
 import app.australdashboard.funzioni.Benzinai
+import app.australdashboard.funzioni.DatiMimit
 import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.Ordine
+import app.australdashboard.funzioni.Playlist
+import app.australdashboard.funzioni.Playlists
+import app.australdashboard.funzioni.StatoSistema
+import app.australdashboard.funzioni.StatoWifi
 import app.australdashboard.temi.Ui.ADATTA
 import app.australdashboard.temi.Ui.TUTTO
 import app.australdashboard.temi.Ui.lp
@@ -89,11 +96,11 @@ object Cyberpunk : Tema {
 
     private fun codice(c: Context, contenuto: String) = testo(c, 28, SECONDARIO, false, 32, contenuto, spaziatura = 3)
 
-    private fun etichetta(c: Context, contenuto: String): TextView =
-        testo(c, 28, SFONDO, true, 28, contenuto, spaziatura = 2).apply {
+    private fun etichetta(c: Context, contenuto: String, margine: Int = 18, spaziatura: Int = 2): TextView =
+        testo(c, 28, SFONDO, true, 28, contenuto, spaziatura = spaziatura).apply {
             gravity = Gravity.CENTER_VERTICAL
             taglia(this, GIALLO, 12)
-            setPadding(18, 0, 18, 0)
+            setPadding(margine, 0, margine, 0)
         }
 
     private fun tasto(
@@ -149,7 +156,7 @@ object Cyberpunk : Tema {
     private class HomeCyberpunk(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
         private val ora = testo(s, 168, TESTO, true, 150)
         private val data = Ui.adatta(testo(s, 32, TESTO, false, 38, maiuscolo = true, spaziatura = 2), 22, 32)
-        private val gradi = testo(s, 124, TESTO, true, 112, "--°")
+        private val gradi = testo(s, 124, TESTO, true, 112, "--°").apply { translationY = -20f }
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, GIALLO)
         private val cielo = Ui.adatta(testo(s, 34, TESTO, true, 38, "In attesa", maiuscolo = true), 20, 34)
         private val estremi = Ui.adatta(testo(s, 30, SECONDARIO, false, 34, "max --° · min --°", maiuscolo = true), 20, 30)
@@ -172,6 +179,20 @@ object Cyberpunk : Tema {
         private val asta = AstaCyb(s, CONTORNO, TESTO, SECONDARIO, GIALLO)
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, SFONDO)
         private lateinit var play: View
+        private val playlist = Playlists.elenco(s)
+        private val chipPioggia = etichetta(s, "", 14, 1).apply { visibility = View.GONE }
+        private val wifi = Ui.colonna(s, 4, Gravity.CENTER)
+        private val iconaWifi = Ui.icona(s, R.drawable.ic_wifi_spento, SECONDARIO)
+        private val scrittaWifi = testo(s, 28, SECONDARIO, true, 30, "WI-FI")
+        private val bluetooth = Ui.colonna(s, 4, Gravity.CENTER)
+        private val iconaBluetooth = Ui.icona(s, R.drawable.ic_bluetooth_spento, SECONDARIO)
+        private val scrittaBluetooth = testo(s, 28, SECONDARIO, true, 30, "BT")
+        private val volume = Ui.colonna(s, 8, Gravity.CENTER)
+        private val cifreVolume = testo(s, 72, TESTO, true, 60, "00").apply {
+            gravity = Gravity.CENTER
+            translationY = -16f
+        }
+        private val tacchePerVolume = LivelloCyb(s, GIALLO, CONTORNO)
 
         override val view: View = costruisci()
 
@@ -182,10 +203,13 @@ object Cyberpunk : Tema {
             }
             radice.addView(servizi(), lp(TUTTO, 120))
             val corpo = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            corpo.addView(pannelloMusica(), lp(700, TUTTO))
+            val sinistra = Ui.colonna(s, 20)
+            sinistra.addView(pannelloMusica(), lp(TUTTO, 0, 1f))
+            sinistra.addView(sistema(), lp(TUTTO, 120))
+            corpo.addView(sinistra, lp(700, TUTTO))
             val destra = Ui.colonna(s, 20)
             destra.addView(boxOra(), lp(TUTTO, 300))
-            destra.addView(boxMeteo(), lp(TUTTO, 220))
+            destra.addView(boxMeteo(), lp(TUTTO, 250))
             destra.addView(griglia(), lp(TUTTO, 0, 1f))
             corpo.addView(destra, lp(0, TUTTO, 1f))
             radice.addView(corpo, lp(TUTTO, 0, 1f))
@@ -230,7 +254,7 @@ object Cyberpunk : Tema {
             }
             intestazione.addView(settimana, lp(ADATTA, 32))
             p.addView(intestazione, lp(TUTTO, 32))
-            p.addView(ora.apply { gravity = Gravity.CENTER_VERTICAL }, lp(ADATTA, 172).apply { topMargin = 6 })
+            p.addView(ora.apply { gravity = Gravity.CENTER_VERTICAL; translationY = -34f }, lp(ADATTA, 172).apply { topMargin = 6 })
             p.addView(tacche, lp(TUTTO, 14).apply { topMargin = -14 })
             p.addView(View(s), lp(TUTTO, 0, 1f))
             p.addView(data, lp(TUTTO, 38))
@@ -248,15 +272,73 @@ object Cyberpunk : Tema {
             val colonna = Ui.colonna(s, 6)
             val rigaCielo = Ui.riga(s, 10)
             rigaCielo.addView(iconaMeteo, lp(48, 48))
-            rigaCielo.addView(cielo, lp(0, 40, 1f))
+            rigaCielo.addView(cielo, lp(0, 46, 1f))
             colonna.addView(rigaCielo, lp(TUTTO, 48))
-            colonna.addView(estremi, lp(TUTTO, 36))
+            colonna.addView(estremi, lp(TUTTO, 40))
             riga.addView(colonna, lp(0, ADATTA, 1f))
             p.addView(riga, lp(TUTTO, 112))
             p.addView(asta, lp(TUTTO, 14).apply { topMargin = 10 })
+            p.addView(chipPioggia, lp(ADATTA, 34).apply { topMargin = 10 })
             taglia(p, PANNELLO, 28, 0, CONTORNO)
-            p.setPadding(30, 22, 30, 22)
+            p.setPadding(30, 18, 30, 18)
             return p
+        }
+
+        private fun sistema(): View {
+            val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+            riga.addView(tastoSistema(wifi, iconaWifi, scrittaWifi, "Wi-Fi") { azioni.wifi() }, lp(130, TUTTO))
+            riga.addView(tastoSistema(bluetooth, iconaBluetooth, scrittaBluetooth, "Bluetooth") { azioni.bluetooth() }, lp(130, TUTTO))
+            riga.addView(
+                tasto(s, R.drawable.ic_meno, 52, TASTO, TESTO, 18, "Abbassa il volume", ONDA, CONTORNO) { azioni.volume(false) },
+                lp(120, TUTTO),
+            )
+            volume.addView(cifreVolume, lp(TUTTO, 64))
+            volume.addView(tacchePerVolume, lp(117, 14))
+            riga.addView(volume, lp(120, TUTTO))
+            riga.addView(
+                tasto(s, R.drawable.ic_piu, 52, TASTO, TESTO, 18, "Alza il volume", ONDA, CONTORNO) { azioni.volume(true) },
+                lp(120, TUTTO),
+            )
+            mostraSistema(StatoSistema(StatoWifi.SPENTO, false, 0, 0))
+            return riga
+        }
+
+        private fun tastoSistema(tasto: LinearLayout, icona: ImageView, scritta: TextView, nome: String, azione: () -> Unit): View {
+            tasto.addView(icona, lp(48, 48))
+            tasto.addView(scritta, lp(ADATTA, ADATTA))
+            tasto.contentDescription = nome
+            return Ui.premibile(tasto, ONDA, nome, azione)
+        }
+
+        private fun statoTasto(tasto: View, icona: ImageView, scritta: TextView, risorsa: Int, sfondo: Int, colore: Int, contorno: Int) {
+            taglia(tasto, sfondo, 18, contorno = contorno)
+            icona.setImageResource(risorsa)
+            icona.imageTintList = ColorStateList.valueOf(colore)
+            scritta.setTextColor(colore)
+        }
+
+        private fun bottonePlaylist(p: Playlist, inRiga: Boolean): View {
+            val c = FrameLayout(s)
+            val contenuto = Ui.riga(s, 14)
+            if (inRiga) contenuto.addView(Ui.icona(s, R.drawable.ic_play, GIALLO), lp(32, 32))
+            val nome = Ui.adatta(
+                testo(s, 28, TESTO, false, 30, p.nome, righe = 3).apply { gravity = Gravity.CENTER_VERTICAL },
+                18,
+                28,
+            )
+            contenuto.addView(nome, lp(0, TUTTO, 1f))
+            contenuto.setPadding(if (inRiga) 20 else 14, 2, 14, 2)
+            c.addView(contenuto, lpf(TUTTO, TUTTO))
+            c.addView(
+                triangolo(s),
+                lpf(16, 16, Gravity.BOTTOM or Gravity.END).apply {
+                    rightMargin = 2
+                    bottomMargin = 2
+                },
+            )
+            taglia(c, TASTO, 14, contorno = CONTORNO)
+            Ui.premibile(c, ONDA, "Riproduci la playlist ${p.nome}") { azioni.playlist(p) }
+            return c
         }
 
         private fun griglia(): View {
@@ -272,11 +354,11 @@ object Cyberpunk : Tema {
         private fun cellaApp(app: AppHome, numero: Int): View {
             val c = FrameLayout(s)
             val centro = Ui.colonna(s, 8, Gravity.CENTER)
-            val sigla = testo(s, 44, GIALLO, true, 44, app.sigla).apply {
+            val sigla = testo(s, 40, GIALLO, true, 40, app.sigla).apply {
                 gravity = Gravity.CENTER
                 background = Ui.bordo(GIALLO, 2)
             }
-            centro.addView(sigla, lp(64, 64))
+            centro.addView(sigla, lp(56, 56))
             val nome = Ui.adatta(
                 testo(s, 30, TESTO, true, 32, app.nome, maiuscolo = true, spaziatura = 1).apply { gravity = Gravity.CENTER },
                 18,
@@ -313,12 +395,27 @@ object Cyberpunk : Tema {
             copertina.setBackgroundColor(TASTO)
             tagliaImmagine(copertina, 24)
             Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }
-            inAscolto.addView(copertina, lp(560, 560).apply { topMargin = 18 })
+            if (playlist.isEmpty()) {
+                inAscolto.addView(
+                    copertina,
+                    lp(470, 470).apply {
+                        topMargin = 18
+                        gravity = Gravity.CENTER_HORIZONTAL
+                    },
+                )
+            } else {
+                val rigaCopertina = Ui.riga(s, 20, Gravity.NO_GRAVITY)
+                rigaCopertina.addView(copertina, lp(400, 400))
+                val colonnaPlaylist = Ui.colonna(s, 20)
+                playlist.forEach { colonnaPlaylist.addView(bottonePlaylist(it, false), lp(TUTTO, 0, 1f)) }
+                rigaCopertina.addView(colonnaPlaylist, lp(0, TUTTO, 1f))
+                inAscolto.addView(rigaCopertina, lp(TUTTO, 400).apply { topMargin = 18 })
+            }
             val info = Ui.colonna(s)
-            info.addView(titolo, lp(TUTTO, 72))
-            info.addView(artista, lp(TUTTO, 40))
+            info.addView(titolo, lp(TUTTO, 88).apply { topMargin = -8; bottomMargin = -8 })
+            info.addView(artista, lp(TUTTO, 40).apply { topMargin = -6 })
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
-            inAscolto.addView(info, lp(TUTTO, ADATTA).apply { topMargin = 20 })
+            inAscolto.addView(info, lp(TUTTO, ADATTA).apply { topMargin = 18 })
             inAscolto.addView(View(s), lp(TUTTO, 0, 1f))
             inAscolto.addView(filetto(s, CONTORNO, GIALLO), lp(TUTTO, 6))
             inAscolto.addView(View(s), lp(TUTTO, 0, 1f))
@@ -344,7 +441,12 @@ object Cyberpunk : Tema {
             )
             fermo.addView(testataFermo, lp(TUTTO, 42))
             val grande = Ui.adatta(testo(s, 150, TESTO, true, 140, "Spotify", maiuscolo = true), 80, 150)
-            fermo.addView(grande, lp(TUTTO, 140).apply { topMargin = 40 })
+            fermo.addView(grande, lp(TUTTO, 184).apply { topMargin = 8; bottomMargin = -22 })
+            if (playlist.isNotEmpty()) {
+                val righePlaylist = Ui.colonna(s, 20)
+                playlist.forEach { righePlaylist.addView(bottonePlaylist(it, true), lp(TUTTO, 120)) }
+                fermo.addView(righePlaylist, lp(TUTTO, ADATTA).apply { topMargin = 20 })
+            }
             fermo.addView(View(s), lp(TUTTO, 0, 1f))
             fermo.addView(filetto(s, CONTORNO, GIALLO), lp(TUTTO, 6))
             fermo.addView(View(s), lp(TUTTO, 0, 1f))
@@ -384,7 +486,33 @@ object Cyberpunk : Tema {
             tacche.contentDescription = "Avanzamento della giornata: ore $ore su 24"
         }
 
+        override fun mostraSistema(stato: StatoSistema) {
+            when (stato.wifi) {
+                StatoWifi.SPENTO -> statoTasto(wifi, iconaWifi, scrittaWifi, R.drawable.ic_wifi_spento, PANNELLO, SECONDARIO, CONTORNO)
+                StatoWifi.ACCESO -> statoTasto(wifi, iconaWifi, scrittaWifi, R.drawable.ic_wifi, TASTO, TESTO, CONTORNO)
+                StatoWifi.CONNESSO -> statoTasto(wifi, iconaWifi, scrittaWifi, R.drawable.ic_wifi, GIALLO, SFONDO, 0)
+            }
+            wifi.contentDescription = when (stato.wifi) {
+                StatoWifi.SPENTO -> "Wi-Fi spento"
+                StatoWifi.ACCESO -> "Wi-Fi acceso, non connesso"
+                StatoWifi.CONNESSO -> "Wi-Fi connesso"
+            }
+            if (stato.bluetooth) {
+                statoTasto(bluetooth, iconaBluetooth, scrittaBluetooth, R.drawable.ic_bluetooth, GIALLO, SFONDO, 0)
+            } else {
+                statoTasto(bluetooth, iconaBluetooth, scrittaBluetooth, R.drawable.ic_bluetooth_spento, PANNELLO, SECONDARIO, CONTORNO)
+            }
+            bluetooth.contentDescription = if (stato.bluetooth) "Bluetooth acceso" else "Bluetooth spento"
+            cifreVolume.text = String.format(Locale.US, "%02d", stato.volume)
+            val massimo = stato.volumeMassimo
+            tacchePerVolume.mostra(if (massimo > 0) Math.round(stato.volume * 15f / massimo).coerceIn(0, 15) else 0)
+            volume.contentDescription = "Volume ${stato.volume} su $massimo"
+        }
+
         override fun mostraMeteo(meteo: Meteo?) {
+            val pioggia = meteo?.let { FonteMeteo.testoPioggia(it.pioggiaTraMinuti) }
+            chipPioggia.text = pioggia?.uppercase(Locale.ITALIAN)
+            chipPioggia.visibility = if (pioggia != null) View.VISIBLE else View.GONE
             if (meteo == null) {
                 asta.mostra(null)
                 asta.contentDescription = null
@@ -425,8 +553,15 @@ object Cyberpunk : Tema {
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: View
         private val codiceScheda = testo(s, 30, SFONDO, true, 34, maiuscolo = true, spaziatura = 3)
-        private val indirizzo = Ui.adatta(testo(s, 72, SFONDO, true, 70, maiuscolo = true, righe = 2), 32, 72)
-        private val dettagli = Ui.adatta(testo(s, 32, SFONDO, true, 36, maiuscolo = true), 20, 32)
+        private val indirizzo = Ui.adatta(
+            testo(s, 64, SFONDO, true, 62, maiuscolo = true).apply { gravity = Gravity.CENTER_VERTICAL },
+            28,
+            64,
+        )
+        private val dettagli = Ui.adatta(testo(s, 30, SFONDO, true, 34, maiuscolo = true), 20, 30)
+        private val spesa = testo(s, 28, SECONDARIO, false, 32, maiuscolo = true, spaziatura = 1).apply {
+            visibility = View.GONE
+        }
         private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
@@ -437,13 +572,14 @@ object Cyberpunk : Tema {
                 setPadding(24, 24, 24, 24)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
+            radice.addView(ordinamenti(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
                 addView(elencoView)
             }
             radice.addView(FrameLayout(s).apply { addView(scorrimento) }, lp(TUTTO, 0, 1f))
-            radice.addView(boxScheda(), lp(TUTTO, 270))
+            radice.addView(boxScheda(), lp(TUTTO, 186))
             return radice
         }
 
@@ -454,19 +590,38 @@ object Cyberpunk : Tema {
                 lp(120, 120),
             )
             val titoli = Ui.colonna(s)
-            titoli.addView(codice(s, "// CARBURANTE · SELF"))
-            titoli.addView(testo(s, 84, TESTO, true, 78, "Benzinai", maiuscolo = true, spaziatura = 1))
+            titoli.addView(codice(s, "// CARBURANTE · SELF").apply { translationY = 6f })
+            titoli.addView(testo(s, 80, TESTO, true, 74, "Benzinai", maiuscolo = true, spaziatura = 1).apply { translationY = -11f })
             riga.addView(titoli, lp(0, ADATTA, 1f))
-            val gruppo = Ui.riga(s, 20)
+            val rifornimenti = Ui.riga(s, 14)
+            rifornimenti.addView(Ui.icona(s, R.drawable.ic_rifornimenti, GIALLO), lp(44, 44))
+            val voce = Ui.colonna(s)
+            voce.addView(testo(s, 34, TESTO, true, 38, "Rifornimenti", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
+            voce.addView(spesa, lp(ADATTA, ADATTA))
+            rifornimenti.addView(voce, lp(ADATTA, ADATTA))
+            rifornimenti.setPadding(26, 0, 26, 0)
+            taglia(rifornimenti, PANNELLO, 18, contorno = GIALLO)
+            Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti() }
+            riga.addView(rifornimenti, lp(ADATTA, TUTTO))
+            return riga
+        }
+
+        private fun ordinamenti(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(codice(s, "// ORDINA PER"), lp(ADATTA, ADATTA))
             for ((ordine, nome) in Ui.ORDINI) {
                 val t = testo(s, 32, TESTO, true, 36, nome, maiuscolo = true, spaziatura = 2).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = t
                 Ui.premibile(t, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }
-                gruppo.addView(t, lp(190, 120))
+                riga.addView(t, lp(0, TUTTO, 1f))
             }
-            riga.addView(gruppo, lp(ADATTA, TUTTO))
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
+        }
+
+        override fun mostraSpesa(testo: String?) {
+            spesa.text = testo
+            spesa.visibility = if (testo != null) View.VISIBLE else View.GONE
         }
 
         private fun evidenziaOrdine(attivo: Ordine) {
@@ -480,11 +635,10 @@ object Cyberpunk : Tema {
 
         private fun boxScheda(): View {
             val p = Ui.riga(s, 28)
-            val testi = Ui.colonna(s, 8)
+            val testi = Ui.colonna(s, 2)
             testi.addView(codiceScheda, lp(TUTTO, 34))
             testi.addView(indirizzo, lp(TUTTO, 0, 1f))
-            testi.addView(filetto(s, SFONDO, SFONDO), lp(TUTTO, 6))
-            testi.addView(dettagli, lp(TUTTO, 36))
+            testi.addView(dettagli, lp(TUTTO, 34))
             p.addView(testi, lp(0, TUTTO, 1f))
             val comandi = Ui.riga(s, 20)
             comandi.addView(
@@ -492,8 +646,8 @@ object Cyberpunk : Tema {
                 lp(120, 120),
             )
             p.addView(comandi, lp(ADATTA, ADATTA))
-            scheda = taglia(p, GIALLO, 40)
-            p.setPadding(36, 24, 36, 24)
+            scheda = taglia(p, GIALLO, 32)
+            p.setPadding(32, 0, 32, 0)
             scheda.visibility = View.GONE
             return scheda
         }
@@ -570,6 +724,13 @@ object Cyberpunk : Tema {
             )
             corpo.addView(sinistra, lp(0, ADATTA, 1f))
             corpo.addView(testo(s, 34, TESTO, true, 38, Benzinai.distanza(d.distanzaKm)), lp(ADATTA, ADATTA))
+            DatiMimit.andamento(d)?.let { a ->
+                val variazione = Ui.riga(s, 6)
+                variazione.addView(Ui.icona(s, if (a.salito) R.drawable.ic_su else R.drawable.ic_giu, TESTO), lp(20, 20))
+                variazione.addView(testo(s, 28, TESTO, true, 32, a.differenza), lp(ADATTA, ADATTA))
+                variazione.contentDescription = "Prezzo ${if (a.salito) "salito" else "sceso"} di ${a.differenza}"
+                corpo.addView(variazione, lp(ADATTA, ADATTA))
+            }
             val cifre = Benzinai.prezzo(d.prezzo)
             val prezzo = SpannableString("$cifre €/L")
             prezzo.setSpan(AbsoluteSizeSpan(46), cifre.length - 1, cifre.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -683,6 +844,24 @@ private class FormaCyb(c: Context, private val disegna: (Canvas, Float, Float, P
 
     override fun onDraw(canvas: Canvas) {
         disegna(canvas, width.toFloat(), height.toFloat(), pennello)
+    }
+}
+
+private class LivelloCyb(c: Context, private val accesa: Int, private val spenta: Int) : View(c) {
+    private val pennello = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private var accese = 0
+
+    fun mostra(nuove: Int) {
+        if (nuove == accese) return
+        accese = nuove
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        for (i in 0 until 15) {
+            pennello.color = if (i < accese) accesa else spenta
+            canvas.drawRect(i * 8f, 0f, i * 8f + 5f, height.toFloat(), pennello)
+        }
     }
 }
 
