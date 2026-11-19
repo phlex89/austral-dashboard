@@ -26,6 +26,8 @@ Un'app della Home che non è installata resta spenta. Toccando la copertina o il
 
 Per cambiare l'aspetto: Impostazioni → **Tema**, poi tocca quello che vuoi. La Home cambia subito.
 
+Ogni tema ha piccoli indicatori che si aggiornano da soli: il giorno della settimana in evidenza, quanta parte della giornata è passata, dove sta la temperatura di adesso tra la minima e la massima, una spia quando la musica suona. Nei Benzinai ogni distributore ha il suo numero di posizione e la terza cifra del prezzo è più piccola, come sui cartelli. Finché il meteo non arriva, i suoi indicatori restano spenti.
+
 ## Prima installazione sul box
 
 **In breve.** Si fa una volta sola, a mano; dopo il launcher si aggiorna da solo.

@@ -2,7 +2,7 @@
 
 ## Per cominciare
 
-Progetto Gradle (wrapper 9.9.1, AGP 9.5.1 con Kotlin integrato), un modulo `app`, package `app.australdashboard`. `minSdk` = `targetSdk` = `compileSdk` = 32. Nessuna dipendenza di runtime; nei test JUnit 4 e `org.json` (che su Android è nella piattaforma). Il controllo lint `ExpiredTargetSdkVersion` è disattivato perché riguarda solo il Play Store. Release con R8 e riduzione delle risorse: l'APK è intorno ai 670 KB con i font VT323, Orbitron, Limelight, Rajdhani (pesi 600 e 700, la parte più pesante) e Audiowide.
+Progetto Gradle (wrapper 9.9.1, AGP 9.5.1 con Kotlin integrato), un modulo `app`, package `app.australdashboard`. `minSdk` = `targetSdk` = `compileSdk` = 32. Nessuna dipendenza di runtime; nei test JUnit 4 e `org.json` (che su Android è nella piattaforma). Il controllo lint `ExpiredTargetSdkVersion` è disattivato perché riguarda solo il Play Store. Release con R8 e riduzione delle risorse: l'APK è intorno ai 690 KB con i font VT323, Orbitron, Limelight, Rajdhani (pesi 600 e 700, la parte più pesante) e Audiowide.
 
 JDK: quello di Android Studio, `/Applications/Android Studio.app/Contents/jbr/Contents/Home` (esportare `JAVA_HOME`). SDK in `~/Library/Android/sdk`, indicato in `local.properties` (ignorato da git).
 
@@ -66,7 +66,8 @@ Da verificare sul box (prove manuali di M01, previste il 2026-11-19): se c'è la
 
 ## Temi
 
-- Le tavole sono nell'artifact Design `FB5G7dpEA4q1GcwEvhxoXL`: `project/T<n>Home.dc.html`, `project/T<n>Benzinai.dc.html`, e in `project/canvas.json` le note `t<n>spec` con palette, font e misure.
+- Le tavole sono nell'artifact Design `FB5G7dpEA4q1GcwEvhxoXL`: `project/T<n>Home.dc.html` (con musica), `project/T<n>HomeB.dc.html` (la stessa con `music=false`), `project/T<n>Benzinai.dc.html`, e in `project/canvas.json` le note `t<n>spec` con palette, font, misure e la sezione DETTAGLI (gli indicatori che portano un'informazione). Le tavole del 2026-11-18 sera aggiungono i dettagli a quelle usate per la v0.2.0.
+- Disegnare le tavole in locale per confrontarle con l'emulatore: scaricare i `.dc.html` e `artifact-type/dc-runtime.js` dall'artifact (azione `read`), salvare il runtime come `support.js` accanto ai `.dc.html`, servire la cartella con `python3 -m http.server` e fotografare con Chrome senza finestra: `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --window-size=1244,1194 --virtual-time-budget=8000 --screenshot=<png> http://localhost:<porta>/T<n>Home.dc.html`. Gli `HomeB` caricano la tavola `Home` con `dc-import`, quindi servono entrambe nella cartella.
 - Le misure delle tavole sono in px a 1244×1194 e i temi le usano così come sono (`TypedValue.COMPLEX_UNIT_PX`), senza convertire in dp.
 - Tutte le activity usano `Theme.DeviceDefault.NoActionBar.Fullscreen`: la barra di stato di Android non toglie spazio alla Home.
 - Un riquadro con l'etichetta sul bordo esce dai propri limiti: il genitore deve avere `clipChildren=false` (`Ui.senzaRitaglio`). Mai su un genitore diretto di uno `ScrollView`, che altrimenti disegna fuori dai suoi limiti: lo `ScrollView` va dentro un `FrameLayout`.
@@ -123,13 +124,14 @@ Immagine `system-images;android-32;google_apis;arm64-v8a`. AVD in `~/.android/av
 | `box` | 1244×1194, 200 dpi, `hw.mainKeys=yes` | 8 | 8 GB |
 | `box-lento` | uguale | 2 | 2 GB |
 
-- Avvio senza finestra: `~/Library/Android/sdk/emulator/emulator -avd box -no-window -no-audio -no-boot-anim -no-snapshot-save`; con finestra si apre da Android Studio (Device Manager).
+- Avvio senza finestra: `~/Library/Android/sdk/emulator/emulator -avd box -no-window -no-boot-anim -no-snapshot-save`; con finestra lo stesso comando senza `-no-window`, o da Android Studio (Device Manager). Con `-no-audio` Chrome non crea la sessione media e la prova della musica non funziona. Con molte build Gradle in parallelo l'emulatore da 8 GB si è chiuso da solo: in quel caso `-memory 4096`.
 - Su un AVD nuovo, per somigliare al box (che non ha la taskbar di Android 12L): `adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher`, poi `adb shell cmd package set-home-activity app.australdashboard/.HomeActivity`.
 - Avvio a freddo: `adb shell am force-stop app.australdashboard`, poi `adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME` (`TotalTime`, `LaunchState: COLD`).
 - Posizione finta: `adb shell appops set com.android.shell android:mock_location allow`, poi per `gps` e `fused` `adb shell cmd location providers add-test-provider <p>`, `set-test-provider-enabled <p> true`, `set-test-provider-location <p> --location 41.9028,12.4964`. `adb emu geo fix` da solo non bastava.
 - Permesso musica senza toccare: `adb shell cmd notification allow_listener app.australdashboard/app.australdashboard.funzioni.AscoltoNotifiche`.
-- Un brano finto per provare la scheda della musica: una pagina servita dal Mac (`python3 -m http.server 8765`, poi `adb reverse tcp:8765 tcp:8765`) con un `<audio>` e `navigator.mediaSession.metadata` (titolo, artista, copertina PNG), aperta in Chrome sull'emulatore; un tocco su play crea una sessione media vera, con il nome dell'app «Chrome». `adb shell am force-stop com.android.chrome` la chiude.
+- Un brano finto per provare la scheda della musica: una pagina servita dal Mac (`python3 -m http.server <porta> --directory <cartella>`, poi `adb reverse tcp:<porta> tcp:<porta>`; le porte 8765 e 8766 sono spesso già occupate da altri progetti, controllare con `lsof -iTCP:<porta>`) con un `<audio>` e `navigator.mediaSession.metadata` (titolo, artista, copertina PNG), aperta in Chrome sull'emulatore; un tocco su play crea una sessione media vera, con il nome dell'app «Chrome». Dopo un avvio dell'emulatore Chrome può disegnare la pagina nera per qualche secondo: riprovare il tocco finché `adb shell dumpsys media_session` non mostra `package=com.android.chrome`. `adb shell am force-stop com.android.chrome` la chiude.
 - Le activity diverse dalla Home non sono esportate: ci si arriva dalla Home con `adb shell input tap`. Per toccare un elemento per testo o descrizione: `adb exec-out uiautomator dump /dev/tty`, poi il centro dei suoi `bounds`. Il testo letto è quello originale, senza il maiuscolo applicato dalla vista. Memoria: `adb shell dumpsys meminfo app.australdashboard`. Frame: `adb shell dumpsys gfxinfo app.australdashboard`.
+- Con una build di debug (debuggable) il tema si cambia senza toccare: `adb shell "run-as app.australdashboard sh -c 'printf ... > shared_prefs/impostazioni.xml'"` con `<string name=\"tema\">id</string>`, poi `am force-stop` e il tasto casa. La build di debug ha un'altra firma: per passare tra debug e release sull'emulatore serve `adb uninstall`, che cancella preferenze e permessi (da ridare con `pm grant` e `allow_listener`). Il PSS della build di debug è di circa 39 MB, contro 26–28 MB della release: le misure si fanno sulla release.
 
 Misure sull'emulatore `box` (build 0.1.0, release): APK 41 KB, PSS 20–24 MB, avvio a freddo `TotalTime` 180–330 ms, primo frame dalla creazione della Home 85–125 ms, 0 frame in ritardo secondo `gfxinfo`.
 

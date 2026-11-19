@@ -10,6 +10,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Aggiornamenti dalle GitHub Releases](#aggiornamenti-dalle-github-releases)
 - [Temi intercambiabili per la Home](#temi-intercambiabili-per-la-home)
 - [Fonti di meteo e prezzi](#fonti-di-meteo-e-prezzi)
+- [Dettagli dei temi legati ai dati](#dettagli-dei-temi-legati-ai-dati)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -66,3 +67,15 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - Se il box non ha una posizione, meteo e Benzinai usano una città di riserva scelta in Impostazioni (Open-Meteo Geocoding).
 - «Conviene» ordina per il costo di un pieno da 40 litri più andata e ritorno a 6 l/100 km.
 - I preferiti sono tre comuni scelti dall'utente, fissi nel codice (Torino, Cellamare, Valenzano), non distributori: un comune ha molti distributori e quello più economico cambia di giorno in giorno. Di ognuno si mostra il più economico, anche se è lontano (D-6 del piano M02).
+
+## Dettagli dei temi legati ai dati
+
+**In breve.** Ogni dettaglio grafico dei temi porta un'informazione: giorno della settimana, ore passate, temperatura tra minima e massima, musica in riproduzione, posizione nell'elenco dei Benzinai. Nel launcher ogni dettaglio legge il dato vero e si aggiorna con l'ora o con il meteo; senza il dato resta spento, mai con un valore inventato.
+
+**Dettagli.**
+
+- Decisione dell'utente (2026-11-18): le tavole dei temi si arricchiscono di dettagli solo se ognuno porta un'informazione; la scheda `t<n>spec` di ogni tema li elenca nella sezione DETTAGLI.
+- Gli indicatori si ridisegnano in `mostraOra` (a ogni minuto) e `mostraMeteo`, senza timer propri, per non pesare sul box.
+- Le scale della temperatura vanno dalla minima alla massima del giorno; con minima uguale alla massima, o senza meteo, restano spente.
+- Le ★ delle tavole restano fuori: i preferiti sono comuni fissi (D-6), non distributori da salvare.
+- Costo misurato in release: 2–3 MB di PSS in più per tema, avvio a freddo invariato.
