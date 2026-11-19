@@ -50,7 +50,7 @@ object Brutalismo : Tema {
     }
     private val mono: Typeface get() = Ui.monoGrassetto
 
-    override fun palette(context: Context) = Palette(SFONDO, TESTO, SECONDARIO, ROSSO, SFONDO, TESTO, nero, mono)
+    override fun palette(context: Context) = Palette(SFONDO, TESTO, ROSSO, TESTO, nero, mono)
 
     private fun tasto(
         context: Context,
@@ -294,7 +294,7 @@ object Brutalismo : Tema {
 
         private fun app(): View {
             val colonna = Ui.colonna(s, 20)
-            AppHome.elenco.forEachIndexed { i, app ->
+            AppHome.elenco(s).forEachIndexed { i, app ->
                 val riga = Ui.riga(s, 22).apply {
                     background = Ui.bordo(TESTO, BORDO)
                     setPadding(16, 0, 20, 0)
@@ -348,7 +348,7 @@ object Brutalismo : Tema {
             estremi.text = "MAX ${meteo.massima}° / MIN ${meteo.minima}°"
             val escursione = meteo.massima - meteo.minima
             barraMeteo.frazione =
-                if (escursione > 0) ((meteo.gradi - meteo.minima).toFloat() / escursione).coerceIn(0f, 1f) else 0.5f
+                if (escursione > 0) Ui.frazione(meteo.gradi, meteo.minima, meteo.massima) else 0.5f
         }
 
         override fun mostraMusica(musica: Musica?) {
@@ -383,8 +383,7 @@ object Brutalismo : Tema {
             88,
         )
         private val dettagli = Ui.testo(s, 30, SFONDO, mono, 36, maiuscolo = true)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -413,7 +412,7 @@ object Brutalismo : Tema {
                 lp(0, 100, 1f),
             )
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = Ui.testo(s, 30, TESTO, mono, 34, nome, maiuscolo = true).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
                 gruppo.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(200, 120))
@@ -445,25 +444,25 @@ object Brutalismo : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio(Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio(e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("★ ${e.preferiti.size}", "Preferiti", e.preferiti, true)
                     val per = when (e.ordine) {
                         Ordine.CONVIENE -> "PER CONVENIENZA"
@@ -504,7 +503,7 @@ object Brutalismo : Tema {
         private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = if (scelto) Ui.bordo(ROSSO, 6) else Ui.bordo(TESTO, BORDO)
                 setPadding(18, 0, 24, 0)
@@ -530,7 +529,7 @@ object Brutalismo : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return

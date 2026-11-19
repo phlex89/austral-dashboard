@@ -32,6 +32,7 @@ class EsitoInstallazioneReceiver : BroadcastReceiver() {
             context.startActivity(conferma)
             return
         }
+        inAttesa = conferma
         val notifiche = context.getSystemService(NotificationManager::class.java)
         notifiche.createNotificationChannel(
             NotificationChannel(CANALE, "Aggiornamenti", NotificationManager.IMPORTANCE_HIGH)
@@ -49,7 +50,15 @@ class EsitoInstallazioneReceiver : BroadcastReceiver() {
         notifiche.notify(1, notifica)
     }
 
-    private companion object {
-        const val CANALE = "aggiornamenti"
+    companion object {
+        private const val CANALE = "aggiornamenti"
+        private var inAttesa: Intent? = null
+
+        fun riprendi(context: Context) {
+            val conferma = inAttesa ?: return
+            inAttesa = null
+            context.getSystemService(NotificationManager::class.java).cancel(1)
+            context.startActivity(conferma)
+        }
     }
 }

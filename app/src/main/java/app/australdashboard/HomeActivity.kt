@@ -29,6 +29,7 @@ class HomeActivity : Schermata(), AzioniHome {
     private val principale = Handler(Looper.getMainLooper())
     private lateinit var vista: VistaHome
     private var temaCostruito = ""
+    private var appCostruite = ""
     private var lettore: Lettore? = null
 
     private val frameListener = Window.OnFrameMetricsAvailableListener { _, metriche, _ ->
@@ -46,6 +47,7 @@ class HomeActivity : Schermata(), AzioniHome {
 
     private val controlloMeteo = object : Runnable {
         override fun run() {
+            vista.mostraMeteo(FonteMeteo.ultimo(this@HomeActivity))
             aggiornaMeteo()
             principale.postDelayed(this, INTERVALLO_METEO_MS)
         }
@@ -54,14 +56,15 @@ class HomeActivity : Schermata(), AzioniHome {
     override fun onCreate(savedInstanceState: Bundle?) {
         val creazione = SystemClock.uptimeMillis()
         super.onCreate(savedInstanceState)
+        AggiornamentoJob.programma(this)
         costruisci()
         if (Misure.homePrimoFrameMs == null) misuraPrimoFrame(creazione)
-        AggiornamentoJob.programma(this)
     }
 
     private fun costruisci() {
         val tema = Temi.scelto(this)
         temaCostruito = tema.id
+        appCostruite = AppHome.firma(this)
         vista = tema.home(this, this)
         vista.mostraOra(Date())
         vista.mostraMeteo(FonteMeteo.ultimo(this))
@@ -70,7 +73,7 @@ class HomeActivity : Schermata(), AzioniHome {
 
     override fun onStart() {
         super.onStart()
-        if (Temi.scelto(this).id != temaCostruito) costruisci()
+        if (Temi.scelto(this).id != temaCostruito || AppHome.firma(this) != appCostruite) costruisci()
         vista.mostraOra(Date())
         registerReceiver(orologio, IntentFilter().apply {
             addAction(Intent.ACTION_TIME_TICK)

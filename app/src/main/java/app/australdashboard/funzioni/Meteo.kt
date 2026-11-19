@@ -10,10 +10,12 @@ import org.json.JSONObject
 object FonteMeteo {
     private const val PREFERENZE = "meteo"
     private const val VALIDITA_MS = 30 * 60 * 1000L
+    private const val ETA_MASSIMA_MS = 3 * 60 * 60 * 1000L
 
     fun ultimo(context: Context): Meteo? {
         val preferenze = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE)
         if (!preferenze.contains("quando")) return null
+        if (troppoVecchio(preferenze.getLong("quando", 0), System.currentTimeMillis())) return null
         return Meteo(
             gradi = preferenze.getInt("gradi", 0),
             minima = preferenze.getInt("minima", 0),
@@ -21,6 +23,8 @@ object FonteMeteo {
             codice = preferenze.getInt("codice", 0),
         )
     }
+
+    fun troppoVecchio(quando: Long, adesso: Long): Boolean = adesso - quando > ETA_MASSIMA_MS
 
     fun daAggiornare(context: Context): Boolean {
         val quando = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getLong("quando", 0)

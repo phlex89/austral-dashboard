@@ -2,10 +2,10 @@ package app.australdashboard.funzioni
 
 import java.io.StringReader
 import java.io.StringWriter
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -112,10 +112,11 @@ class BenzinaiTest {
     @Test
     fun ilFileCompattoSiRileggeUguale() {
         val originali = impianti()
-        val scritto = StringWriter().also { DatiMimit.scriviCompatto(it, LocalDate.of(2026, 11, 18), originali) }.toString()
+        val quando = LocalDateTime.of(2026, 11, 18, 9, 15, 30)
+        val scritto = StringWriter().also { DatiMimit.scriviCompatto(it, quando, originali) }.toString()
         val letto = DatiMimit.leggiCompatto(StringReader(scritto))
         assertNotNull(letto)
-        assertEquals(LocalDate.of(2026, 11, 18), letto!!.data)
+        assertEquals(quando, letto!!.scaricato)
         assertEquals(originali, letto.impianti)
     }
 
@@ -123,6 +124,46 @@ class BenzinaiTest {
     fun ilFileCompattoVuotoOGuastoNonSiLegge() {
         assertNull(DatiMimit.leggiCompatto(StringReader("")))
         assertNull(DatiMimit.leggiCompatto(StringReader("non una data\n")))
+        assertNull(DatiMimit.leggiCompatto(StringReader("2026-11-18\n")))
+    }
+
+    private fun alle(giorno: Int, ora: Int, minuti: Int) = LocalDateTime.of(2026, 11, giorno, ora, minuti)
+
+    @Test
+    fun primaDelleOtto30VaBeneIlFileDiIeriDopoLePubblicazione() {
+        assertFalse(DatiMimit.daAggiornare(alle(17, 9, 0), alle(18, 8, 29)))
+        assertTrue(DatiMimit.daAggiornare(alle(17, 8, 29), alle(18, 8, 29)))
+    }
+
+    @Test
+    fun dopoLe8e30VaBeneSoloUnFileScaricatoDopoLePubblicazione() {
+        assertTrue(DatiMimit.daAggiornare(alle(18, 8, 29), alle(18, 8, 30)))
+        assertFalse(DatiMimit.daAggiornare(alle(18, 8, 30), alle(18, 8, 30)))
+        assertFalse(DatiMimit.daAggiornare(alle(18, 12, 0), alle(18, 23, 59)))
+    }
+
+    @Test
+    fun aCavalloDiMezzanotteContaLaPubblicazioneDiIeri() {
+        assertFalse(DatiMimit.daAggiornare(alle(18, 8, 30), alle(19, 0, 5)))
+        assertTrue(DatiMimit.daAggiornare(alle(18, 8, 29), alle(19, 0, 5)))
+    }
+
+    @Test
+    fun cercaIComuniPerNomeSenzaMaiuscoleDistintiEOrdinati() {
+        val impianti = listOf(
+            d(1, 1.0, 45.0, comune = "TORINO"),
+            d(2, 1.0, 45.0, comune = "Torino"),
+            d(3, 1.0, 45.0, comune = "Settimo Torinese"),
+            d(4, 1.0, 45.0, comune = "MILANO"),
+        )
+        assertEquals(listOf("TORINO", "Settimo Torinese"), DatiMimit.comuniContenenti(impianti, "torin"))
+        assertEquals(emptyList<String>(), DatiMimit.comuniContenenti(impianti, "roma"))
+    }
+
+    @Test
+    fun cercaIComuniAlMassimoVenti() {
+        val impianti = (1..30).map { d(it.toLong(), 1.0, 45.0, comune = "Comune %02d".format(it)) }
+        assertEquals(20, DatiMimit.comuniContenenti(impianti, "comune").size)
     }
 
     @Test

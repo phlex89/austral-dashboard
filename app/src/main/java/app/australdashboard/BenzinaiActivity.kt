@@ -50,6 +50,11 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         }.start()
     }
 
+    override fun onDestroy() {
+        Benzinai.libera()
+        super.onDestroy()
+    }
+
     override fun indietro() = finish()
 
     override fun ordina(ordine: Ordine) {

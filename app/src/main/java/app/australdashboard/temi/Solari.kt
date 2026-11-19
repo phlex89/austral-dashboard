@@ -54,7 +54,7 @@ object Solari : Tema {
     private val grassetto: Typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
 
     override fun palette(context: Context) =
-        Palette(SFONDO, CARATTERI, SECONDARIO, AMBRA, SFONDO, PANNELLO, grassetto, medio)
+        Palette(SFONDO, CARATTERI, AMBRA, PANNELLO, grassetto, medio)
 
     private class Paletta(raggio: Int, private val perni: Int) : GradientDrawable() {
         private val pennello = Paint().apply { color = PERNI }
@@ -118,8 +118,6 @@ object Solari : Tema {
 
     private fun etichetta(context: Context, testo: String, px: Int = 28, spazio: Int = 3): TextView =
         Ui.testo(context, px, AMBRA, grassetto, px + 6, testo).apply { letterSpacing = spazio / px.toFloat() }
-
-    private fun spia(context: Context): View = View(context)
 
     private fun accendi(spia: View, accesa: Boolean) {
         spia.background = GradientDrawable().apply {
@@ -186,7 +184,7 @@ object Solari : Tema {
         private val massima = piastra(s, "", 32, margine = 14, maiuscolo = true)
         private val minima = piastra(s, "", 32, margine = 14, maiuscolo = true)
         private val estremi = Ui.riga(s, 8)
-        private val spiaOnda = spia(s)
+        private val spiaOnda = View(s)
         private val inAscolto = Ui.riga(s, 24).apply { setPadding(20, 20, 20, 20) }
         private val fermo = Ui.riga(s, 24).apply { setPadding(32, 20, 20, 20) }
         private val copertina = ImageView(s).apply {
@@ -289,7 +287,7 @@ object Solari : Tema {
             inAscolto.addView(comandi)
 
             val testi = Ui.colonna(s, 10, Gravity.CENTER_VERTICAL)
-            val spiaSorgente = spia(s)
+            val spiaSorgente = View(s)
             accendi(spiaSorgente, false)
             testi.addView(intestazioneSezione(s, "SORGENTE", segnale = spiaSorgente), lp(TUTTO, 36))
             testi.addView(cifre(s, "SPOTIFY", 64, 96, 72, 6), lp(ADATTA, 96))
@@ -311,7 +309,7 @@ object Solari : Tema {
 
         private fun boxApp(): View {
             val griglia = Ui.colonna(s, 20)
-            AppHome.elenco.chunked(3).forEachIndexed { r, gruppo ->
+            AppHome.elenco(s).chunked(3).forEachIndexed { r, gruppo ->
                 val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
                 gruppo.forEachIndexed { i, app -> riga.addView(cella(app, r * 3 + i + 1), lp(0, TUTTO, 1f)) }
                 griglia.addView(riga, lp(TUTTO, 0, 1f))
@@ -386,7 +384,15 @@ object Solari : Tema {
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
-            if (meteo == null) return
+            if (meteo == null) {
+                iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
+                riempi(s, gradi, "-°", 110, 160, 130)
+                cielo.text = "IN ATTESA"
+                massima.text = ""
+                minima.text = ""
+                estremi.visibility = View.INVISIBLE
+                return
+            }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             val testo = "${meteo.gradi}°"
             if (testo.length > 2) riempi(s, gradi, testo, 76, 160, 100) else riempi(s, gradi, testo, 110, 160, 130)
@@ -423,13 +429,12 @@ object Solari : Tema {
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: View
         private val indirizzo = Ui.riga(s, 4)
-        private val spiaScheda = spia(s)
+        private val spiaScheda = View(s)
         private val nomeScheda = piastra(s, "", 30, margine = 14, maiuscolo = true)
         private val prezzoScheda = piastra(s, "", 30, AMBRA, margine = 14, maiuscolo = true)
         private val distanzaScheda = piastra(s, "", 30, margine = 14, maiuscolo = true)
         private val quandoScheda = piastra(s, "", 30, SECONDARIO, margine = 14, maiuscolo = true)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -455,7 +460,7 @@ object Solari : Tema {
             riga.addView(tasto(s, R.drawable.ic_indietro, 52, "Indietro") { azioni.indietro() }.vista, lp(120, 120))
             riga.addView(cifre(s, "BENZINAI", 50, 80, 56, 6), lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = Ui.testo(s, 32, CARATTERI, grassetto, 36, nome, maiuscolo = true).apply {
                     gravity = Gravity.CENTER
                     letterSpacing = 1 / 32f
@@ -511,25 +516,25 @@ object Solari : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("AGGIORNAMENTO", "Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("POSIZIONE", "Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio("POSIZIONE", Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio("ERRORE", e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("RISULTATI", "Nessun distributore entro 15 km.")
@@ -560,12 +565,12 @@ object Solari : Tema {
         private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 12).apply {
                 background = pieno(PANNELLO, 6, 3, if (scelto) AMBRA else PANNELLO)
                 setPadding(16, 0, 16, 0)
             }
-            val segnale = spia(s)
+            val segnale = View(s)
             accendi(segnale, scelto)
             corpo.addView(segnale, lp(14, 14))
             val nome = Ui.colonna(s, 6, Gravity.CENTER_VERTICAL)
@@ -584,7 +589,7 @@ object Solari : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return

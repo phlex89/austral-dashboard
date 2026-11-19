@@ -75,7 +75,7 @@ object Hud : Tema {
     private val condensatoGrassetto: Typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
 
     override fun palette(context: Context) =
-        Palette(SFONDO, TESTO, SECONDARIO, CIANO, SFONDO, LINEA_FORTE, orbitron(context), condensato)
+        Palette(SFONDO, TESTO, CIANO, LINEA_FORTE, orbitron(context), condensato)
 
     private fun orb(
         context: Context,
@@ -330,7 +330,7 @@ object Hud : Tema {
 
         private fun boxApp(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            AppHome.elenco.forEachIndexed { i, app ->
+            AppHome.elenco(s).forEachIndexed { i, app ->
                 val cella = FrameLayout(s).apply { background = Ui.bordo(LINEA, 2, PANNELLO) }
                 val lettera = FrameLayout(s).apply {
                     background = Smusso(0, CIANO, 2f, 18f)
@@ -377,11 +377,16 @@ object Hud : Tema {
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
-            if (meteo == null) return
+            termometro.mostra(meteo)
+            if (meteo == null) {
+                iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
+                gradi.text = "--°"
+                cielo.text = "In attesa"
+                return
+            }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             gradi.text = "${meteo.gradi}°"
             cielo.text = FonteMeteo.descrizione(meteo.codice)
-            termometro.mostra(meteo)
         }
 
         override fun mostraMusica(musica: Musica?) {
@@ -409,8 +414,7 @@ object Hud : Tema {
         private val prezzoScheda = orb(s, 40, CIANO, "", 700, 0, 46)
         private val distanzaScheda = orb(s, 40, TESTO, "", 700, 0, 46)
         private val aggiornatoScheda = orb(s, 40, TESTO, "", 700, 0, 46)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -435,7 +439,7 @@ object Hud : Tema {
             riga.addView(tastoContorno(s, R.drawable.ic_indietro, 52, "Indietro") { azioni.indietro() }, lp(120, 120))
             riga.addView(orb(s, 60, TESTO, "BENZINAI", 700, 0, 66), lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = cond(s, 32, TESTO, nome, true, 2, 36, true).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
                 val cornice = FrameLayout(s).apply { addView(tasto, lpf(TUTTO, TUTTO)) }
@@ -487,25 +491,25 @@ object Hud : Tema {
             }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("BENZINAI", "Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("POSIZIONE", "Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio("POSIZIONE", Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio("ERRORE", e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("PREFERITI", "%02d".format(e.preferiti.size), e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("VICINI", "ORDINE: ${e.ordine.name}", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("BENZINAI", "Nessun distributore entro 15 km.")
@@ -538,7 +542,7 @@ object Hud : Tema {
         private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = if (scelto) Ui.bordo(CIANO, 3, PANNELLO) else Ui.bordo(LINEA, 2, PANNELLO)
                 setPadding(24, 0, 28, 0)
@@ -573,7 +577,7 @@ object Hud : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return
@@ -787,7 +791,7 @@ private class Termometro(context: Context) : View(context) {
     private val baseNumeri = -(numeri.fontMetrics.ascent + numeri.fontMetrics.descent) / 2f
     private val triangolo = Path()
 
-    fun mostra(meteo: Meteo) {
+    fun mostra(meteo: Meteo?) {
         this.meteo = meteo
         invalidate()
     }

@@ -64,7 +64,7 @@ object ArtDeco : Tema {
     private fun limelight(context: Context): Typeface = Ui.font(context, R.font.limelight)
 
     override fun palette(context: Context) =
-        Palette(NERO, AVORIO, SABBIA, ORO, NERO, FILETTO_ESTERNO, limelight(context), serif)
+        Palette(NERO, AVORIO, ORO, FILETTO_ESTERNO, limelight(context), serif)
 
     private class Cornice(
         private val colore: Int,
@@ -193,7 +193,7 @@ object ArtDeco : Tema {
             visibility = if (meteo == null) INVISIBLE else VISIBLE
             if (meteo == null) return
             val escursione = meteo.massima - meteo.minima
-            posizione = if (escursione <= 0) 0.5f else ((meteo.gradi - meteo.minima) / escursione.toFloat()).coerceIn(0f, 1f)
+            posizione = if (escursione <= 0) 0.5f else Ui.frazione(meteo.gradi, meteo.minima, meteo.massima)
             invalidate()
         }
 
@@ -302,9 +302,9 @@ object ArtDeco : Tema {
             alto.addView(boxOra(), lp(0, TUTTO, 1f))
             alto.addView(servizio("II", R.drawable.ic_griglia, "Tutte le app", 30, "Tutte le app") { azioni.tutteLeApp() }, lp(220, TUTTO))
             val centro = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            centro.addView(colonnaApp(AppHome.elenco.take(3)), lp(220, TUTTO))
+            centro.addView(colonnaApp(AppHome.elenco(s).take(3)), lp(220, TUTTO))
             centro.addView(boxMusica(), lp(0, TUTTO, 1f))
-            centro.addView(colonnaApp(AppHome.elenco.drop(3)), lp(220, TUTTO))
+            centro.addView(colonnaApp(AppHome.elenco(s).drop(3)), lp(220, TUTTO))
             val basso = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             basso.addView(servizio("III", R.drawable.ic_cursori, "Impostazioni Android", 28, "Impostazioni Android") { azioni.impostazioniAndroid() }, lp(220, TUTTO))
             basso.addView(boxMeteo(), lp(0, TUTTO, 1f))
@@ -486,7 +486,14 @@ object ArtDeco : Tema {
 
         override fun mostraMeteo(meteo: Meteo?) {
             asta.imposta(meteo)
-            if (meteo == null) return
+            if (meteo == null) {
+                iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
+                condizione.text = "In attesa"
+                gradi.text = "--°"
+                massima.text = "max --°"
+                minima.text = "min --°"
+                return
+            }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             condizione.text = FonteMeteo.descrizione(meteo.codice)
             gradi.text = "${meteo.gradi}°"
@@ -521,8 +528,7 @@ object ArtDeco : Tema {
         }
         private val dettagli = Ui.testo(s, 30, AVORIO, serif, 36)
         private val aggiornato = Ui.testo(s, 30, SABBIA, corsivo, 36)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -553,7 +559,7 @@ object ArtDeco : Tema {
             Ui.adatta(titolo, 48, 80)
             riga.addView(titolo, lp(0, 88, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = maiuscoletto(Ui.testo(s, 30, AVORIO, serif, 36, nome), 30, 2).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
                 gruppo.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(190, 120))
@@ -598,25 +604,25 @@ object ArtDeco : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio(Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio(e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("NEI DINTORNI", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
@@ -653,7 +659,7 @@ object ArtDeco : Tema {
         private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = Cornice(if (scelto) ORO else FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
                 setPadding(28, 0, 32, 0)
@@ -677,7 +683,7 @@ object ArtDeco : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return

@@ -71,7 +71,7 @@ object Synthwave : Tema {
     private val grassetto: Typeface by lazy { corpo(700) }
 
     override fun palette(context: Context) =
-        Palette(NOTTE, TESTO, SECONDARIO, ROSA, NOTTE, CONTORNO, audiowide(context), normale)
+        Palette(NOTTE, TESTO, ROSA, CONTORNO, audiowide(context), normale)
 
     private class TestoSfumato(context: Context) : TextView(context) {
         private var larghezza = -1f
@@ -391,7 +391,7 @@ object Synthwave : Tema {
 
         private fun app(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            for (app in AppHome.elenco) {
+            for (app in AppHome.elenco(s)) {
                 val interno = FrameLayout(s).apply {
                     background = GradientDrawable().apply { setColor(SUPERFICIE); cornerRadius = 30f }
                     addView(Ui.testo(s, 54, TESTO, aw, 54, app.sigla).apply { gravity = Gravity.CENTER }, lpf(TUTTO, ADATTA, Gravity.CENTER))
@@ -441,7 +441,7 @@ object Synthwave : Tema {
             cielo.text = FonteMeteo.descrizione(meteo.codice)
             estremi.text = "max ${meteo.massima}° · min ${meteo.minima}°"
             if (meteo.massima > meteo.minima) {
-                tubo.frazione = ((meteo.gradi - meteo.minima).toFloat() / (meteo.massima - meteo.minima)).coerceIn(0f, 1f)
+                tubo.frazione = Ui.frazione(meteo.gradi, meteo.minima, meteo.massima)
                 tubo.contentDescription = "Temperatura attuale ${meteo.gradi}° tra minima ${meteo.minima}° e massima ${meteo.massima}°"
             } else {
                 tubo.frazione = -1f
@@ -473,8 +473,7 @@ object Synthwave : Tema {
         private val nomeScheda = Ui.testo(s, 30, SECONDARIO, normale, 36)
         private val indirizzo = Ui.adatta(Ui.testo(s, 76, TESTO, grassetto, maiuscolo = true, righe = 2), 34, 76)
         private val dettagli = Ui.testo(s, 30, TESTO, normale, 36)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -499,7 +498,7 @@ object Synthwave : Tema {
             riga.addView(tondo(s, R.drawable.ic_indietro, 48, TESTO, "Indietro") { azioni.indietro() }, lp(120, 120))
             riga.addView(Ui.adatta(sfumato(s, 70, aw, contenuto = "Benzinai"), 36, 70), lp(0, TUTTO, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val pillola = Ui.testo(s, 32, TESTO, medio, 38, nome).apply { gravity = Gravity.CENTER }
                 arrotonda(pillola, 60f)
                 ordini[ordine] = pillola
@@ -540,25 +539,25 @@ object Synthwave : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio(Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio(e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
@@ -591,7 +590,7 @@ object Synthwave : Tema {
         private fun riga(d: Distributore, luogo: Boolean, numero: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpoRiga = Ui.riga(s, 24).apply {
                 background = superficie(24f, if (scelto) ROSA else CONTORNO)
                 setPadding(28, 0, 32, 0)
@@ -616,7 +615,7 @@ object Synthwave : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return

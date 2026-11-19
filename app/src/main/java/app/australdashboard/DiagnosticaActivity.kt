@@ -15,7 +15,7 @@ class DiagnosticaActivity : Schermata() {
         dati = testo("")
         radice.addView(dati)
         radice.addView(pulsante("Aggiorna") { mostra() })
-        setContentView(radice)
+        setContentView(scorrevole(radice))
     }
 
     override fun onResume() {
@@ -35,6 +35,7 @@ class DiagnosticaActivity : Schermata() {
             "Creazione Home → primo frame: ${Misure.homePrimoFrameMs?.let { "$it ms" } ?: "—"}",
             "Frame della Home: ${Misure.frameTotali}, in ritardo: ${Misure.framePersi}",
             "Aggiornamenti: ${Stato.esito(this)}",
+            "Ultimo crash: ${Stato.crash(this)}",
         ).joinToString("\n")
     }
 }

@@ -25,11 +25,17 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
     private var controller: MediaController? = null
     private var emesso = false
     private var ultima: Musica? = null
+    private var meta: MediaMetadata? = null
+    private var copertina: Bitmap? = null
+    private var originale: Bitmap? = null
 
     private val cambioSessioni = MediaSessionManager.OnActiveSessionsChangedListener { ricalcola() }
 
     private val callback = object : MediaController.Callback() {
-        override fun onMetadataChanged(metadata: MediaMetadata?) = ricalcola()
+        override fun onMetadataChanged(metadata: MediaMetadata?) {
+            leggi(metadata)
+            ricalcola()
+        }
         override fun onPlaybackStateChanged(state: PlaybackState?) = ricalcola()
         override fun onSessionDestroyed() = ricalcola()
     }
@@ -61,6 +67,7 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
         }
         controller?.unregisterCallback(callback)
         controller = null
+        leggi(null)
         attivo = false
         emesso = false
         ultima = null
@@ -110,14 +117,19 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
     private fun ricalcola() {
         if (!attivo) return
         val elenco = sessioni()
+        val attuale = controller?.sessionToken
         val indice = scegliControllerIndice(
-            elenco.map { Pair(it.playbackState?.state ?: PlaybackState.STATE_NONE, titolo(it.metadata) != null) },
+            elenco.mapIndexed { i, c ->
+                val conTitolo = i == 0 && titolo(if (c.sessionToken == attuale) meta else c.metadata) != null
+                Pair(c.playbackState?.state ?: PlaybackState.STATE_NONE, conTitolo)
+            },
         )
         val scelto = elenco.getOrNull(indice)
-        if (scelto?.sessionToken != controller?.sessionToken) {
+        if (scelto?.sessionToken != attuale) {
             controller?.unregisterCallback(callback)
             controller = scelto
             scelto?.registerCallback(callback, main)
+            leggi(scelto?.metadata)
         }
         val musica = scelto?.let { costruisci(it) }
         if (emesso && uguali(ultima, musica)) return
@@ -126,8 +138,19 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
         ascolto(musica)
     }
 
+    private fun leggi(nuovo: MediaMetadata?) {
+        meta = nuovo
+        val immagine = nuovo?.let {
+            it.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                ?: it.getBitmap(MediaMetadata.METADATA_KEY_ART)
+                ?: it.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+        }
+        if (immagine != null && originale?.sameAs(immagine) == true) return
+        originale = immagine
+        copertina = immagine?.let { ridotta(it) }
+    }
+
     private fun costruisci(c: MediaController): Musica {
-        val meta = c.metadata
         return Musica(
             titolo = titolo(meta) ?: "",
             artista = testo(
@@ -136,7 +159,7 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
                 MediaMetadata.METADATA_KEY_ALBUM_ARTIST,
                 MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE,
             ) ?: "",
-            copertina = copertina(meta),
+            copertina = copertina,
             inRiproduzione = inRiproduzione(c),
             app = etichetta(c.packageName),
             pacchetto = c.packageName,
@@ -155,12 +178,7 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
         return null
     }
 
-    private fun copertina(meta: MediaMetadata?): Bitmap? {
-        if (meta == null) return null
-        val originale = meta.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-            ?: meta.getBitmap(MediaMetadata.METADATA_KEY_ART)
-            ?: meta.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
-            ?: return null
+    private fun ridotta(originale: Bitmap): Bitmap {
         val lato = maxOf(originale.width, originale.height)
         if (lato <= LATO_MASSIMO) return originale
         val scala = LATO_MASSIMO.toFloat() / lato

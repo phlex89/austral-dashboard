@@ -11,6 +11,9 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Temi intercambiabili per la Home](#temi-intercambiabili-per-la-home)
 - [Fonti di meteo e prezzi](#fonti-di-meteo-e-prezzi)
 - [Dettagli dei temi legati ai dati](#dettagli-dei-temi-legati-ai-dati)
+- [Aggiornatore in un processo suo, senza conferma](#aggiornatore-in-un-processo-suo-senza-conferma)
+- [App della Home e comuni preferiti scelti in Impostazioni](#app-della-home-e-comuni-preferiti-scelti-in-impostazioni)
+- [Niente interruttori per meteo e musica](#niente-interruttori-per-meteo-e-musica)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -79,3 +82,34 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - Le scale della temperatura vanno dalla minima alla massima del giorno; con minima uguale alla massima, o senza meteo, restano spente.
 - Le ★ delle tavole restano fuori: i preferiti sono comuni fissi (D-6), non distributori da salvare.
 - Costo misurato in release: 2–3 MB di PSS in più per tema, avvio a freddo invariato.
+
+## Aggiornatore in un processo suo, senza conferma
+
+**In breve.** Il controllo degli aggiornamenti gira in un processo separato dalla Home (`:aggiornamenti`), parte un minuto dopo l'accensione e poi ogni sei ore, e il manifest dichiara il permesso `UPDATE_PACKAGES_WITHOUT_USER_ACTION`. Così una versione che si chiude all'avvio si corregge da sola e, dopo il primo aggiornamento confermato a mano, Android non chiede più niente.
+
+**Dettagli.**
+
+- Prova del 2026-11-19 sull'emulatore, con una build che lancia un'eccezione in `HomeActivity.onCreate`: con l'aggiornatore nel processo della Home, Android segna il processo come guasto e `BOOT_COMPLETED` non arriva più, quindi l'aggiornamento non parte. Nel processo separato parte e installa la versione pubblicata.
+- Senza il permesso nel manifest Android 12 chiede sempre «Aggiornare?», anche quando l'app è l'installatore di sé stessa: le prove precedenti lo attribuivano all'installazione con `adb`.
+- Nei primi 30 secondi dall'accensione Android non installa senza conferma: per questo il controllo di avvio aspetta 60 secondi.
+- Il controllo periodico copre il caso, non ancora verificato sul box, in cui il box si risveglia invece di riavviarsi.
+- Costo: un secondo processo, vivo solo durante un controllo. L'esito dell'ultimo controllo sta in un file di preferenze letto da tutti e due i processi.
+- Il pulsante «Controlla aggiornamenti» resta nel processo della Home: due controlli contemporanei nei due processi sono possibili e innocui (la seconda installazione sostituisce la prima).
+
+## App della Home e comuni preferiti scelti in Impostazioni
+
+**In breve.** Le sei app della Home e i comuni preferiti dei Benzinai non sono più fissi nel codice: si scelgono in Impostazioni, con soli tocchi. Le app partono dalle sei di prima; i comuni partono vuoti, perché sono un dato personale e il repository è pubblico.
+
+**Dettagli.**
+
+- Sostituisce le due scelte precedenti («le sei app della Home sono fisse», «i preferiti sono tre comuni fissi nel codice»). Resta vero che i preferiti sono comuni e non distributori (D-6 del piano M02), e che sono al massimo tre.
+- I comuni si cercano nel file dei prezzi già scaricato, non in rete: i nomi sono quelli del MIMIT, quindi il confronto con gli impianti è esatto.
+- La Home si ricostruisce quando cambia l'elenco o quando un'app viene installata o tolta: prima un'app installata dopo l'avvio restava spenta.
+
+## Niente interruttori per meteo e musica
+
+**In breve.** Valutato e scartato il 2026-11-19: un sistema di moduli attivabili dalle Impostazioni. Meteo e musica restano sempre attivi, perché l'utente li vuole sempre e il codice è già pigro: tutto si ferma quando la Home non è visibile e i Benzinai lavorano solo a pannello aperto.
+
+**Dettagli.**
+
+- Scartati nello stesso giro, per scelta dell'utente: il tasto «portami qui» nella scheda del distributore (il navigatore non si usa dal box) e le azioni automatiche all'accensione.

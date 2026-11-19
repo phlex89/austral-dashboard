@@ -2,9 +2,11 @@ package app.australdashboard.temi
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.view.View
 import app.australdashboard.Schermata
+import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.Meteo
 import app.australdashboard.funzioni.Musica
@@ -23,9 +25,7 @@ interface Tema {
 data class Palette(
     val sfondo: Int,
     val testo: Int,
-    val secondario: Int,
     val accento: Int,
-    val suAccento: Int,
     val bordo: Int,
     val titoli: Typeface,
     val corpo: Typeface,
@@ -60,12 +60,28 @@ interface AzioniBenzinai {
     fun ordina(ordine: Ordine)
 }
 
+class StatoBenzinai {
+    var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
+    var selezionato: Distributore? = null
+
+    fun alterna(d: Distributore?) {
+        selezionato = if (d != null && d.id == selezionato?.id) null else d
+    }
+
+    fun riallinea(tutti: List<Distributore>) {
+        selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+    }
+}
+
 class AppHome(val nome: String, val sigla: String, private val pacchetti: List<String>) {
     fun intent(context: Context): Intent? =
         pacchetti.firstNotNullOfOrNull { context.packageManager.getLaunchIntentForPackage(it) }
 
     companion object {
-        val elenco = listOf(
+        private const val FILE = "impostazioni"
+        private const val CHIAVE = "app_home_"
+
+        private val predefinite = listOf(
             AppHome("Netflix", "N", listOf("com.netflix.mediaclient")),
             AppHome("Prime Video", "P", listOf("com.amazon.avod.thirdpartyclient", "com.amazon.avod")),
             AppHome("Disney+", "D", listOf("com.disney.disneyplus")),
@@ -73,5 +89,28 @@ class AppHome(val nome: String, val sigla: String, private val pacchetti: List<S
             AppHome("Stremio", "S", listOf("com.stremio.one", "com.stremio.app")),
             AppHome("TikTok", "T", listOf("com.zhiliaoapp.musically", "com.ss.android.ugc.trill")),
         )
+
+        fun elenco(context: Context): List<AppHome> {
+            val preferenze = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            return predefinite.mapIndexed { i, predefinita ->
+                val pacchetto = preferenze.getString(CHIAVE + i, null) ?: return@mapIndexed predefinita
+                val nome = etichetta(context, pacchetto)
+                AppHome(nome, nome.take(1).uppercase(), listOf(pacchetto))
+            }
+        }
+
+        fun scegli(context: Context, indice: Int, pacchetto: String) {
+            context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putString(CHIAVE + indice, pacchetto).apply()
+        }
+
+        fun firma(context: Context): String =
+            elenco(context).joinToString("|") { "${it.nome}:${it.intent(context)?.component?.packageName}" }
+
+        private fun etichetta(context: Context, pacchetto: String): String = try {
+            val pm = context.packageManager
+            pm.getApplicationLabel(pm.getApplicationInfo(pacchetto, 0)).toString()
+        } catch (e: PackageManager.NameNotFoundException) {
+            pacchetto
+        }
     }
 }

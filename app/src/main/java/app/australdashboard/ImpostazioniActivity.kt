@@ -7,6 +7,7 @@ import android.widget.TextView
 import android.view.View
 import android.widget.Button
 import app.australdashboard.aggiornamenti.Aggiornatore
+import app.australdashboard.funzioni.Benzinai
 import app.australdashboard.funzioni.Lettore
 import app.australdashboard.funzioni.Posizione
 import app.australdashboard.temi.Temi
@@ -16,6 +17,7 @@ class ImpostazioniActivity : Schermata() {
     private lateinit var tema: Button
     private lateinit var musica: Button
     private lateinit var citta: Button
+    private lateinit var comuni: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +29,9 @@ class ImpostazioniActivity : Schermata() {
         radice.addView(musica)
         citta = pulsante("") { startActivity(Intent(this, CittaActivity::class.java)) }
         radice.addView(citta)
+        comuni = pulsante("") { startActivity(Intent(this, ComuniActivity::class.java)) }
+        radice.addView(comuni)
+        radice.addView(pulsante("App della Home") { startActivity(Intent(this, AppHomeActivity::class.java)) })
         radice.addView(pulsante("Controlla aggiornamenti") { controllaOra() })
         esito = testo("")
         radice.addView(esito)
@@ -48,14 +53,15 @@ class ImpostazioniActivity : Schermata() {
         tema.text = "Tema: ${Temi.scelto(this).nome}"
         musica.visibility = if (Lettore.permessoConcesso(this)) View.GONE else View.VISIBLE
         citta.text = "Città di riserva: ${Posizione.cittaDiRiserva(this)?.first ?: "nessuna"}"
+        comuni.text = "Comuni preferiti: ${Benzinai.preferiti(this).joinToString(", ").ifEmpty { "nessuno" }}"
     }
 
     private fun controllaOra() {
         esito.text = "Controllo in corso…"
         Thread {
-            val avviato = Aggiornatore.controlla(applicationContext)
+            val occupato = Aggiornatore.controlla(applicationContext) == Aggiornatore.Esito.OCCUPATO
             runOnUiThread {
-                esito.text = if (avviato) Stato.esito(this) else "Un controllo è già in corso"
+                esito.text = if (occupato) "Un controllo è già in corso" else Stato.esito(this)
             }
         }.start()
     }

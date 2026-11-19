@@ -47,7 +47,7 @@ object Matrix : Tema {
     private fun vt(context: Context): Typeface = Ui.font(context, R.font.vt323)
 
     override fun palette(context: Context) =
-        Palette(NERO, VERDE, ATTENUATO, VERDE, NERO, BORDO, vt(context), Ui.mono)
+        Palette(NERO, VERDE, VERDE, BORDO, vt(context), Ui.mono)
 
     private class Riquadro(val esterno: FrameLayout, val interno: LinearLayout, val etichetta: TextView)
 
@@ -229,12 +229,12 @@ object Matrix : Tema {
         }
 
         private fun boxApp(): View {
-            val r = riquadro(s, "[ 04 · APP ]", verticale = false, destra = "[ ${AppHome.elenco.size} ]")
+            val r = riquadro(s, "[ 04 · APP ]", verticale = false, destra = "[ ${AppHome.elenco(s).size} ]")
             r.interno.apply {
                 dividerDrawable = GradientDrawable().apply { setSize(20, 20) }
                 showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
             }
-            AppHome.elenco.forEachIndexed { i, app ->
+            AppHome.elenco(s).forEachIndexed { i, app ->
                 val contenuto = Ui.colonna(s, 6, Gravity.CENTER).apply {
                     setPadding(6, 0, 6, 0)
                     addView(Ui.testo(s, 88, VERDE, vt, 72, "[${app.sigla}]"))
@@ -312,7 +312,15 @@ object Matrix : Tema {
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
-            if (meteo == null) return
+            if (meteo == null) {
+                iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
+                gradi.text = "--°"
+                cielo.text = "IN ATTESA"
+                estremi.text = " "
+                barra.contentDescription = null
+                barra.visibility = View.INVISIBLE
+                return
+            }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             gradi.text = "${meteo.gradi}°"
             cielo.text = FonteMeteo.descrizione(meteo.codice)
@@ -360,8 +368,7 @@ object Matrix : Tema {
         private val etichettaIndirizzo = Ui.testo(s, 28, ATTENUATO, Ui.mono, 34, "indirizzo:")
         private val indirizzo = Ui.adatta(Ui.testo(s, 82, VERDE, vt, contenuto = "", maiuscolo = true, righe = 2), 40, 82)
         private val dettagli = Ui.testo(s, 30, VERDE, Ui.mono, 36)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -396,7 +403,7 @@ object Matrix : Tema {
             titolo.addView(View(s).apply { setBackgroundColor(VERDE) }, lp(26, 52))
             riga.addView(titolo, lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val tasto = Ui.testo(s, 44, VERDE, vt, 40, nome, maiuscolo = true).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = tasto
                 gruppo.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(200, 120))
@@ -432,25 +439,25 @@ object Matrix : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("~$ benzinai --aggiorna", "Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("~$ posizione", "Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio("~$ posizione", Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio("~$ benzinai", e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("[ ★ PREFERITI ]", "[ ${e.preferiti.size} ]", e.preferiti, true)
                     val nomeOrdine = when (e.ordine) {
                         Ordine.CONVIENE -> "CONVIENE"
@@ -484,7 +491,7 @@ object Matrix : Tema {
         private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 20).apply {
                 background = if (scelto) Ui.bordo(VERDE, 3) else Ui.bordo(BORDO, 2)
                 setPadding(16, 0, 24, 0)
@@ -519,7 +526,7 @@ object Matrix : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.esterno.visibility = View.GONE
                 return

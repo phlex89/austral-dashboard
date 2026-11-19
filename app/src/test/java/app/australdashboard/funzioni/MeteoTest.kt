@@ -12,6 +12,15 @@ class MeteoTest {
     }
 
     @Test
+    fun ilMeteoVecchioDiPiuDiTreOreNonVale() {
+        val ora = 10_000_000_000L
+        val treOre = 3 * 60 * 60 * 1000L
+        assertEquals(false, FonteMeteo.troppoVecchio(ora - treOre, ora))
+        assertEquals(true, FonteMeteo.troppoVecchio(ora - treOre - 1, ora))
+        assertEquals(false, FonteMeteo.troppoVecchio(ora, ora))
+    }
+
+    @Test
     fun cieloDaiCodici() {
         assertEquals(Cielo.SERENO, FonteMeteo.cielo(0))
         assertEquals(Cielo.POCO_NUVOLOSO, FonteMeteo.cielo(1))

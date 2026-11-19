@@ -64,7 +64,7 @@ object Braun : Tema {
     private val medio: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
 
     override fun palette(context: Context) =
-        Palette(CORPO, TESTO, SECONDARIO, ARANCIO, CORPO, ANELLO, leggero, normale)
+        Palette(CORPO, TESTO, ARANCIO, ANELLO, leggero, normale)
 
     private fun ovale(riempimento: Int, anello: Int = 0): GradientDrawable =
         GradientDrawable().apply {
@@ -297,7 +297,7 @@ object Braun : Tema {
         }
 
         private fun tastierino(): View {
-            val app = AppHome.elenco
+            val app = AppHome.elenco(s)
             val celle = listOf(
                 cellaApp(app[0]),
                 cellaApp(app[1]),
@@ -361,7 +361,13 @@ object Braun : Tema {
 
         override fun mostraMeteo(meteo: Meteo?) {
             termometro.imposta(meteo)
-            if (meteo == null) return
+            if (meteo == null) {
+                iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
+                cielo.text = "In attesa"
+                gradi.text = "--°"
+                estremi.text = " "
+                return
+            }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             cielo.text = FonteMeteo.descrizione(meteo.codice)
             gradi.text = "${meteo.gradi}°"
@@ -397,8 +403,7 @@ object Braun : Tema {
             60,
         )
         private val dettagli = Ui.testo(s, 30, TESTO, normale, 36)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -423,7 +428,7 @@ object Braun : Tema {
             riga.addView(tasto(s, 48, 92, R.drawable.ic_indietro, Tipo.SCURO, TESTO, "Indietro") { azioni.indietro() }.view, lp(120, 120))
             riga.addView(Ui.testo(s, 68, TESTO, leggero, 76, "Benzinai"), lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val pulsante = Ui.testo(s, 32, TESTO, normale, 38, nome).apply {
                     gravity = Gravity.CENTER
                     clipToOutline = true
@@ -468,25 +473,25 @@ object Braun : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("Caricamento dei prezzi…")
-                is ElencoBenzinai.SenzaPosizione -> messaggio("Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                is ElencoBenzinai.SenzaPosizione -> messaggio(Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio(e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
@@ -520,7 +525,7 @@ object Braun : Tema {
         private fun riga(d: Distributore, luogo: Boolean): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24).apply {
                 background = arrotondato(MODULO, 28, if (scelto) ARANCIO else MODULO, 3)
                 clipToOutline = true
@@ -551,7 +556,7 @@ object Braun : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return

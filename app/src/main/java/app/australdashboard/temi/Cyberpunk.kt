@@ -60,7 +60,7 @@ object Cyberpunk : Tema {
         Ui.font(context, if (grassetto) R.font.rajdhani_bold else R.font.rajdhani_semibold)
 
     override fun palette(context: Context) =
-        Palette(SFONDO, TESTO, SECONDARIO, GIALLO, SFONDO, TASTO, font(context, true), font(context, false))
+        Palette(SFONDO, TESTO, GIALLO, TASTO, font(context, true), font(context, false))
 
     private fun testo(
         c: Context,
@@ -261,7 +261,7 @@ object Cyberpunk : Tema {
 
         private fun griglia(): View {
             val g = Ui.colonna(s, 20)
-            AppHome.elenco.withIndex().chunked(2).forEach { coppia ->
+            AppHome.elenco(s).withIndex().chunked(2).forEach { coppia ->
                 val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
                 coppia.forEach { riga.addView(cellaApp(it.value, it.index + 1), lp(0, TUTTO, 1f)) }
                 g.addView(riga, lp(TUTTO, 0, 1f))
@@ -379,14 +379,23 @@ object Cyberpunk : Tema {
                 g.setBackgroundColor(if (i == oggi) GIALLO else Color.TRANSPARENT)
             }
             settimana.contentDescription = "Giorno della settimana: ${SimpleDateFormat("EEEE", Locale.ITALIAN).format(adesso)}"
-            tacche.mostra(calendario.get(Calendar.HOUR_OF_DAY))
-            tacche.contentDescription = "Avanzamento della giornata: ore $t su 24"
+            val ore = calendario.get(Calendar.HOUR_OF_DAY)
+            tacche.mostra(ore)
+            tacche.contentDescription = "Avanzamento della giornata: ore $ore su 24"
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
-            if (meteo == null) return
+            if (meteo == null) {
+                asta.mostra(null)
+                asta.contentDescription = null
+                iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
+                gradi.text = "--°"
+                cielo.text = "In attesa"
+                estremi.text = "max --° · min --°"
+                return
+            }
             val escursione = meteo.massima - meteo.minima
-            asta.mostra(if (escursione > 0) ((meteo.gradi - meteo.minima).toFloat() / escursione).coerceIn(0f, 1f) else null)
+            asta.mostra(if (escursione > 0) Ui.frazione(meteo.gradi, meteo.minima, meteo.massima) else null)
             asta.contentDescription =
                 "Temperatura attuale ${meteo.gradi}° tra minima ${meteo.minima}° e massima ${meteo.massima}°"
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
@@ -418,8 +427,7 @@ object Cyberpunk : Tema {
         private val codiceScheda = testo(s, 30, SFONDO, true, 34, maiuscolo = true, spaziatura = 3)
         private val indirizzo = Ui.adatta(testo(s, 72, SFONDO, true, 70, maiuscolo = true, righe = 2), 32, 72)
         private val dettagli = Ui.adatta(testo(s, 32, SFONDO, true, 36, maiuscolo = true), 20, 32)
-        private var ultimo: ElencoBenzinai = ElencoBenzinai.Caricamento
-        private var selezionato: Distributore? = null
+        private val stato = StatoBenzinai()
 
         override val view: View = costruisci()
 
@@ -450,7 +458,7 @@ object Cyberpunk : Tema {
             titoli.addView(testo(s, 84, TESTO, true, 78, "Benzinai", maiuscolo = true, spaziatura = 1))
             riga.addView(titoli, lp(0, ADATTA, 1f))
             val gruppo = Ui.riga(s, 20)
-            for ((ordine, nome) in listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")) {
+            for ((ordine, nome) in Ui.ORDINI) {
                 val t = testo(s, 32, TESTO, true, 36, nome, maiuscolo = true, spaziatura = 2).apply { gravity = Gravity.CENTER }
                 ordini[ordine] = t
                 Ui.premibile(t, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }
@@ -491,26 +499,26 @@ object Cyberpunk : Tema {
         }
 
         override fun mostra(elenco: ElencoBenzinai) {
-            ultimo = elenco
+            stato.ultimo = elenco
             disegna()
         }
 
         private fun seleziona(d: Distributore?) {
-            selezionato = if (d != null && d.id == selezionato?.id) null else d
+            stato.alterna(d)
             disegna()
         }
 
         private fun disegna() {
             elencoView.removeAllViews()
-            when (val e = ultimo) {
+            when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("// BENZINAI · AGGIORNAMENTO", "Caricamento dei prezzi…")
                 is ElencoBenzinai.SenzaPosizione ->
-                    messaggio("// POSIZIONE", "Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher.")
+                    messaggio("// POSIZIONE", Ui.POSIZIONE_NON_DISPONIBILE)
                 is ElencoBenzinai.Errore -> messaggio("// ERRORE", e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     val tutti = e.preferiti + e.vicini
-                    selezionato = selezionato?.let { sel -> tutti.firstOrNull { it.id == sel.id } }
+                    stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) {
                         sezione("★ ${e.preferiti.size.toString().padStart(2, '0')}", "Preferiti", e.preferiti, true)
                     }
@@ -551,7 +559,7 @@ object Cyberpunk : Tema {
         private fun riga(d: Distributore, luogo: Boolean, posizione: Int): View {
             val adesso = System.currentTimeMillis()
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            val scelto = d.id == selezionato?.id
+            val scelto = d.id == stato.selezionato?.id
             val corpo = Ui.riga(s, 24)
             corpo.addView(testo(s, 28, SECONDARIO, false, 32, posizione.toString().padStart(2, '0')), lp(40, ADATTA))
             val sinistra = Ui.colonna(s)
@@ -577,7 +585,7 @@ object Cyberpunk : Tema {
         }
 
         private fun aggiornaScheda() {
-            val d = selezionato
+            val d = stato.selezionato
             if (d == null) {
                 scheda.visibility = View.GONE
                 return

@@ -5,30 +5,58 @@ import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 object Benzinai {
     private const val ANAGRAFICA = "https://www.mimit.gov.it/images/exportCSV/anagrafica_impianti_attivi.csv"
     private const val PREZZI = "https://www.mimit.gov.it/images/exportCSV/prezzo_alle_8.csv"
     private const val FILE_COMPATTO = "benzinai.txt"
-    val preferiti = listOf("Torino", "Cellamare", "Valenzano")
+    private const val PREFERENZE = "benzinai"
+    private const val ATTESA_DOPO_ERRORE_MS = 10 * 60 * 1000L
+    private var memoria: DatiMimit.Compatto? = null
+    private var ultimoErrore = 0L
+
+    fun preferiti(context: Context): List<String> =
+        context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getString("comuni", "")!!
+            .split('\n').filter { it.isNotBlank() }
+
+    fun salvaPreferiti(context: Context, comuni: List<String>) {
+        context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit()
+            .putString("comuni", comuni.joinToString("\n"))
+            .apply()
+    }
+
+    @Synchronized
+    fun comuni(context: Context, testo: String): List<String> {
+        val compatto = memoria ?: leggi(File(context.filesDir, FILE_COMPATTO)).also { memoria = it } ?: return emptyList()
+        return DatiMimit.comuniContenenti(compatto.impianti, testo)
+    }
+
+    fun disponibile(context: Context): Boolean = File(context.filesDir, FILE_COMPATTO).exists()
+
+    @Synchronized
+    fun libera() {
+        memoria = null
+    }
 
     @Synchronized
     fun elenco(context: Context, luogo: Luogo, ordine: Ordine): ElencoBenzinai {
         val file = File(context.filesDir, FILE_COMPATTO)
-        var compatto = leggi(file)
-        if (compatto == null || compatto.data != LocalDate.now()) {
-            val nuovo = try {
-                scarica(context, file)
+        var compatto = memoria ?: leggi(file).also { memoria = it }
+        val adesso = System.currentTimeMillis()
+        val vecchio = compatto == null || DatiMimit.daAggiornare(compatto.scaricato, LocalDateTime.now())
+        if (vecchio && adesso - ultimoErrore > ATTESA_DOPO_ERRORE_MS) {
+            try {
+                compatto = scarica(context, file)
+                memoria = compatto
             } catch (e: Exception) {
-                null
+                ultimoErrore = adesso
             }
-            if (nuovo != null) compatto = nuovo
         }
         if (compatto == null || compatto.impianti.isEmpty()) {
             return ElencoBenzinai.Errore("Prezzi non disponibili. Controlla la connessione.")
         }
-        return DatiMimit.filtra(compatto.impianti, luogo, preferiti, ordine)
+        return DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine)
     }
 
     fun prezzo(valore: Double): String = DatiMimit.prezzo(valore)
@@ -50,10 +78,10 @@ object Benzinai {
             val elencoPrezzi = prezzi.bufferedReader().use { DatiMimit.leggiPrezzi(it) }
             val impianti = anagrafica.bufferedReader().use { DatiMimit.leggiImpianti(it, elencoPrezzi) }
             if (impianti.isEmpty()) error("Nessun impianto nel file scaricato")
-            val oggi = LocalDate.now()
-            temporaneo.bufferedWriter().use { DatiMimit.scriviCompatto(it, oggi, impianti) }
+            val adesso = LocalDateTime.now()
+            temporaneo.bufferedWriter().use { DatiMimit.scriviCompatto(it, adesso, impianti) }
             if (!temporaneo.renameTo(file)) error("Salvataggio non riuscito")
-            return DatiMimit.Compatto(oggi, impianti)
+            return DatiMimit.Compatto(adesso, impianti)
         } finally {
             anagrafica.delete()
             prezzi.delete()

@@ -4,7 +4,7 @@ import java.io.BufferedReader
 import java.io.Reader
 import java.io.Writer
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalTime
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,11 +23,12 @@ object DatiMimit {
     private val formatoData = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm:ss")
     private val formatoOra = DateTimeFormatter.ofPattern("HH:mm")
     private val formatoGiorno = DateTimeFormatter.ofPattern("dd/MM HH:mm")
+    private val pubblicazione = LocalTime.of(8, 30)
     private val tipiImpianto = setOf("Stradale", "Autostradale")
 
     class Prezzo(val valore: Double, val aggiornato: Long)
 
-    class Compatto(val data: LocalDate, val impianti: List<Distributore>)
+    class Compatto(val scaricato: LocalDateTime, val impianti: List<Distributore>)
 
     fun leggiPrezzi(lettore: Reader, zona: ZoneId = ZoneId.systemDefault()): Map<Long, Prezzo> {
         val prezzi = HashMap<Long, Prezzo>()
@@ -78,8 +79,20 @@ object DatiMimit {
         return impianti
     }
 
-    fun scriviCompatto(uscita: Writer, data: LocalDate, impianti: List<Distributore>) {
-        uscita.write(data.toString())
+    fun daAggiornare(scaricato: LocalDateTime, adesso: LocalDateTime): Boolean {
+        val oggi = adesso.toLocalDate().atTime(pubblicazione)
+        val ultima = if (adesso >= oggi) oggi else oggi.minusDays(1)
+        return scaricato < ultima
+    }
+
+    fun comuniContenenti(impianti: List<Distributore>, testo: String, massimo: Int = 20): List<String> =
+        impianti.map { it.comune }.filter { it.contains(testo, ignoreCase = true) }
+            .distinctBy { it.lowercase() }
+            .sortedWith(compareBy<String> { !it.startsWith(testo, ignoreCase = true) }.thenBy { it.lowercase() })
+            .take(massimo)
+
+    fun scriviCompatto(uscita: Writer, scaricato: LocalDateTime, impianti: List<Distributore>) {
+        uscita.write(scaricato.toString())
         uscita.write("\n")
         impianti.forEach {
             val campi = listOf(it.id, it.nome, it.marchio, it.indirizzo, it.comune, it.luogo.lat, it.luogo.lon, it.prezzo, it.aggiornato)
@@ -90,7 +103,7 @@ object DatiMimit {
 
     fun leggiCompatto(lettore: Reader): Compatto? {
         val righe = BufferedReader(lettore).useLines { it.toList() }
-        val data = righe.firstOrNull()?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+        val scaricato = righe.firstOrNull()?.let { runCatching { LocalDateTime.parse(it) }.getOrNull() } ?: return null
         val impianti = righe.drop(1).mapNotNull { riga ->
             val c = riga.split('\t')
             if (c.size != 9) return@mapNotNull null
@@ -108,7 +121,7 @@ object DatiMimit {
                 distanzaKm = 0.0,
             )
         }
-        return Compatto(data, impianti)
+        return Compatto(scaricato, impianti)
     }
 
     fun filtra(tutti: List<Distributore>, luogo: Luogo, comuni: List<String>, ordine: Ordine): ElencoBenzinai.Pronto {

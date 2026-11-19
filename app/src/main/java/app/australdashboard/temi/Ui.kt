@@ -18,11 +18,20 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import app.australdashboard.R
+import app.australdashboard.funzioni.Ordine
 
 object Ui {
     private val font = HashMap<Int, Typeface>()
 
     fun font(context: Context, id: Int): Typeface = font.getOrPut(id) { context.resources.getFont(id) }
+
+    const val POSIZIONE_NON_DISPONIBILE =
+        "Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher."
+
+    val ORDINI = listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")
+
+    fun frazione(gradi: Int, minima: Int, massima: Int): Float =
+        ((gradi - minima).toFloat() / (massima - minima)).coerceIn(0f, 1f)
 
     val mono: Typeface = Typeface.MONOSPACE
     val monoGrassetto: Typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
