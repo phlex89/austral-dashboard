@@ -25,7 +25,7 @@ Auto: all'accensione o dal tasto in Impostazioni → scarica → installa
 | Lavoro | Stato |
 |---|---|
 | [M01 · La catena di aggiornamento](doc/piani/M01-catena-aggiornamenti/PIANO.md) | Fatto sull'emulatore; manca il test sul box, previsto il 2026-11-19 |
-| [M02 · La Home vera, in otto temi](doc/piani/M02-home-a-temi/PIANO.md) | Otto temi con i dettagli delle tavole nuove, provati sull'emulatore; v0.2.0 pubblicata senza i dettagli; manca la prova sul box, prevista il 2026-11-19 |
+| [M02 · La Home vera, in otto temi](doc/piani/M02-home-a-temi/PIANO.md) | Otto temi con i dettagli delle tavole nuove, pubblicati nella v0.2.1; manca la prova sul box, prevista il 2026-11-19 |
 
 Prima installazione sul box, aggiornamenti e chiave di firma: [doc/GUIDA.md](doc/GUIDA.md).
 
