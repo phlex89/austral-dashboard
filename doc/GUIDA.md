@@ -8,7 +8,7 @@
 |---|---|---|
 | Home | Tasto casa della barra Ottocast | Ora e data, meteo, brano in ascolto con i comandi, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi |
 | Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano |
-| Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico |
+| Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico. In alto a destra «Aggiorna app» apre il Play Store sulla pagina delle tue app, dove tocchi «Aggiorna tutto» |
 | Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, comuni preferiti, app della Home, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
 | Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash |
 

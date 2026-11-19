@@ -14,6 +14,8 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Aggiornatore in un processo suo, senza conferma](#aggiornatore-in-un-processo-suo-senza-conferma)
 - [App della Home e comuni preferiti scelti in Impostazioni](#app-della-home-e-comuni-preferiti-scelti-in-impostazioni)
 - [Niente interruttori per meteo e musica](#niente-interruttori-per-meteo-e-musica)
+- [La Home non blocca l'orientamento](#la-home-non-blocca-l-orientamento)
+- [«Aggiorna app» apre il Play Store](#aggiorna-app-apre-il-play-store)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -113,3 +115,22 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 **Dettagli.**
 
 - Scartati nello stesso giro, per scelta dell'utente: il tasto «portami qui» nella scheda del distributore (il navigatore non si usa dal box) e le azioni automatiche all'accensione.
+
+## La Home non blocca l'orientamento
+
+**In breve.** Nel manifest `HomeActivity` non dichiara più `screenOrientation="nosensor"`. Sul box quel blocco faceva rimpicciolire la Home da Android, con due bande grigie ai lati; senza, la Home occupa tutta la larghezza. Il box non ruota lo schermo, quindi il blocco non serviva.
+
+**Dettagli.**
+
+- Visto sul box il 2026-11-19, in tutti i temi. Riprodotto sull'emulatore `box` con un display verticale ruotato in orizzontale (`wm size 1194x1244`, `cmd window user-rotation lock 1`) e `cmd window set-ignore-orientation-request true`: con `nosensor` Android chiede l'orientamento naturale del display e mette la Home in una finestra di 1146×1194 con le bande ai lati (`areBoundsLetterboxed=true`); senza, la finestra è 1244×1194.
+- È un'ipotesi su come è configurato il display del box, confermata solo dal fatto che il sintomo è lo stesso: la prova vera è la versione successiva sul box.
+- Le altre activity non avevano il blocco.
+
+## «Aggiorna app» apre il Play Store
+
+**In breve.** Un'app normale non può aggiornare le altre app: solo il Play Store può farlo. Il tasto «Aggiorna app», in Tutte le app, apre quindi il Play Store sulla pagina delle app installate, dove basta toccare «Aggiorna tutto». Sta in Tutte le app e non sulla Home per non ridisegnare le otto tavole.
+
+**Dettagli.**
+
+- La pagina si apre con l'intent `com.google.android.finsky.VIEW_MY_DOWNLOADS`, non documentato ma dichiarato dal Play Store (verificato nella versione 50.7 su un emulatore con Play Store). Se un giorno sparisce, il tasto apre il Play Store e basta.
+- Se il Play Store non c'è, il tasto non compare.

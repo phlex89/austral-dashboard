@@ -80,7 +80,7 @@ Qui si verificano anche le cose rimandate: aggiornamento senza conferma, origini
 
 | Prova | Esito |
 |---|---|
-| v1 installata a mano dal browser del box e impostata come launcher | da provare |
+| v1 installata a mano dal browser del box e impostata come launcher | fatto il 2026-11-19 con la 0.3.0 |
 | v2 trovata all'accensione e installata | da provare |
 | v2 trovata dal tasto «Controlla aggiornamenti» | da provare |
 | L'aggiornamento parte senza conferma (altrimenti con un tocco) | da provare |

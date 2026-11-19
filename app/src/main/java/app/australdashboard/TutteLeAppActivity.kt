@@ -1,5 +1,6 @@
 package app.australdashboard
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
@@ -34,6 +35,19 @@ class TutteLeAppActivity : Schermata() {
         }
         intestazione.addView(Ui.premibile(indietro, onda, "Indietro") { finish() }, lp(ADATTA, TUTTO))
         intestazione.addView(Ui.testo(this, 76, p.testo, p.titoli, 70, "Tutte le app"), lp(0, ADATTA, 1f))
+        val playStore = packageManager.getLaunchIntentForPackage(PLAY_STORE)
+        if (playStore != null) {
+            val aggiorna = Ui.riga(this, 10).apply {
+                background = Ui.bordo(p.accento, 2)
+                setPadding(24, 0, 24, 0)
+                addView(Ui.icona(this@TutteLeAppActivity, R.drawable.ic_aggiorna, p.accento), lp(44, 44))
+                addView(Ui.testo(this@TutteLeAppActivity, 44, p.accento, p.titoli, 40, "Aggiorna app"))
+            }
+            intestazione.addView(
+                Ui.premibile(aggiorna, onda, "Aggiorna le app dal Play Store") { apriAggiornamenti(playStore) },
+                lp(ADATTA, TUTTO),
+            )
+        }
         radice.addView(intestazione, lp(TUTTO, 120))
 
         val griglia = Ui.colonna(this, 20)
@@ -59,6 +73,14 @@ class TutteLeAppActivity : Schermata() {
                 }
             }
         }.start()
+    }
+
+    private fun apriAggiornamenti(playStore: Intent) {
+        try {
+            startActivity(Intent(PAGINA_AGGIORNAMENTI).setPackage(PLAY_STORE))
+        } catch (e: ActivityNotFoundException) {
+            startActivity(playStore)
+        }
     }
 
     private fun cella(
@@ -88,5 +110,7 @@ class TutteLeAppActivity : Schermata() {
 
     private companion object {
         const val COLONNE = 5
+        const val PLAY_STORE = "com.android.vending"
+        const val PAGINA_AGGIORNAMENTI = "com.google.android.finsky.VIEW_MY_DOWNLOADS"
     }
 }

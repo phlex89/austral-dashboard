@@ -63,11 +63,13 @@ Si chiude quando la versione è pubblicata, il box l'ha ricevuta e l'aggiornamen
 
 | Prova | Esito |
 |---|---|
-| Il box riceve questa versione dalla 0.2.1, con la conferma «Aggiorna» | da provare |
+| Il box riceve questa versione dalla 0.2.1, con la conferma «Aggiorna» | non serve: la 0.3.0 è stata installata a mano (2026-11-19) |
 | L'aggiornamento successivo arriva senza nessuna conferma | da provare |
 | Il box, all'accensione dell'auto, si riavvia o si risveglia? | da provare |
 | Comuni preferiti e app della Home scelti dal box, con la tastiera del box | da provare |
 | Diagnostica mostra «Ultimo crash: nessuno» dopo qualche giorno d'uso | da provare |
+| La Home occupa tutta la larghezza, senza bande grigie ai lati | da provare, nella versione successiva alla 0.3.0 |
+| «Aggiorna app» apre la pagina delle app del Play Store | da provare |
 
 ## Diario
 
@@ -78,3 +80,5 @@ Si chiude quando la versione è pubblicata, il box l'ha ricevuta e l'aggiornamen
 - 2026-11-19: meteo vecchio provato su Matrix e HUD: emulatore in modalità aereo con l'orologio avanti di 5 ore, la Home mostra «--°» e «In attesa» con le scale spente.
 - 2026-11-19: non provati: `mostraMeteo(null)` negli altri quattro temi cambiati (Art Déco, Solari, Cyberpunk, Braun: solo letti nel codice), la conferma riaperta al ritorno sulla Home, il job periodico (visto solo in `dumpsys jobscheduler`: 6 ore, margine di un'ora), `release.sh` con una chiave sbagliata, i tasti precedente e successivo dopo la modifica al lettore.
 - 2026-11-19: pubblicata la v0.3.0 (codice 5, 454 KB). Il file scaricato da GitHub ha lo SHA-256 di `versione.json` ed è firmato con la chiave di sempre. Sull'emulatore `box` l'app installata (codice di M03 con `versionCode` 4, installatore di sé stessa) l'ha ricevuta da sola 85 secondi dopo l'accensione, senza conferma, con la Home in primo piano. Restano le prove sul box.
+- 2026-11-19: primo uso sul box. L'utente installa a mano la 0.3.0 e la usa come Home: «filato tutto liscio a livello di funzionalità». Unico difetto: in tutti i temi la Home è più stretta dell'area, con due bande grigie ai lati. Riprodotto sull'emulatore `box` (display verticale ruotato, `set-ignore-orientation-request`): era il blocco `screenOrientation="nosensor"` di `HomeActivity`, tolto. L'utente chiede anche un collegamento al Play Store, meglio se un tasto per aggiornare le app: «Aggiorna app» in Tutte le app (vedi `DECISIONI.md`). Provato su un emulatore Android 37 con Play Store: il tasto compare e apre il Play Store (senza account Google mostra l'accesso), «Indietro» torna a Tutte le app; sull'emulatore `box` il Play Store è uno scheletro senza icona e il tasto non compare.
+- 2026-11-19: prova della catena con il codice nuovo come `versionCode` 4, installatore di sé stessa: riavvio alle 13:36:38, 70 secondi dopo è la 0.3.0 pubblicata, senza conferma.
