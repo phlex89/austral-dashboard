@@ -56,7 +56,7 @@ Si chiude quando la versione è pubblicata, il box l'ha ricevuta e l'aggiornamen
 - [x] Catena di aggiornamento.
 - [x] Funzioni, schermate nuove, pulizia dei temi.
 - [x] Prove sull'emulatore `box` e documentazione.
-- [ ] Commit e rilascio con `./release.sh minor`.
+- [x] Commit e rilascio con `./release.sh minor`.
 - [ ] Prove sul box (Prove manuali).
 
 ## Prove manuali
@@ -77,3 +77,4 @@ Si chiude quando la versione è pubblicata, il box l'ha ricevuta e l'aggiornamen
 - 2026-11-19: prove sull'emulatore `box` con la build di release: otto temi (Home e Benzinai) a vista, Diagnostica con il crash di prova, scelta di Chrome nella posizione 2 e Home ricostruita, ricerca «tori» tra i comuni con Torino in cima, Torino tra i preferiti dei Benzinai, brano finto in Chrome con copertina. Misure: APK 454 KB, avvio a freddo 139–163 ms, PSS 23 MB (Synthwave), 0 frame in ritardo; con il brano in riproduzione 0 frame in 30 secondi (prima della correzione circa uno al secondo). 45 unit test.
 - 2026-11-19: meteo vecchio provato su Matrix e HUD: emulatore in modalità aereo con l'orologio avanti di 5 ore, la Home mostra «--°» e «In attesa» con le scale spente.
 - 2026-11-19: non provati: `mostraMeteo(null)` negli altri quattro temi cambiati (Art Déco, Solari, Cyberpunk, Braun: solo letti nel codice), la conferma riaperta al ritorno sulla Home, il job periodico (visto solo in `dumpsys jobscheduler`: 6 ore, margine di un'ora), `release.sh` con una chiave sbagliata, i tasti precedente e successivo dopo la modifica al lettore.
+- 2026-11-19: pubblicata la v0.3.0 (codice 5, 454 KB). Il file scaricato da GitHub ha lo SHA-256 di `versione.json` ed è firmato con la chiave di sempre. Sull'emulatore `box` l'app installata (codice di M03 con `versionCode` 4, installatore di sé stessa) l'ha ricevuta da sola 85 secondi dopo l'accensione, senza conferma, con la Home in primo piano. Restano le prove sul box.
