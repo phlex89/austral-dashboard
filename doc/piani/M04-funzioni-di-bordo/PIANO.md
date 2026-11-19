@@ -53,7 +53,7 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - [x] Fase 2: otto temi, prove sull'emulatore, misure.
 - [x] Prova della catena di aggiornamento sull'emulatore.
 - [x] Guida, riferimento, decisioni.
-- [ ] Rilascio con `./release.sh minor`.
+- [x] Rilascio con `./release.sh minor`: v0.4.0.
 - [ ] Prova sul box: Spotify parte con `:play`, il pannello Wi‑Fi si apre sopra la Home, il volume cambia l'audio che arriva all'auto.
 
 **Rischi.** Il suffisso `:play` per far partire la playlist non è documentato da Spotify e l'emulatore non ha Spotify: si prova solo sul box; se non parte, la playlist si apre e serve un tocco su play. Non si sa se il volume del box cambia davvero l'audio verso l'auto o se conta solo quello dell'auto.
@@ -63,3 +63,4 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - 2026-11-19: piano scritto dalle scelte dell'utente; avviata la fase 1.
 - 2026-11-19: fase 1 fatta. Provate sull'emulatore `box` la condivisione di un link Spotify (nome ricavato dal testo, salvato) e la schermata Rifornimenti (tre pieni: 17,1 km/l, 9,84 € ogni 100 km). Corretti dopo la prova: i campi decimali scartavano la virgola (il tastierino accetta solo il separatore della lingua del sistema) e la tastiera restava aperta sopra il riepilogo dopo «Salva». La pioggia non si è vista sull'emulatore (posizione finta negata dopo `adb root`): controllata la risposta reale di Open‑Meteo, che ha il formato letto dai test. APK 472 KB. Stato di Wi‑Fi, Bluetooth e volume non ancora collegato: arriva con i temi.
 - 2026-11-19: fase 2 fatta. Tavole aggiornate da Claude Design per tutti e otto i temi; contratto comune (`mostraSistema`, `mostraSpesa`, azioni per Wi‑Fi, Bluetooth, volume, playlist, rifornimenti), nove icone condivise, poi un agente per tema. Confronto con le tavole sull'emulatore `box` in quattro stati per tema (tutto acceso, stati vuoti, Benzinai, scheda del distributore aperta) e un giro di correzioni per tema: posizioni di ora e titoli, testi rimpiccioliti da `Ui.adatta`, distanze allineate a destra, spie del volume tagliate in Solari. Le ★ dei preferiti restano fuori (D-6). Misure in release: avvio 160–267 ms, PSS 25–29 MB, 0 frame in ritardo, APK 511 KB. Prova della catena: una build di questa versione con `versionCode` 5, installata come installatore di sé stessa, ha ricevuto da sola la 0.3.1 pubblicata senza conferma; firma uguale a quella della release. Durante le prove lo schermo dell'emulatore era tornato verticale dopo il riavvio (rotazione non più bloccata): annotato in `RIFERIMENTO.md`.
+- 2026-11-19: pubblicata la v0.4.0 (codice 7, 511 KB); l'emulatore `box` l'ha ricevuta da Impostazioni → Controlla aggiornamenti. Resta la prova sul box.
