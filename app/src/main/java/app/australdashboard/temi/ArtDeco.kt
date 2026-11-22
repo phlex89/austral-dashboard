@@ -319,8 +319,8 @@ object ArtDeco : Tema {
     private class HomeArtDeco(private val s: Schermata, private val azioni: AzioniHome) : VistaHome {
         private val limelight = limelight(s)
         private val playlist = Playlists.elenco(s)
-        private val ora = Ui.testo(s, 160, AVORIO, limelight, 146).apply {
-            letterSpacing = 2f / 160
+        private val ora = Ui.testo(s, 140, AVORIO, limelight, 128).apply {
+            letterSpacing = 2f / 140
             gravity = Gravity.CENTER_HORIZONTAL
         }
         private val giorno = maiuscoletto(Ui.testo(s, 30, SABBIA, serif, 36, maiuscolo = true), 30, 5)
@@ -461,7 +461,7 @@ object ArtDeco : Tema {
             riga.addView(data)
             return Ui.colonna(s, 12, Gravity.CENTER).apply {
                 background = Cornice(ORO, FILETTO_MEDIO, 12, true)
-                addView(ora, lp(TUTTO, 146).apply { topMargin = -25; bottomMargin = 25 })
+                addView(ora, lp(TUTTO, 128).apply { topMargin = -22; bottomMargin = 22 })
                 addView(riga)
                 addView(fregio, lp(328, 28))
             }

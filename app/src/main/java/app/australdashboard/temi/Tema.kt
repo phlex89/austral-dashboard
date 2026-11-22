@@ -59,7 +59,6 @@ interface AzioniHome {
     fun successivo()
     fun wifi()
     fun bluetooth()
-    fun volume(su: Boolean)
     fun wifiDettaglio()
     fun bluetoothDettaglio()
     fun temaSuccessivo()
@@ -69,7 +68,6 @@ interface AzioniHome {
 interface AzioniBenzinai {
     fun indietro()
     fun ordina(ordine: Ordine)
-    fun rifornimenti()
     fun rifornimenti(selezionato: Distributore?)
     fun intornoAMe()
     fun raggio()

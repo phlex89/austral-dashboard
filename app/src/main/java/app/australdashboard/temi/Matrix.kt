@@ -431,7 +431,7 @@ object Matrix : Tema {
                 return
             }
             pioggia.text = testo
-            pioggia.setTextSize(TypedValue.COMPLEX_UNIT_PX, if (testo.length > 18) 28f * 18 / testo.length else 28f)
+            pioggia.setTextSize(TypedValue.COMPLEX_UNIT_PX, if (testo.length > 14) 28f * 14 / testo.length else 28f)
             pioggia.visibility = View.VISIBLE
         }
 

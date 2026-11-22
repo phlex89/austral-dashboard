@@ -191,10 +191,6 @@ class HomeActivity : Schermata(), AzioniHome {
         vista.mostraMusica(lettore?.ultima)
     }
 
-    override fun volume(su: Boolean) {
-        Sistema.volume(this, su)
-        vista.mostraSistema(Sistema.stato(this))
-    }
 
     override fun playlist(playlist: Playlist) = Playlists.apri(this, playlist)
 

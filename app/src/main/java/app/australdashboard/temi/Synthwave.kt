@@ -640,7 +640,9 @@ object Synthwave : Tema {
         private val spesa = Ui.testo(s, 28, SECONDARIO, tipoDritto, 32).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
         private val intornoIcona = Ui.icona(s, R.drawable.ic_mirino, ROSA)
-        private val intornoTesto = Ui.adatta(Ui.testo(s, 32, TESTO, medio, 38, "Intorno a me"), 22, 32)
+        private val intornoTesto = Ui.adatta(Ui.testo(s, 32, TESTO, medio, 38, "Intorno a me"), 22, 32).apply {
+            gravity = Gravity.CENTER_VERTICAL
+        }
         private val intornoView = Ui.riga(s, 12, Gravity.CENTER)
         private val raggioTesto = Ui.adatta(Ui.testo(s, 32, TESTO, medio, 38, "Raggio ${Benzinai.raggio(s).toInt()} km"), 22, 32).apply {
             gravity = Gravity.CENTER

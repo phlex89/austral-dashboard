@@ -74,8 +74,6 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         carica()
     }
 
-    override fun rifornimenti() = rifornimenti(null)
-
     override fun rifornimenti(selezionato: Distributore?) {
         val intent = Intent(this, RifornimentiActivity::class.java)
         if (selezionato != null) {
@@ -90,9 +88,9 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
             carica()
             return
         }
-        mostra(ElencoBenzinai.Caricamento)
+        carica()
         Posizione.aggiorna(this) { fresco ->
-            if (isDestroyed) return@aggiorna
+            if (isDestroyed || !intornoAMe) return@aggiorna
             if (fresco != null) luogo = fresco
             if (luogo == null) mostra(ElencoBenzinai.SenzaPosizione) else carica()
         }

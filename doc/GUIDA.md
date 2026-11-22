@@ -2,12 +2,13 @@
 
 ## Per cominciare
 
-**In breve.** Austral Dashboard è il launcher del box Ottocast in auto. La Home mostra ora, meteo, il brano in ascolto, le playlist preferite, sei app, quattro servizi, Wi‑Fi, Bluetooth e volume; l'aspetto dipende dal tema scelto in Impostazioni.
+**In breve.** Austral Dashboard è il launcher del box Ottocast in auto. La Home mostra ora, meteo, il brano in ascolto, le playlist preferite, sei app, quattro servizi, Wi‑Fi, Bluetooth e il tasto Tema; l'aspetto dipende dal tema scelto.
 
 | Schermata | Come ci arrivi | Cosa trovi |
 |---|---|---|
-| Home | Tasto casa della barra Ottocast | Ora e data, meteo con la pioggia in arrivo, brano in ascolto con i comandi, fino a tre playlist preferite, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi, Wi‑Fi, Bluetooth e volume |
-| Benzinai | Home → Benzinai | Distributori entro 10 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano. Accanto al prezzo, ▲ o ▼ con la differenza dal download precedente. In alto «Rifornimenti» con la spesa del mese |
+| Home | Tasto casa della barra Ottocast | Ora e data, meteo con il nome del luogo, la pioggia in arrivo e la previsione di domani, brano in ascolto con i comandi, fino a tre playlist preferite, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi, Wi‑Fi e Bluetooth con il loro «›», il tasto Tema |
+| Benzinai | Home → Benzinai | Distributori entro 10 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano. Accanto al prezzo, ▲ o ▼ con la differenza dal download precedente. In alto «Rifornimenti» con la spesa del mese. «Intorno a me» riprende la posizione e mostra solo i vicini; «Raggio» passa a ogni tocco da 5 a 10, 20 e 30 km; «Mappa» apre la mappa |
+| Mappa | Benzinai → Mappa | I distributori sulla mappa con il prezzo, il più economico in evidenza. Trascini col dito, «+» e «−» per lo zoom, «Centra» torna su di te. Un tocco su un prezzo apre la scheda, con «Rifornimenti» |
 | Rifornimenti | Benzinai → Rifornimenti | A ogni rifornimento scrivi euro, litri e contachilometri, dici se è un pieno completo e tocchi «Salva». Sotto: km percorsi, spesa e litri totali, prezzo medio al litro, consumo e € ogni 100 km (medi, ultimo, migliore, peggiore), il grafico del consumo, spesa e km mese per mese, gli ultimi 20 rifornimenti |
 | Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico. In alto a destra «Aggiorna app» apre il Play Store sulla pagina delle tue app, dove tocchi «Aggiorna tutto» |
 | Impostazioni | Home → Launcher | Divise in sezioni: Aspetto (tema), Home (app della Home), Meteo (luogo del meteo), Benzinai (comuni preferiti), Musica (lettura della musica, playlist preferite), Sistema e aggiornamenti (controllo, Diagnostica, impostazioni di sistema, launcher predefinito) |
@@ -18,9 +19,9 @@ Un'app della Home che non è installata resta spenta. Toccando la copertina o il
 
 «Conviene» mette in cima il distributore con cui spendi meno contando un pieno da 40 litri e il viaggio di andata e ritorno. I prezzi si scaricano quando apri Benzinai, al massimo una volta al giorno, dopo la pubblicazione del mattino.
 
-Wi‑Fi apre il pannello delle reti di Android, Bluetooth le sue impostazioni; «−» e «+» cambiano il volume di un passo. Una playlist si fa partire con un tocco. «Piove» o «Pioggia tra 20 min» compare nel meteo solo se la pioggia arriva entro due ore.
+Wi‑Fi apre il pannello delle reti di Android; Bluetooth si accende e si spegne con un tocco (la prima volta Android chiede il permesso «Dispositivi nelle vicinanze»). Il «›» accanto a ciascuno apre le impostazioni complete. «Tema» passa al tema successivo. Il volume si regola dall'auto: dal launcher non si può. Il meteo mostra il luogo che sta seguendo, con la puntina quando segue il GPS. Una playlist si fa partire con un tocco. «Piove» o «Pioggia tra 20 min» compare nel meteo solo se la pioggia arriva entro due ore.
 
-Il consumo si calcola da pieno completo a pieno completo, contando anche i rifornimenti parziali in mezzo: scrivi il contachilometri di ogni rifornimento e togli «Pieno completo» quando non riempi il serbatoio. Servono almeno due pieni completi. «Togli» chiede un secondo tocco entro 3 secondi, per non cancellare per sbaglio.
+Se apri Rifornimenti dopo aver toccato un distributore (nel pannello o sulla mappa), il prezzo è già scritto: scrivi gli euro e i litri si calcolano da soli. Il consumo si calcola da pieno completo a pieno completo, contando anche i rifornimenti parziali in mezzo: scrivi il contachilometri di ogni rifornimento e togli «Pieno completo» quando non riempi il serbatoio. Servono almeno due pieni completi. «Togli» chiede un secondo tocco entro 3 secondi, per non cancellare per sbaglio.
 
 Se il launcher si chiude da solo, Diagnostica mostra in fondo quando è successo, con quale versione e l'errore: è quello che serve per correggerlo.
 

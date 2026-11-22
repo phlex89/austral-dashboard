@@ -18,6 +18,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [«Aggiorna app» apre il Play Store](#aggiorna-app-apre-il-play-store)
 - [Funzioni di bordo: come funzionano e perché](#funzioni-di-bordo-come-funzionano-e-perche)
 - [Luoghi del meteo e mappa dei benzinai](#luoghi-del-meteo-e-mappa-dei-benzinai)
+- [Niente volume dal launcher, Bluetooth diretto](#niente-volume-dal-launcher-bluetooth-diretto)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -156,4 +157,10 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 **In breve.** Il meteo segue il GPS oppure un luogo salvato, scelto in Impostazioni; il primo luogo salvato fa da riserva quando manca il GPS, e la vecchia città di riserva è diventata quel primo luogo. La mappa dei benzinai è disegnata dall'app con le tessere di OpenStreetMap, perché il progetto non usa librerie; è una schermata con la grafica comune, così il percorso da A a B potrà arrivarci senza ridisegnare gli otto temi.
 
 **Dettagli.** Scelte dell'utente del 2026-11-22 (D-3 e D-6 di M05). Il nome del luogo che segue il GPS viene dal geocoder di Android; se manca, dal comune del distributore più vicino nel file dei prezzi, che è già sul box. Le tessere OSM sono gratuite per un uso leggero, con un `User-Agent` che identifica l'app (solo nome e versione, nessun dato dell'utente) e l'attribuzione visibile; la cache sul box (al massimo 30 MB, sette giorni) evita di riscaricarle. Le tessere sono scurite con un filtro di colore, perché quelle originali sono chiare e in auto, in mezzo a un'interfaccia scura, abbagliano. Nelle zone fitte un'etichetta che coprirebbe un'altra già disegnata diventa un puntino, e le più economiche si disegnano per prime.
+
+## Niente volume dal launcher, Bluetooth diretto
+
+**In breve.** Il volume è stato tolto dalla Home: sul box nessun modo di cambiarlo dal launcher ha effetto, e l'audio verso l'auto lo regola solo l'auto. Il Bluetooth invece ora si accende e si spegne con un tocco, perché su Android 12 un'app può farlo con il permesso `BLUETOOTH_CONNECT`; il Wi‑Fi no, e resta il pannello di Android. Accanto a entrambi un «›» apre le impostazioni complete.
+
+**Dettagli.** Prove in auto dell'utente con la Diagnostica della 0.4.1 (2026-11-22): né `adjustStreamVolume`, né `adjustSuggestedStreamVolume`, né il tasto volume simulato cambiavano l'audio. La sezione Audio della Diagnostica serviva solo a questo ed è stata tolta. Lo spazio liberato ospita i «›» e il tasto Tema (D-2 di M05). `BluetoothAdapter.enable()` è deprecato da API 33, ma il box resta su API 32. Questa voce aggiorna «Funzioni di bordo» per il Bluetooth.
 

@@ -8,7 +8,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -18,7 +17,7 @@ import android.provider.Settings
 
 enum class StatoWifi { SPENTO, ACCESO, CONNESSO }
 
-data class StatoSistema(val wifi: StatoWifi, val bluetooth: Boolean, val volume: Int, val volumeMassimo: Int)
+data class StatoSistema(val wifi: StatoWifi, val bluetooth: Boolean)
 
 object Sistema {
     const val CODICE_BLUETOOTH = 41
@@ -35,13 +34,7 @@ object Sistema {
             else -> StatoWifi.SPENTO
         }
         val bluetooth = app.getSystemService(BluetoothManager::class.java).adapter?.isEnabled == true
-        val audio = app.getSystemService(AudioManager::class.java)
-        return StatoSistema(
-            statoWifi,
-            bluetooth,
-            audio.getStreamVolume(AudioManager.STREAM_MUSIC),
-            audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
-        )
+        return StatoSistema(statoWifi, bluetooth)
     }
 
     fun apriWifi(context: Context) {
@@ -76,14 +69,6 @@ object Sistema {
         }
     }
 
-    fun volume(context: Context, su: Boolean) {
-        context.getSystemService(AudioManager::class.java).adjustStreamVolume(
-            AudioManager.STREAM_MUSIC,
-            if (su) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
-            0,
-        )
-    }
-
     fun osserva(context: Context, cambiato: () -> Unit): () -> Unit {
         val app = context.applicationContext
         val ricevitore = object : BroadcastReceiver() {
@@ -94,7 +79,6 @@ object Sistema {
             IntentFilter().apply {
                 addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
                 addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-                addAction("android.media.VOLUME_CHANGED_ACTION")
             },
         )
         val rete = app.getSystemService(ConnectivityManager::class.java)

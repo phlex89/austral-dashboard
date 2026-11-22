@@ -315,7 +315,7 @@ object Cyberpunk : Tema {
                 lp(228, TUTTO),
             )
             riga.addView(tastoTema(), lp(204, TUTTO))
-            mostraSistema(StatoSistema(StatoWifi.SPENTO, false, 0, 0))
+            mostraSistema(StatoSistema(StatoWifi.SPENTO, false))
             return riga
         }
 
