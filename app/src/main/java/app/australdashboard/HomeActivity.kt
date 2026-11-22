@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -108,6 +109,10 @@ class HomeActivity : Schermata(), AzioniHome {
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (requestCode == Sistema.CODICE_BLUETOOTH) {
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) Sistema.alternaBluetooth(this)
+            return
+        }
         if (Posizione.permessoConcesso(this)) aggiornaMeteo(forza = true)
     }
 
@@ -172,7 +177,19 @@ class HomeActivity : Schermata(), AzioniHome {
 
     override fun wifi() = Sistema.apriWifi(this)
 
-    override fun bluetooth() = Sistema.apriBluetooth(this)
+    override fun bluetooth() = Sistema.alternaBluetooth(this)
+
+    override fun wifiDettaglio() = Sistema.dettaglioWifi(this)
+
+    override fun bluetoothDettaglio() = Sistema.apriBluetooth(this)
+
+    override fun temaSuccessivo() {
+        val elenco = Temi.elenco
+        val attuale = elenco.indexOfFirst { it.id == Temi.scelto(this).id }
+        Temi.scegli(this, elenco[(attuale + 1) % elenco.size])
+        costruisci()
+        vista.mostraMusica(lettore?.ultima)
+    }
 
     override fun volume(su: Boolean) {
         Sistema.volume(this, su)

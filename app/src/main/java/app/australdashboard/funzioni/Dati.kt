@@ -10,6 +10,7 @@ data class Meteo(
     val pioggiaTraMinuti: Int? = null,
     val luogo: String = "",
     val domani: Previsione? = null,
+    val gps: Boolean = false,
 )
 
 data class Previsione(val codice: Int, val minima: Int, val massima: Int)

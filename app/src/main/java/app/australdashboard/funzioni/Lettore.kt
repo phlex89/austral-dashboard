@@ -24,7 +24,8 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
     private var attivo = false
     private var controller: MediaController? = null
     private var emesso = false
-    private var ultima: Musica? = null
+    var ultima: Musica? = null
+        private set
     private var meta: MediaMetadata? = null
     private var copertina: Bitmap? = null
     private var originale: Bitmap? = null

@@ -36,6 +36,7 @@ object FonteMeteo {
                 )
             },
             luogo = preferenze.getString("nome", "").orEmpty(),
+            gps = preferenze.getString("luogo", Luoghi.CHIAVE_GPS) == Luoghi.CHIAVE_GPS,
             domani = if (preferenze.contains("domani_codice")) {
                 Previsione(
                     preferenze.getInt("domani_codice", 0),

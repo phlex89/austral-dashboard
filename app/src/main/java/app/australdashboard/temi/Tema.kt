@@ -60,6 +60,9 @@ interface AzioniHome {
     fun wifi()
     fun bluetooth()
     fun volume(su: Boolean)
+    fun wifiDettaglio()
+    fun bluetoothDettaglio()
+    fun temaSuccessivo()
     fun playlist(playlist: Playlist)
 }
 
@@ -67,6 +70,10 @@ interface AzioniBenzinai {
     fun indietro()
     fun ordina(ordine: Ordine)
     fun rifornimenti()
+    fun rifornimenti(selezionato: Distributore?)
+    fun intornoAMe()
+    fun raggio()
+    fun mappa()
 }
 
 class StatoBenzinai {

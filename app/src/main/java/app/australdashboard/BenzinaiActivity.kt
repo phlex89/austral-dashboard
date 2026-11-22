@@ -3,6 +3,7 @@ package app.australdashboard
 import android.content.Intent
 import android.os.Bundle
 import app.australdashboard.funzioni.Benzinai
+import app.australdashboard.funzioni.Distributore
 import app.australdashboard.funzioni.ElencoBenzinai
 import app.australdashboard.funzioni.Luogo
 import app.australdashboard.funzioni.Ordine
@@ -18,6 +19,7 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
     private var ordine = Ordine.CONVIENE
     private var luogo: Luogo? = null
     private var richiesta = 0
+    private var intornoAMe = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +49,9 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         val dove = luogo ?: return
         val numero = ++richiesta
         val scelto = ordine
+        val soloVicini = intornoAMe
         Thread {
-            val elenco = Benzinai.elenco(applicationContext, dove, scelto)
+            val elenco = Benzinai.elenco(applicationContext, dove, scelto, soloVicini)
             runOnUiThread { if (!isDestroyed && numero == richiesta) mostra(elenco) }
         }.start()
     }
@@ -71,5 +74,34 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
         carica()
     }
 
-    override fun rifornimenti() = startActivity(Intent(this, RifornimentiActivity::class.java))
+    override fun rifornimenti() = rifornimenti(null)
+
+    override fun rifornimenti(selezionato: Distributore?) {
+        val intent = Intent(this, RifornimentiActivity::class.java)
+        if (selezionato != null) {
+            intent.putExtra("prezzo", selezionato.prezzo).putExtra("distributore", selezionato.nome.ifBlank { selezionato.marchio })
+        }
+        startActivity(intent)
+    }
+
+    override fun intornoAMe() {
+        intornoAMe = !intornoAMe
+        if (!intornoAMe) {
+            carica()
+            return
+        }
+        mostra(ElencoBenzinai.Caricamento)
+        Posizione.aggiorna(this) { fresco ->
+            if (isDestroyed) return@aggiorna
+            if (fresco != null) luogo = fresco
+            if (luogo == null) mostra(ElencoBenzinai.SenzaPosizione) else carica()
+        }
+    }
+
+    override fun raggio() {
+        Benzinai.prossimoRaggio(this)
+        carica()
+    }
+
+    override fun mappa() = startActivity(Intent(this, MappaActivity::class.java).putExtra("intornoAMe", intornoAMe))
 }
