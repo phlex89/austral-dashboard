@@ -1,9 +1,7 @@
 package app.australdashboard
 
-import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
-import android.text.method.DigitsKeyListener
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -42,20 +40,6 @@ class RifornimentiActivity : Schermata() {
         radice.addView(voci)
         setContentView(scorrevole(radice))
         aggiorna()
-    }
-
-    private fun campo(suggerimento: String, tipo: Int) = EditText(this).apply {
-        hint = suggerimento
-        textSize = 28f
-        setTextColor(Color.WHITE)
-        setHintTextColor(Color.GRAY)
-        setSingleLine()
-        inputType = tipo
-        if (tipo and InputType.TYPE_NUMBER_FLAG_DECIMAL != 0) {
-            keyListener = DigitsKeyListener.getInstance("0123456789.,")
-            setRawInputType(tipo)
-        }
-        minHeight = dp(96)
     }
 
     private fun salva() {
