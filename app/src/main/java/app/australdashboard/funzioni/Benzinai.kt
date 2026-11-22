@@ -14,6 +14,7 @@ object Benzinai {
     private const val FILE_PRIMA = "benzinai-prima.txt"
     private const val PREFERENZE = "benzinai"
     private const val ATTESA_DOPO_ERRORE_MS = 10 * 60 * 1000L
+    private val RAGGI = listOf(5, 10, 20, 30)
     private var memoria: DatiMimit.Compatto? = null
     private var ultimoErrore = 0L
     private val prezziPrima = HashMap<Long, Double?>()
@@ -26,6 +27,17 @@ object Benzinai {
         context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit()
             .putString("comuni", comuni.joinToString("\n"))
             .apply()
+    }
+
+    fun raggio(context: Context): Double =
+        context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getInt("raggio", 10)
+            .takeIf { it in RAGGI }?.toDouble() ?: 10.0
+
+    fun prossimoRaggio(context: Context): Double {
+        val attuale = raggio(context).toInt()
+        val prossimo = RAGGI[(RAGGI.indexOf(attuale) + 1) % RAGGI.size]
+        context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit().putInt("raggio", prossimo).apply()
+        return prossimo.toDouble()
     }
 
     @Synchronized
@@ -43,7 +55,7 @@ object Benzinai {
     }
 
     @Synchronized
-    fun elenco(context: Context, luogo: Luogo, ordine: Ordine): ElencoBenzinai {
+    fun elenco(context: Context, luogo: Luogo, ordine: Ordine, intornoAMe: Boolean = false): ElencoBenzinai {
         val file = File(context.filesDir, FILE_COMPATTO)
         var compatto = memoria ?: leggi(file).also { memoria = it }
         val adesso = System.currentTimeMillis()
@@ -60,7 +72,7 @@ object Benzinai {
         if (compatto == null || compatto.impianti.isEmpty()) {
             return ElencoBenzinai.Errore("Prezzi non disponibili. Controlla la connessione.")
         }
-        val pronto = DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine)
+        val pronto = DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine, raggio(context), intornoAMe)
         val richiesti = (pronto.preferiti + pronto.vicini).map { it.id }.toSet()
         val mancanti = richiesti.filter { it !in prezziPrima }.toSet()
         if (mancanti.isNotEmpty()) {
@@ -73,6 +85,12 @@ object Benzinai {
             preferiti = pronto.preferiti.map { it.copy(prezzoPrima = prezziPrima[it.id]) },
             vicini = pronto.vicini.map { it.copy(prezzoPrima = prezziPrima[it.id]) },
         )
+    }
+
+    fun comuneVicino(context: Context, luogo: Luogo): String? {
+        val file = File(context.filesDir, FILE_COMPATTO)
+        if (!file.exists()) return null
+        return runCatching { file.bufferedReader().use { DatiMimit.comunePiuVicino(it, luogo) } }.getOrNull()
     }
 
     fun prezzo(valore: Double): String = DatiMimit.prezzo(valore)

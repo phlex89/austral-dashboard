@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <queries>
         <intent>
@@ -53,7 +54,7 @@
             android:exported="false" />
 
         <activity
-            android:name=".CittaActivity"
+            android:name=".LuoghiActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
@@ -84,6 +85,10 @@
 
         <activity
             android:name=".BenzinaiActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".MappaActivity"
             android:exported="false" />
 
         <activity

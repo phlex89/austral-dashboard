@@ -185,6 +185,8 @@ class BenzinaiTest {
             milano,
             listOf("Valenzano", "Cellamare", "Torino"),
             Ordine.PREZZO,
+            15.0,
+            false,
         )
         assertEquals(listOf(4L, 3L), pronto.preferiti.map { it.id })
         assertEquals(listOf("Valenzano", "Torino"), pronto.preferiti.map { it.comune })
@@ -195,7 +197,7 @@ class BenzinaiTest {
 
     @Test
     fun ilPreferitoNonCompareAncheTraIVicini() {
-        val pronto = DatiMimit.filtra(listOf(d(1, 1.9, 45.47, comune = "MILANO"), d(2, 2.0, 45.47)), milano, listOf("Milano"), Ordine.PREZZO)
+        val pronto = DatiMimit.filtra(listOf(d(1, 1.9, 45.47, comune = "MILANO"), d(2, 2.0, 45.47)), milano, listOf("Milano"), Ordine.PREZZO, 15.0, false)
         assertEquals(listOf(1L), pronto.preferiti.map { it.id })
         assertEquals(listOf(2L), pronto.vicini.map { it.id })
     }
@@ -203,13 +205,33 @@ class BenzinaiTest {
     @Test
     fun limitaITrentaVicini() {
         val molti = (1L..40L).map { d(it, 1.5 + it / 1000.0, 45.47) }
-        val pronto = DatiMimit.filtra(molti, milano, emptyList(), Ordine.PREZZO)
+        val pronto = DatiMimit.filtra(molti, milano, emptyList(), Ordine.PREZZO, 15.0, false)
         assertEquals(30, pronto.vicini.size)
         assertEquals(1L, pronto.vicini.first().id)
     }
 
+    @Test
+    fun ilRaggioLimitaIVicini() {
+        val impianti = listOf(d(1, 1.9, 45.4642 + 0.03), d(2, 1.8, 45.4642 + 0.07), d(3, 1.7, 45.4642 + 0.2))
+        fun entro(km: Double) = DatiMimit.filtra(impianti, milano, emptyList(), Ordine.PREZZO, km, false).vicini.map { it.id }
+        assertEquals(listOf(1L), entro(5.0))
+        assertEquals(listOf(2L, 1L), entro(10.0))
+        assertEquals(listOf(3L, 2L, 1L), entro(30.0))
+    }
+
+    @Test
+    fun intornoAMeSaltaIPreferiti() {
+        val torino = d(2, 1.8, 45.07, 7.68, "TORINO")
+        val vicino = d(1, 1.9, 45.47)
+        val pronto = DatiMimit.filtra(listOf(vicino, torino), milano, listOf("Torino"), Ordine.PREZZO, 10.0, true)
+        assertTrue(pronto.preferiti.isEmpty())
+        assertEquals(listOf(1L), pronto.vicini.map { it.id })
+        assertTrue(pronto.intornoAMe)
+        assertEquals(10.0, pronto.raggioKm, 0.0)
+    }
+
     private fun ordinati(ordine: Ordine, vararg impianti: Distributore) =
-        DatiMimit.filtra(impianti.toList(), milano, emptyList(), ordine).vicini.map { it.id }
+        DatiMimit.filtra(impianti.toList(), milano, emptyList(), ordine, 15.0, false).vicini.map { it.id }
 
     @Test
     fun ordinaPerPrezzo() {

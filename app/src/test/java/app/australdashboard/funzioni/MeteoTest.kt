@@ -15,6 +15,16 @@ class MeteoTest {
     }
 
     @Test
+    fun daJsonLeggeLaPrevisioneDiDomani() {
+        val due = risposta.replace(
+            "\"time\":[\"2026-11-18\"],\"temperature_2m_max\":[10.0],\"temperature_2m_min\":[5.0]",
+            "\"time\":[\"2026-11-18\",\"2026-11-19\"],\"weather_code\":[3,61],\"temperature_2m_max\":[10.0,12.4],\"temperature_2m_min\":[5.0,6.6]",
+        )
+        assertEquals(Previsione(codice = 61, minima = 7, massima = 12), FonteMeteo.daJson(due).domani)
+        assertNull(FonteMeteo.daJson(risposta).domani)
+    }
+
+    @Test
     fun ilMeteoVecchioDiPiuDiTreOreNonVale() {
         val ora = 10_000_000_000L
         val treOre = 3 * 60 * 60 * 1000L

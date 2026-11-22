@@ -7,7 +7,18 @@ import java.time.format.TextStyle
 import java.util.Calendar
 import java.util.Locale
 
-data class Rifornimento(val quando: Long, val euro: Double, val litri: Double, val km: Int)
+data class Rifornimento(val quando: Long, val euro: Double, val litri: Double, val km: Int, val pieno: Boolean = true)
+
+data class Tratta(val km: Int, val litri: Double, val euro: Double) {
+    val consumo: Double get() = km / litri
+    val costoCentoKm: Double get() = euro / km * 100
+}
+
+data class Totali(val km: Int, val euro: Double, val litri: Double) {
+    val euroAlLitro: Double get() = euro / litri
+}
+
+data class Mese(val anno: Int, val mese: Int, val spesa: Double, val km: Int)
 
 object Rifornimenti {
     private const val FILE = "rifornimenti.txt"
@@ -32,16 +43,22 @@ object Rifornimenti {
     }
 
     fun riga(r: Rifornimento): String =
-        String.format(Locale.US, "%d\t%.2f\t%.2f\t%d", r.quando, r.euro, r.litri, r.km)
+        String.format(Locale.US, "%d\t%.2f\t%.2f\t%d\t%d", r.quando, r.euro, r.litri, r.km, if (r.pieno) 1 else 0)
 
     fun daRiga(riga: String): Rifornimento? {
         val campi = riga.split('\t')
-        if (campi.size != 4) return null
+        if (campi.size != 4 && campi.size != 5) return null
+        val pieno = if (campi.size == 5) when (campi[4]) {
+            "1" -> true
+            "0" -> false
+            else -> return null
+        } else true
         return Rifornimento(
             campi[0].toLongOrNull() ?: return null,
             campi[1].toDoubleOrNull() ?: return null,
             campi[2].toDoubleOrNull() ?: return null,
             campi[3].toIntOrNull() ?: return null,
+            pieno,
         )
     }
 
@@ -63,21 +80,48 @@ object Rifornimenti {
         return String.format(Locale.ITALY, "%.0f € a %s", spesa, nome)
     }
 
+    fun tratte(elenco: List<Rifornimento>): List<Tratta> {
+        val ordinati = elenco.sortedBy { it.km }
+        val pieni = ordinati.filter { it.pieno }
+        return pieni.zipWithNext().mapNotNull { (da, a) ->
+            val km = a.km - da.km
+            if (km <= 0) return@mapNotNull null
+            val dentro = ordinati.filter { it.km > da.km && it.km <= a.km }
+            Tratta(km, dentro.sumOf { it.litri }, dentro.sumOf { it.euro })
+        }
+    }
+
     fun consumo(elenco: List<Rifornimento>): Double? {
-        val (distanza, ordinati) = distanzaEResto(elenco) ?: return null
-        return distanza / ordinati.sumOf { it.litri }
+        val tratte = tratte(elenco).ifEmpty { return null }
+        return tratte.sumOf { it.km } / tratte.sumOf { it.litri }
     }
 
     fun costoCentoKm(elenco: List<Rifornimento>): Double? {
-        val (distanza, ordinati) = distanzaEResto(elenco) ?: return null
-        return ordinati.sumOf { it.euro } / distanza * 100
+        val tratte = tratte(elenco).ifEmpty { return null }
+        return tratte.sumOf { it.euro } / tratte.sumOf { it.km } * 100
     }
 
-    private fun distanzaEResto(elenco: List<Rifornimento>): Pair<Double, List<Rifornimento>>? {
-        if (elenco.size < 2) return null
-        val ordinati = elenco.sortedBy { it.km }
-        val distanza = (ordinati.last().km - ordinati.first().km).toDouble()
-        if (distanza <= 0) return null
-        return distanza to ordinati.drop(1)
+    fun totali(elenco: List<Rifornimento>): Totali? {
+        if (elenco.isEmpty()) return null
+        return Totali(
+            elenco.maxOf { it.km } - elenco.minOf { it.km },
+            elenco.sumOf { it.euro },
+            elenco.sumOf { it.litri },
+        )
+    }
+
+    fun mesi(elenco: List<Rifornimento>): List<Mese> {
+        val gruppi = elenco.groupBy {
+            val data = Calendar.getInstance().apply { timeInMillis = it.quando }
+            data.get(Calendar.YEAR) * 12 + data.get(Calendar.MONTH)
+        }.toSortedMap()
+        var precedente: Int? = null
+        val risultato = gruppi.map { (chiave, voci) ->
+            val ultimo = voci.maxOf { it.km }
+            val km = ultimo - (precedente ?: voci.minOf { it.km })
+            precedente = ultimo
+            Mese(chiave / 12, chiave % 12 + 1, voci.sumOf { it.euro }, km)
+        }
+        return risultato.reversed()
     }
 }

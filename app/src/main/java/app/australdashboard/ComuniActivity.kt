@@ -1,6 +1,5 @@
 package app.australdashboard
 
-import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
 import android.view.inputmethod.EditorInfo
@@ -17,15 +16,11 @@ class ComuniActivity : Schermata() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val radice = colonna()
-        radice.addView(testo("Comuni preferiti", 40f))
+        val radice = pagina("Comuni preferiti")
         scelti = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         radice.addView(scelti)
-        campo = EditText(this).apply {
-            textSize = 28f
-            setTextColor(Color.WHITE)
-            setSingleLine()
-            inputType = InputType.TYPE_CLASS_TEXT
+        radice.addView(sezione("Aggiungi un comune"))
+        campo = campo("Nome del comune", InputType.TYPE_CLASS_TEXT).apply {
             imeOptions = EditorInfo.IME_ACTION_SEARCH
             setOnEditorActionListener { _, azione, _ ->
                 if (azione == EditorInfo.IME_ACTION_SEARCH) cerca()
@@ -34,11 +29,10 @@ class ComuniActivity : Schermata() {
         }
         radice.addView(campo)
         radice.addView(pulsante("Cerca") { cerca() })
-        messaggio = testo("")
+        messaggio = secondario("")
         radice.addView(messaggio)
         risultati = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         radice.addView(risultati)
-        setContentView(scorrevole(radice))
         mostraScelti()
     }
 
@@ -50,13 +44,19 @@ class ComuniActivity : Schermata() {
     private fun mostraScelti() {
         scelti.removeAllViews()
         val comuni = Benzinai.preferiti(this)
-        if (comuni.isEmpty()) scelti.addView(testo("Nessun comune scelto"))
+        scelti.addView(sezione("Scelti"))
+        if (comuni.isEmpty()) {
+            scelti.addView(secondario("Nessun comune scelto"))
+            return
+        }
+        val elenco = scheda()
         comuni.forEach { comune ->
-            scelti.addView(pulsante("Togli $comune") {
+            elenco.addView(rigaTogli(comune) {
                 Benzinai.salvaPreferiti(this, comuni - comune)
                 mostraScelti()
-            })
+            }.view)
         }
+        scelti.addView(elenco)
     }
 
     private fun cerca() {
@@ -82,15 +82,18 @@ class ComuniActivity : Schermata() {
             trovati.isEmpty() -> "Nessun comune trovato"
             else -> ""
         }
+        if (trovati.isEmpty()) return
+        val elenco = scheda()
         trovati.forEach { comune ->
-            risultati.addView(pulsante(comune) {
+            elenco.addView(riga(comune, freccia = false) {
                 val attuali = Benzinai.preferiti(this)
                 if (attuali.size < MASSIMO && comune !in attuali) Benzinai.salvaPreferiti(this, attuali + comune)
                 risultati.removeAllViews()
                 messaggio.text = ""
                 mostraScelti()
-            })
+            }.view)
         }
+        risultati.addView(elenco)
     }
 
     private companion object {

@@ -35,6 +35,16 @@ object FonteMeteo {
                     System.currentTimeMillis(),
                 )
             },
+            luogo = preferenze.getString("nome", "").orEmpty(),
+            domani = if (preferenze.contains("domani_codice")) {
+                Previsione(
+                    preferenze.getInt("domani_codice", 0),
+                    preferenze.getInt("domani_minima", 0),
+                    preferenze.getInt("domani_massima", 0),
+                )
+            } else {
+                null
+            },
         )
     }
 
@@ -59,21 +69,22 @@ object FonteMeteo {
 
     fun daAggiornare(context: Context): Boolean {
         val quando = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getLong("quando", 0)
-        return quando == 0L || System.currentTimeMillis() - quando > VALIDITA_MS
+        if (quando == 0L || System.currentTimeMillis() - quando > VALIDITA_MS) return true
+        return context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getString("luogo", null) != Luoghi.chiave(context)
     }
 
-    fun scarica(context: Context, luogo: Luogo): Meteo? = try {
+    fun scarica(context: Context, luogo: Luogo, nome: String = ""): Meteo? = try {
         val indirizzo = String.format(
             Locale.US,
             "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f" +
                 "&current=temperature_2m,weather_code" +
-                "&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1" +
+                "&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2" +
                 "&minutely_15=precipitation&forecast_minutely_15=12",
             luogo.lat,
             luogo.lon,
         )
         val testo = leggi(indirizzo)
-        val meteo = daJson(testo)
+        val meteo = daJson(testo).copy(luogo = nome)
         val pioggia = pioggiaDaJson(testo)
         val adesso = System.currentTimeMillis()
         val modifica = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit()
@@ -87,8 +98,18 @@ object FonteMeteo {
             .putInt("minima", meteo.minima)
             .putInt("massima", meteo.massima)
             .putInt("codice", meteo.codice)
+            .putString("nome", nome)
+            .putString("luogo", Luoghi.chiave(context))
             .putLong("quando", adesso)
-            .apply()
+        val domani = meteo.domani
+        if (domani != null) {
+            modifica.putInt("domani_codice", domani.codice)
+                .putInt("domani_minima", domani.minima)
+                .putInt("domani_massima", domani.massima)
+        } else {
+            modifica.remove("domani_codice").remove("domani_minima").remove("domani_massima")
+        }
+        modifica.apply()
         if (pioggia == null) meteo else meteo.copy(pioggiaTraMinuti = pioggiaTra(pioggia.inizio, pioggia.mm, adesso))
     } catch (e: Exception) {
         null
@@ -103,6 +124,15 @@ object FonteMeteo {
             minima = giorno.getJSONArray("temperature_2m_min").getDouble(0).roundToInt(),
             massima = giorno.getJSONArray("temperature_2m_max").getDouble(0).roundToInt(),
             codice = attuale.getInt("weather_code"),
+            domani = if (giorno.getJSONArray("temperature_2m_min").length() > 1) {
+                Previsione(
+                    codice = giorno.getJSONArray("weather_code").getInt(1),
+                    minima = giorno.getJSONArray("temperature_2m_min").getDouble(1).roundToInt(),
+                    massima = giorno.getJSONArray("temperature_2m_max").getDouble(1).roundToInt(),
+                )
+            } else {
+                null
+            },
         )
     }
 

@@ -17,7 +17,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 object DatiMimit {
-    const val RAGGIO_KM = 15.0
+    private const val RAGGIO_COMUNE_KM = 15.0
     const val MASSIMO_VICINI = 30
 
     private val formatoData = DateTimeFormatter.ofPattern("dd/MM/uuuu HH:mm:ss")
@@ -148,17 +148,24 @@ object DatiMimit {
         return Andamento(millesimi > 0, String.format(Locale.ITALY, "%.3f", Math.abs(millesimi) / 1000.0))
     }
 
-    fun filtra(tutti: List<Distributore>, luogo: Luogo, comuni: List<String>, ordine: Ordine): ElencoBenzinai.Pronto {
+    fun filtra(
+        tutti: List<Distributore>,
+        luogo: Luogo,
+        comuni: List<String>,
+        ordine: Ordine,
+        raggioKm: Double,
+        intornoAMe: Boolean,
+    ): ElencoBenzinai.Pronto {
         val conDistanza = tutti.map { it.copy(distanzaKm = distanzaKm(luogo, it.luogo)) }
-        val scelti = comuni.mapNotNull { comune ->
+        val scelti = if (intornoAMe) emptyList() else comuni.mapNotNull { comune ->
             conDistanza.filter { it.comune.equals(comune, ignoreCase = true) }
                 .minWithOrNull(compareBy<Distributore> { it.prezzo }.thenBy { it.distanzaKm })
                 ?.copy(comune = comune)
         }
         val esclusi = scelti.map { it.id }.toSet()
-        val vicini = conDistanza.filter { it.id !in esclusi && it.distanzaKm <= RAGGIO_KM }
+        val vicini = conDistanza.filter { it.id !in esclusi && it.distanzaKm <= raggioKm }
             .sortedWith(confronto(ordine)).take(MASSIMO_VICINI)
-        return ElencoBenzinai.Pronto(scelti, vicini, ordine)
+        return ElencoBenzinai.Pronto(scelti, vicini, ordine, raggioKm, intornoAMe)
     }
 
     fun distanzaKm(a: Luogo, b: Luogo): Double {
@@ -200,4 +207,23 @@ object DatiMimit {
         runCatching { LocalDateTime.parse(testo.trim(), formatoData).atZone(zona).toInstant().toEpochMilli() }.getOrNull()
 
     private fun pulisci(testo: String): String = testo.replace(Regex("\\s+"), " ").trim()
+
+    fun comunePiuVicino(lettore: Reader, luogo: Luogo): String? {
+        var migliore: String? = null
+        var minima = RAGGIO_COMUNE_KM
+        lettore.buffered().useLines { righe ->
+            righe.drop(1).forEach { riga ->
+                val c = riga.split('\t')
+                if (c.size != 9) return@forEach
+                val lat = c[5].toDoubleOrNull() ?: return@forEach
+                val lon = c[6].toDoubleOrNull() ?: return@forEach
+                val distanza = distanzaKm(luogo, Luogo(lat, lon))
+                if (distanza <= minima && c[4].isNotBlank()) {
+                    minima = distanza
+                    migliore = c[4]
+                }
+            }
+        }
+        return migliore?.lowercase()?.split(' ')?.joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+    }
 }

@@ -7,11 +7,12 @@
 | Schermata | Come ci arrivi | Cosa trovi |
 |---|---|---|
 | Home | Tasto casa della barra Ottocast | Ora e data, meteo con la pioggia in arrivo, brano in ascolto con i comandi, fino a tre playlist preferite, sei app (all'inizio Netflix, Prime Video, Disney+, YouTube, Stremio, TikTok), i quattro servizi, Wi‑Fi, Bluetooth e volume |
-| Benzinai | Home → Benzinai | Distributori entro 15 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano. Accanto al prezzo, ▲ o ▼ con la differenza dal download precedente. In alto «Rifornimenti» con la spesa del mese |
-| Rifornimenti | Benzinai → Rifornimenti | A ogni pieno scrivi euro, litri e contachilometri e tocchi «Salva». Sotto: spesa del mese, consumo medio in km/l, € ogni 100 km, gli ultimi 20 pieni con «Togli» |
+| Benzinai | Home → Benzinai | Distributori entro 10 km con il prezzo della benzina self, ordinati per «Conviene», «Prezzo» o «Distanza». In cima i preferiti: per ogni comune scelto in Impostazioni il distributore più economico, anche se è lontano. Accanto al prezzo, ▲ o ▼ con la differenza dal download precedente. In alto «Rifornimenti» con la spesa del mese |
+| Rifornimenti | Benzinai → Rifornimenti | A ogni rifornimento scrivi euro, litri e contachilometri, dici se è un pieno completo e tocchi «Salva». Sotto: km percorsi, spesa e litri totali, prezzo medio al litro, consumo e € ogni 100 km (medi, ultimo, migliore, peggiore), il grafico del consumo, spesa e km mese per mese, gli ultimi 20 rifornimenti |
 | Tutte le app | Home → Tutte le app | Tutte le app installate, in ordine alfabetico. In alto a destra «Aggiorna app» apre il Play Store sulla pagina delle tue app, dove tocchi «Aggiorna tutto» |
-| Impostazioni | Home → Launcher | Tema, lettura della musica, città di riserva, comuni preferiti, app della Home, playlist preferite, aggiornamenti, Diagnostica, impostazioni di sistema, launcher predefinito |
-| Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash. In fondo la sezione Audio: livelli del volume, tre pulsanti di prova e l'elenco dei cambi di volume, anche quelli fatti dalla barra Ottocast o dalla manopola dell'auto |
+| Impostazioni | Home → Launcher | Divise in sezioni: Aspetto (tema), Home (app della Home), Meteo (luogo del meteo), Benzinai (comuni preferiti), Musica (lettura della musica, playlist preferite), Sistema e aggiornamenti (controllo, Diagnostica, impostazioni di sistema, launcher predefinito) |
+| Luogo del meteo | Impostazioni → Luogo del meteo | «La mia posizione» (segue il GPS) e i luoghi salvati; un tocco sceglie quello da seguire. «Aggiungi dove sono» salva la posizione attuale con il nome del comune; «Cerca un luogo» aggiunge una città |
+| Diagnostica | Impostazioni → Diagnostica | Versione, dimensione, memoria, tempi di avvio, frame in ritardo, esito dell'ultimo controllo, ultimo crash |
 
 Un'app della Home che non è installata resta spenta. Toccando la copertina o il titolo del brano si apre l'app che lo suona; senza musica, «Apri Spotify» apre Spotify e il tasto play riprende l'ultima app musicale.
 
@@ -19,7 +20,7 @@ Un'app della Home che non è installata resta spenta. Toccando la copertina o il
 
 Wi‑Fi apre il pannello delle reti di Android, Bluetooth le sue impostazioni; «−» e «+» cambiano il volume di un passo. Una playlist si fa partire con un tocco. «Piove» o «Pioggia tra 20 min» compare nel meteo solo se la pioggia arriva entro due ore.
 
-Il consumo si calcola da pieno a pieno: fai sempre il pieno e scrivi il contachilometri di ogni rifornimento. Servono almeno due pieni.
+Il consumo si calcola da pieno completo a pieno completo, contando anche i rifornimenti parziali in mezzo: scrivi il contachilometri di ogni rifornimento e togli «Pieno completo» quando non riempi il serbatoio. Servono almeno due pieni completi. «Togli» chiede un secondo tocco entro 3 secondi, per non cancellare per sbaglio.
 
 Se il launcher si chiude da solo, Diagnostica mostra in fondo quando è successo, con quale versione e l'errore: è quello che serve per correggerlo.
 
@@ -29,8 +30,8 @@ Se il launcher si chiude da solo, Diagnostica mostra in fondo quando è successo
 
 1. Alla prima apertura della Home Android chiede la posizione: consenti. Serve al meteo e ai Benzinai.
 2. Impostazioni → **Consenti la lettura della musica** → attiva Austral Dashboard. Serve a mostrare il brano e a comandarlo; il pulsante sparisce quando il permesso c'è.
-3. Impostazioni → **Città di riserva**: scrivi la città, tocca **Cerca** e scegli. Si usa solo quando il box non sa dove si trova.
-4. Impostazioni → **Comuni preferiti**: apri prima una volta Benzinai, che scarica l'elenco; poi scrivi l'inizio del nome, tocca **Cerca** e scegli. Al massimo tre; **Togli** li rimuove.
+3. Impostazioni → **Luogo del meteo**: lascia «La mia posizione» per seguire il GPS, oppure salva i luoghi che ti servono e scegline uno. Il primo luogo salvato fa da riserva quando il box non sa dove si trova (anche per i Benzinai).
+4. Impostazioni → **Comuni preferiti**: apri prima una volta Benzinai, che scarica l'elenco; poi scrivi l'inizio del nome, tocca **Cerca** e scegli. Al massimo tre; **Togli** li rimuove (con un secondo tocco).
 5. Impostazioni → **App della Home**: tocca una delle sei posizioni e scegli l'app tra quelle installate. La Home cambia subito.
 6. Playlist preferite, al massimo tre: in Spotify apri la playlist, **Condividi → Altro → Austral Dashboard**, correggi il nome se vuoi e tocca **Salva**. In Impostazioni → **Playlist preferite** le vedi e le togli.
 

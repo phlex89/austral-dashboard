@@ -17,6 +17,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [La Home non blocca l'orientamento](#la-home-non-blocca-l-orientamento)
 - [«Aggiorna app» apre il Play Store](#aggiorna-app-apre-il-play-store)
 - [Funzioni di bordo: come funzionano e perché](#funzioni-di-bordo-come-funzionano-e-perche)
+- [Luoghi del meteo e mappa dei benzinai](#luoghi-del-meteo-e-mappa-dei-benzinai)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -149,3 +150,10 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - Rifornimenti: consumo da pieno a pieno, perché senza il carburante nel serbatoio è l'unico calcolo onesto; il file resta sul box, mai nel repository.
 - Pioggia: `minutely_15` di Open‑Meteo nella stessa richiesta del meteo, 12 passi da 15 minuti; da 0,1 mm in un passo conta come pioggia. La serie salvata permette di aggiornare «tra N minuti» senza riscaricare.
 - Grafica: le tavole degli otto temi sono state aggiornate da Claude Design con il prompt in `doc/piani/M04-funzioni-di-bordo/FASE-2.md`; le ★ dei preferiti per distributore restano fuori come in M02.
+
+## Luoghi del meteo e mappa dei benzinai
+
+**In breve.** Il meteo segue il GPS oppure un luogo salvato, scelto in Impostazioni; il primo luogo salvato fa da riserva quando manca il GPS, e la vecchia città di riserva è diventata quel primo luogo. La mappa dei benzinai è disegnata dall'app con le tessere di OpenStreetMap, perché il progetto non usa librerie; è una schermata con la grafica comune, così il percorso da A a B potrà arrivarci senza ridisegnare gli otto temi.
+
+**Dettagli.** Scelte dell'utente del 2026-11-22 (D-3 e D-6 di M05). Il nome del luogo che segue il GPS viene dal geocoder di Android; se manca, dal comune del distributore più vicino nel file dei prezzi, che è già sul box. Le tessere OSM sono gratuite per un uso leggero, con un `User-Agent` che identifica l'app (solo nome e versione, nessun dato dell'utente) e l'attribuzione visibile; la cache sul box (al massimo 30 MB, sette giorni) evita di riscaricarle. Le tessere sono scurite con un filtro di colore, perché quelle originali sono chiare e in auto, in mezzo a un'interfaccia scura, abbagliano. Nelle zone fitte un'etichetta che coprirebbe un'altra già disegnata diventa un puntino, e le più economiche si disegnano per prime.
+

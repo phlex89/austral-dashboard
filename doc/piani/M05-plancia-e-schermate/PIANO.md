@@ -1,6 +1,6 @@
 ---
 milestone: M05
-stato: proposto
+stato: in-corso
 data: 2026-11-22
 lettori: entrambi
 ---
@@ -49,14 +49,14 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 
 **Fase 3** (dopo le tavole).
 
-- Contratto in `temi/Tema.kt`. `AzioniHome`: via `volume`; entrano `wifiDettaglio`, `bluetoothDettaglio`, `temaSuccessivo`. `bluetooth` ora accende e spegne. `StatoSistema` senza volume; `mostraMeteo` riceve il `Meteo` con `luogo` e `domani` (e se il luogo segue il GPS, per la spia). `AzioniBenzinai`: `intornoAMe`, `raggio`, `mappa`.
+- Contratto in `temi/Tema.kt`. `AzioniHome`: via `volume`; entrano `wifiDettaglio`, `bluetoothDettaglio`, `temaSuccessivo`. `bluetooth` ora accende e spegne. `StatoSistema` senza volume; `mostraMeteo` riceve il `Meteo` con `luogo` e `domani` (e se il luogo segue il GPS, per la spia). `AzioniBenzinai`: `intornoAMe`, `raggio`, `mappa`, e `rifornimenti(selezionato: Distributore?)`: il distributore aperto vive nello `StatoBenzinai` privato di ogni tema, quindi il prezzo precompilato dal pannello passa da qui (dalla Mappa arriva già). `BenzinaiActivity` passa `prezzo` e `distributore` come fa `MappaActivity`. `HomeActivity.bluetooth` chiama `Sistema.alternaBluetooth` e gestisce `CODICE_BLUETOOTH` in `onRequestPermissionsResult`; poi si tolgono `Sistema.volume`, i campi del volume e `VOLUME_CHANGED_ACTION`.
 - `HomeActivity.temaSuccessivo`: salva il tema dopo quello attuale in `Temi.elenco` (dopo l'ultimo il primo) e chiama `costruisci()` subito.
 - Un agente per tema, ognuno solo sul suo file, come in M04. Poi il confronto con le tavole sull'emulatore `box`: Home piena, Home vuota, Benzinai normale, Benzinai «Intorno a me». Infine le misure: avvio a freddo, PSS, frame in ritardo, APK.
 
 **Passi.**
 
 - [x] Proposte, scelte dell'utente, prompt per Claude Design.
-- [ ] Fase 1: logica, Luoghi, Mappa, Rifornimenti, schermate interne, test, prove sull'emulatore.
+- [x] Fase 1: logica, Luoghi, Mappa, Rifornimenti, schermate interne, test, prove sull'emulatore.
 - [ ] Tavole aggiornate da Claude Design (utente).
 - [ ] Fase 3: contratto, otto temi, confronto con le tavole, misure.
 - [ ] Prova della catena di aggiornamento sull'emulatore (manifest cambiato).
@@ -83,3 +83,4 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 ## Diario
 
 - 2026-11-22: niente da fare per il volume, nemmeno con la Diagnostica della 0.4.1 (prove dell'utente). Piano scritto dalle scelte dell'utente (D-1…D-8).
+- 2026-11-22: fase 1 fatta, quattro agenti in parallelo (Rifornimenti; Benzinai e Mappa; Luoghi e meteo; schermate interne e Bluetooth) sopra i mattoni comuni di `Schermata.kt`, poi unione e revisione. Correzioni dopo la revisione: «Aggiungi dove sono» non salva più la posizione di ripiego (`Posizione.aggiorna(ripiego = false)`), il comune più vicino è passato in `DatiMimit`. Provate sull'emulatore `box` tutte le schermate interne. Rifornimenti con sette pieni di prova, uno parziale: tratte, grafico, mesi. Mappa su Milano: 36 tessere scaricate, trascinamento, scheda e «Rifornimenti» con 50 € → 28,77 l a 1,738 €/l. Dopo la prima prova la mappa è stata scurita (tessere chiare in mezzo all'interfaccia scura) e le etichette sovrapposte diventano puntini. Meteo con il GPS: salvati «Milano» e domani. Il prezzo precompilato dal pannello Benzinai passa alla fase 3 (serve il contratto dei temi). APK release 537 KB.

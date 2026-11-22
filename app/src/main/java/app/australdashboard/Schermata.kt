@@ -178,6 +178,28 @@ abstract class Schermata : Activity() {
         return Riga(vista, testoTitolo, testoValore)
     }
 
+    protected fun rigaTogli(titolo: String, valore: String? = null, azione: () -> Unit): Riga {
+        var armata = false
+        lateinit var riga: Riga
+        val ripristina = Runnable {
+            armata = false
+            riga.titolo.text = titolo
+            riga.titolo.setTextColor(Color.WHITE)
+        }
+        riga = riga(titolo, valore, R.drawable.ic_chiudi, false) {
+            if (armata) {
+                riga.view.removeCallbacks(ripristina)
+                azione()
+            } else {
+                armata = true
+                riga.titolo.text = "Tocca ancora per togliere"
+                riga.titolo.setTextColor(accento)
+                riga.view.postDelayed(ripristina, 3000)
+            }
+        }
+        return riga
+    }
+
     protected fun testo(contenuto: String, dimensione: Float = 24f): TextView = TextView(this).apply {
         text = contenuto
         textSize = dimensione

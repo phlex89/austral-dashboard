@@ -18,6 +18,8 @@ import android.view.Window
 import app.australdashboard.aggiornamenti.AggiornamentoJob
 import app.australdashboard.funzioni.FonteMeteo
 import app.australdashboard.funzioni.Lettore
+import app.australdashboard.funzioni.Luogo
+import app.australdashboard.funzioni.Luoghi
 import app.australdashboard.funzioni.Playlist
 import app.australdashboard.funzioni.Playlists
 import app.australdashboard.funzioni.Sistema
@@ -111,13 +113,20 @@ class HomeActivity : Schermata(), AzioniHome {
 
     private fun aggiornaMeteo(forza: Boolean = false) {
         if (!forza && !FonteMeteo.daAggiornare(this)) return
-        Posizione.aggiorna(this) { luogo ->
-            if (luogo == null) return@aggiorna
-            Thread {
-                val meteo = FonteMeteo.scarica(applicationContext, luogo) ?: return@Thread
-                runOnUiThread { if (!isDestroyed) vista.mostraMeteo(meteo) }
-            }.start()
+        val fisso = Luoghi.attivo(this)
+        if (fisso != null) {
+            scaricaMeteo(fisso.second, fisso.first)
+        } else {
+            Posizione.aggiorna(this) { luogo -> if (luogo != null) scaricaMeteo(luogo, null) }
         }
+    }
+
+    private fun scaricaMeteo(luogo: Luogo, nome: String?) {
+        Thread {
+            val nomeLuogo = nome ?: Luoghi.nomeDi(applicationContext, luogo)
+            val meteo = FonteMeteo.scarica(applicationContext, luogo, nomeLuogo) ?: return@Thread
+            runOnUiThread { if (!isDestroyed) vista.mostraMeteo(meteo) }
+        }.start()
     }
 
     override fun onResume() {

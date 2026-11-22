@@ -8,7 +8,11 @@ data class Meteo(
     val massima: Int,
     val codice: Int,
     val pioggiaTraMinuti: Int? = null,
+    val luogo: String = "",
+    val domani: Previsione? = null,
 )
+
+data class Previsione(val codice: Int, val minima: Int, val massima: Int)
 
 enum class Cielo { SERENO, POCO_NUVOLOSO, NUVOLOSO, NEBBIA, PIOGGIA, NEVE, TEMPORALE }
 
@@ -46,5 +50,7 @@ sealed class ElencoBenzinai {
         val preferiti: List<Distributore>,
         val vicini: List<Distributore>,
         val ordine: Ordine,
+        val raggioKm: Double = 10.0,
+        val intornoAMe: Boolean = false,
     ) : ElencoBenzinai()
 }

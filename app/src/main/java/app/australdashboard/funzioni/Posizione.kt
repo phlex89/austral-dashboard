@@ -25,21 +25,22 @@ object Posizione {
         return cittaDiRiserva(context)?.second
     }
 
-    fun aggiorna(context: Context, fatto: (Luogo?) -> Unit) {
+    fun aggiorna(context: Context, ripiego: Boolean = true, fatto: (Luogo?) -> Unit) {
+        val altrimenti = { fatto(if (ripiego) attuale(context) else null) }
         if (!permessoConcesso(context)) {
-            fatto(attuale(context))
+            altrimenti()
             return
         }
         val gestore = context.getSystemService(LocationManager::class.java)
         val provider = providerAbilitati(gestore).firstOrNull()
         if (provider == null) {
-            fatto(attuale(context))
+            altrimenti()
             return
         }
         try {
             gestore.getCurrentLocation(provider, null, context.mainExecutor) { posizione ->
                 if (posizione == null) {
-                    fatto(attuale(context))
+                    altrimenti()
                 } else {
                     val luogo = Luogo(posizione.latitude, posizione.longitude)
                     salva(context, luogo)
@@ -47,30 +48,13 @@ object Posizione {
                 }
             }
         } catch (e: SecurityException) {
-            fatto(attuale(context))
+            altrimenti()
         } catch (e: IllegalArgumentException) {
-            fatto(attuale(context))
+            altrimenti()
         }
     }
 
-    fun cittaDiRiserva(context: Context): Pair<String, Luogo>? {
-        val preferenze = context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE)
-        val nome = preferenze.getString("citta_nome", null) ?: return null
-        if (!preferenze.contains("citta_lat") || !preferenze.contains("citta_lon")) return null
-        val luogo = Luogo(
-            Double.fromBits(preferenze.getLong("citta_lat", 0)),
-            Double.fromBits(preferenze.getLong("citta_lon", 0)),
-        )
-        return nome to luogo
-    }
-
-    fun salvaCitta(context: Context, nome: String, luogo: Luogo) {
-        context.getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit()
-            .putString("citta_nome", nome)
-            .putLong("citta_lat", luogo.lat.toRawBits())
-            .putLong("citta_lon", luogo.lon.toRawBits())
-            .apply()
-    }
+    fun cittaDiRiserva(context: Context): Pair<String, Luogo>? = Luoghi.riserva(context)
 
     private fun providerAbilitati(gestore: LocationManager): List<String> =
         listOf(LocationManager.FUSED_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)

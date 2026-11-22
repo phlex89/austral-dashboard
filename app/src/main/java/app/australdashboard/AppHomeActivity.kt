@@ -8,30 +8,31 @@ import app.australdashboard.temi.AppHome
 class AppHomeActivity : Schermata() {
     private lateinit var contenuto: LinearLayout
     private var installate: List<Pair<String, String>>? = null
+    private var posizione: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        contenuto = colonna()
-        setContentView(scorrevole(contenuto))
         mostraPosizioni()
     }
 
     private fun mostraPosizioni() {
-        contenuto.removeAllViews()
-        contenuto.addView(testo("App della Home", 40f))
+        posizione = null
+        contenuto = pagina("App della Home")
+        val elenco = scheda()
         AppHome.elenco(this).forEachIndexed { indice, app ->
-            contenuto.addView(pulsante("${indice + 1} · ${app.nome}") { scegli(indice) })
+            elenco.addView(riga("Posizione ${indice + 1}", app.nome) { scegli(indice) }.view)
         }
+        contenuto.addView(elenco)
     }
 
     private fun scegli(indice: Int) {
-        contenuto.removeAllViews()
-        contenuto.addView(testo("Posizione ${indice + 1}", 40f))
-        val note = testo("Caricamento…")
+        posizione = indice
+        contenuto = pagina("Posizione ${indice + 1}")
+        val note = secondario("Caricamento…")
         contenuto.addView(note)
         val pronte = installate
         if (pronte != null) {
-            note.text = ""
+            contenuto.removeView(note)
             mostraApp(indice, pronte)
             return
         }
@@ -42,7 +43,7 @@ class AppHomeActivity : Schermata() {
                 .map { it.loadLabel(pm).toString() to it.activityInfo.packageName }
                 .sortedBy { it.first.lowercase() }
             runOnUiThread {
-                if (isDestroyed) return@runOnUiThread
+                if (isDestroyed || posizione != indice) return@runOnUiThread
                 installate = app
                 contenuto.removeView(note)
                 mostraApp(indice, app)
@@ -51,11 +52,14 @@ class AppHomeActivity : Schermata() {
     }
 
     private fun mostraApp(indice: Int, app: List<Pair<String, String>>) {
+        val attuale = AppHome.elenco(this).getOrNull(indice)?.nome
+        val elenco = scheda()
         app.forEach { (nome, pacchetto) ->
-            contenuto.addView(pulsante(nome) {
+            elenco.addView(riga(nome, if (nome == attuale) "In uso" else null, freccia = false) {
                 AppHome.scegli(this, indice, pacchetto)
                 mostraPosizioni()
-            })
+            }.view)
         }
+        contenuto.addView(elenco)
     }
 }

@@ -26,7 +26,7 @@ object Ui {
     fun font(context: Context, id: Int): Typeface = font.getOrPut(id) { context.resources.getFont(id) }
 
     const val POSIZIONE_NON_DISPONIBILE =
-        "Posizione non disponibile. Scegli una città di riserva nelle Impostazioni del launcher."
+        "Posizione non disponibile. Salva un luogo in Impostazioni → Luogo del meteo: il primo fa da riserva."
 
     val ORDINI = listOf(Ordine.CONVIENE to "Conviene", Ordine.PREZZO to "Prezzo", Ordine.DISTANZA to "Distanza")
 

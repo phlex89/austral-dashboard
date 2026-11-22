@@ -1,5 +1,7 @@
 package app.australdashboard.funzioni
 
+import android.Manifest
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
@@ -10,6 +12,7 @@ import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.provider.Settings
 
@@ -18,6 +21,8 @@ enum class StatoWifi { SPENTO, ACCESO, CONNESSO }
 data class StatoSistema(val wifi: StatoWifi, val bluetooth: Boolean, val volume: Int, val volumeMassimo: Int)
 
 object Sistema {
+    const val CODICE_BLUETOOTH = 41
+
     @Suppress("DEPRECATION")
     fun stato(context: Context): StatoSistema {
         val app = context.applicationContext
@@ -49,6 +54,26 @@ object Sistema {
 
     fun apriBluetooth(context: Context) {
         context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    fun dettaglioWifi(context: Context) {
+        context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    @Suppress("DEPRECATION")
+    fun alternaBluetooth(activity: Activity) {
+        if (activity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            val adattatore = activity.getSystemService(BluetoothManager::class.java).adapter ?: return
+            if (adattatore.isEnabled) adattatore.disable() else adattatore.enable()
+            return
+        }
+        val preferenze = activity.getSharedPreferences("impostazioni", Context.MODE_PRIVATE)
+        if (preferenze.getBoolean("bluetooth_chiesto", false)) {
+            apriBluetooth(activity)
+        } else {
+            preferenze.edit().putBoolean("bluetooth_chiesto", true).apply()
+            activity.requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), CODICE_BLUETOOTH)
+        }
     }
 
     fun volume(context: Context, su: Boolean) {
