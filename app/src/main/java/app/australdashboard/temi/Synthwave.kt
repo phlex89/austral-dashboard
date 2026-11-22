@@ -216,34 +216,6 @@ object Synthwave : Tema {
         }
     }
 
-    private class Tacche(context: Context) : View(context) {
-        var accese = 0
-            set(valore) {
-                field = valore
-                invalidate()
-            }
-        private val paint = Paint().apply { isAntiAlias = true }
-        private val riquadro = RectF()
-
-        override fun onMeasure(larghezza: Int, altezza: Int) {
-            setMeasuredDimension(294, 28)
-        }
-
-        override fun onDraw(canvas: Canvas) {
-            for (i in 0 until 15) {
-                paint.color = if (i < accese) colore(i / 14f) else CONTORNO
-                riquadro.set(i * 20f, 0f, i * 20f + 14f, 28f)
-                canvas.drawRoundRect(riquadro, 7f, 7f, paint)
-            }
-        }
-
-        private fun colore(t: Float): Int = Color.rgb(
-            (Color.red(ROSA) + (Color.red(ARANCIO) - Color.red(ROSA)) * t).toInt(),
-            (Color.green(ROSA) + (Color.green(ARANCIO) - Color.green(ROSA)) * t).toInt(),
-            (Color.blue(ROSA) + (Color.blue(ARANCIO) - Color.blue(ROSA)) * t).toInt(),
-        )
-    }
-
     private class Interruttore(
         s: Schermata,
         private val nome: String,
@@ -350,10 +322,16 @@ object Synthwave : Tema {
         private lateinit var playIn: View
         private val wifi = Interruttore(s, "Wi-Fi", R.drawable.ic_wifi_spento, R.drawable.ic_wifi)
         private val bluetooth = Interruttore(s, "Bluetooth", R.drawable.ic_bluetooth_spento, R.drawable.ic_bluetooth)
-        private val tacche = Tacche(s).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES }
-        private val cifra = Ui.adatta(Ui.testo(s, 48, TESTO, aw, contenuto = "0"), 30, 48).apply {
-            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        private val pin = Ui.icona(s, R.drawable.ic_puntina, ROSA).apply {
+            visibility = View.GONE
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
+        private val luogo = Ui.adatta(Ui.testo(s, 30, TESTO, medio, 36), 18, 30).apply { gravity = Gravity.CENTER_VERTICAL }
+        private val luogoRiga = Ui.riga(s, 8).apply { visibility = View.GONE }
+        private val domaniIcona = Ui.icona(s, R.drawable.ic_nuvoloso, ROSA)
+        private val domaniTesto = Ui.testo(s, 30, TESTO, medio, 36, " ")
+        private val domaniRiga = Ui.riga(s, 10).apply { visibility = View.GONE }
+        private val striscia = Ui.riga(s, 36).apply { visibility = View.GONE }
 
         override val view: View = costruisci()
 
@@ -363,13 +341,14 @@ object Synthwave : Tema {
                 setPadding(28, 28, 28, 28)
             }
             radice.addView(fasciaOra(), lp(TUTTO, 196))
+            radice.addView(stricciaMeteo(), lp(TUTTO, 38))
             radice.addView(orizzonte, lp(TUTTO, 42).apply { topMargin = 2 })
             val centro = Ui.riga(s, 24, Gravity.NO_GRAVITY)
             centro.addView(sezioneMusica(), lp(0, TUTTO, 1f))
             centro.addView(servizi(), lp(260, TUTTO))
-            radice.addView(centro, lp(TUTTO, 560).apply { topMargin = 16 })
-            radice.addView(app(), lp(TUTTO, 0, 1f).apply { topMargin = 20 })
-            radice.addView(sistema(), lp(TUTTO, 120).apply { topMargin = 20 })
+            radice.addView(centro, lp(TUTTO, 560).apply { topMargin = 10 })
+            radice.addView(app(), lp(TUTTO, 0, 1f).apply { topMargin = 10 })
+            radice.addView(sistema(), lp(TUTTO, 120).apply { topMargin = 10 })
             return radice
         }
 
@@ -395,6 +374,18 @@ object Synthwave : Tema {
             destra.addView(testi, lp(ADATTA, ADATTA))
             riga.addView(destra, lp(ADATTA, ADATTA))
             return riga
+        }
+
+        private fun stricciaMeteo(): View {
+            luogoRiga.addView(pin, lp(26, 26))
+            luogoRiga.addView(luogo, lp(320, 36))
+            domaniRiga.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "Domani").apply { letterSpacing = 0.06f })
+            domaniRiga.addView(domaniIcona, lp(36, 36))
+            domaniRiga.addView(domaniTesto)
+            striscia.addView(View(s), lp(0, 1, 1f))
+            striscia.addView(luogoRiga, lp(ADATTA, TUTTO))
+            striscia.addView(domaniRiga, lp(ADATTA, TUTTO))
+            return striscia
         }
 
         private fun sezioneMusica(): View {
@@ -522,18 +513,35 @@ object Synthwave : Tema {
             return riga
         }
 
+        private fun dettaglio(descrizione: String, azione: () -> Unit): View {
+            val freccia = Ui.testo(s, 64, TESTO, tipoDrittoGrassetto, contenuto = "›").apply {
+                gravity = Gravity.CENTER
+                ellipsize = null
+                background = superficie(60f, CONTORNO, 2)
+            }
+            arrotonda(freccia, 60f)
+            return Ui.premibile(freccia, ONDA, descrizione, azione)
+        }
+
         private fun sistema(): View {
             val riga = Ui.riga(s, 20)
             Ui.premibile(wifi.view, ONDA, null) { azioni.wifi() }
             Ui.premibile(bluetooth.view, ONDA, null) { azioni.bluetooth() }
-            riga.addView(wifi.view, lp(230, 120))
-            riga.addView(bluetooth.view, lp(230, 120))
-            riga.addView(tondo(s, R.drawable.ic_meno, 44, TESTO, "Abbassa il volume") { azioni.volume(false) }, lp(120, 120))
-            val livello = Ui.riga(s, 14, Gravity.CENTER)
-            livello.addView(tacche, lp(294, 28))
-            livello.addView(cifra, lp(74, 62))
-            riga.addView(livello, lp(0, TUTTO, 1f))
-            riga.addView(tondo(s, R.drawable.ic_piu, 44, TESTO, "Alza il volume") { azioni.volume(true) }, lp(120, 120))
+            val rigaWifi = Ui.riga(s, 8)
+            rigaWifi.addView(wifi.view, lp(230, 120))
+            rigaWifi.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(90, 120))
+            val rigaBluetooth = Ui.riga(s, 8)
+            rigaBluetooth.addView(bluetooth.view, lp(230, 120))
+            rigaBluetooth.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(90, 120))
+            riga.addView(rigaWifi, lp(328, 120))
+            riga.addView(rigaBluetooth, lp(328, 120))
+            val tema = Ui.riga(s, 14, Gravity.CENTER).apply {
+                background = superficie(60f, CONTORNO, 2)
+                addView(Ui.icona(s, R.drawable.ic_tavolozza, ROSA), lp(44, 44))
+                addView(Ui.testo(s, 32, TESTO, medio, 38, "Tema"))
+            }
+            arrotonda(tema, 60f)
+            riga.addView(Ui.premibile(tema, ONDA, "Cambia tema") { azioni.temaSuccessivo() }, lp(0, 120, 1f))
             return riga
         }
 
@@ -544,10 +552,6 @@ object Synthwave : Tema {
                 StatoWifi.CONNESSO -> wifi.pieno("connesso")
             }
             if (stato.bluetooth) bluetooth.pieno("acceso") else bluetooth.spento()
-            val massimo = stato.volumeMassimo
-            tacche.accese = if (massimo > 0) Math.round(stato.volume * 15f / massimo).coerceIn(0, 15) else 0
-            cifra.text = stato.volume.toString()
-            tacche.contentDescription = "Volume ${stato.volume} su $massimo"
         }
 
         override fun mostraOra(adesso: Date) {
@@ -569,6 +573,19 @@ object Synthwave : Tema {
             val testoPioggia = FonteMeteo.testoPioggia(meteo?.pioggiaTraMinuti)
             pioggia.text = testoPioggia
             pioggia.visibility = if (testoPioggia != null) View.VISIBLE else View.GONE
+            val nomeLuogo = meteo?.luogo.orEmpty().take(30)
+            val domani = meteo?.domani
+            luogo.text = nomeLuogo
+            pin.visibility = if (meteo?.gps == true) View.VISIBLE else View.GONE
+            luogoRiga.visibility = if (nomeLuogo.isEmpty()) View.GONE else View.VISIBLE
+            luogoRiga.contentDescription = if (meteo?.gps == true) "Luogo: $nomeLuogo, posizione attuale" else "Luogo: $nomeLuogo"
+            if (domani != null) {
+                domaniIcona.setImageResource(Ui.iconaCielo(domani.codice))
+                domaniTesto.text = "${domani.minima}° / ${domani.massima}°"
+                domaniRiga.contentDescription = "Domani ${FonteMeteo.descrizione(domani.codice)}, minima ${domani.minima}°, massima ${domani.massima}°"
+            }
+            domaniRiga.visibility = if (domani != null) View.VISIBLE else View.GONE
+            striscia.visibility = if (nomeLuogo.isNotEmpty() || domani != null) View.VISIBLE else View.GONE
             if (meteo == null) {
                 iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
                 gradi.text = "--°"
@@ -622,6 +639,12 @@ object Synthwave : Tema {
         private val dettagli = Ui.testo(s, 28, TESTO, tipoDritto, 34)
         private val spesa = Ui.testo(s, 28, SECONDARIO, tipoDritto, 32).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
+        private val intornoIcona = Ui.icona(s, R.drawable.ic_mirino, ROSA)
+        private val intornoTesto = Ui.adatta(Ui.testo(s, 32, TESTO, medio, 38, "Intorno a me"), 22, 32)
+        private val intornoView = Ui.riga(s, 12, Gravity.CENTER)
+        private val raggioTesto = Ui.adatta(Ui.testo(s, 32, TESTO, medio, 38, "Raggio ${Benzinai.raggio(s).toInt()} km"), 22, 32).apply {
+            gravity = Gravity.CENTER
+        }
 
         override val view: View = costruisci()
 
@@ -632,6 +655,7 @@ object Synthwave : Tema {
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
             radice.addView(ordinamento(), lp(TUTTO, 120))
+            radice.addView(filtri(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -656,7 +680,7 @@ object Synthwave : Tema {
                 addView(testi, lp(ADATTA, ADATTA))
             }
             arrotonda(rifornimenti, 60f)
-            riga.addView(Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, 120))
+            riga.addView(Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti(stato.selezionato) }, lp(ADATTA, 120))
             return riga
         }
 
@@ -679,6 +703,39 @@ object Synthwave : Tema {
             }
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
+        }
+
+        private fun filtri(): View {
+            val riga = Ui.riga(s, 20)
+            intornoView.addView(intornoIcona, lp(40, 40))
+            intornoView.addView(intornoTesto, lp(0, TUTTO, 1f))
+            arrotonda(intornoView, 60f)
+            evidenziaIntorno(false)
+            riga.addView(Ui.premibile(intornoView, ONDA, null) { azioni.intornoAMe() }, lp(0, TUTTO, 1f))
+            val raggio = Ui.riga(s, 0, Gravity.CENTER).apply {
+                background = superficie(60f, CONTORNO)
+                setPadding(20, 0, 20, 0)
+                addView(raggioTesto, lp(TUTTO, TUTTO))
+            }
+            arrotonda(raggio, 60f)
+            riga.addView(Ui.premibile(raggio, ONDA, null) { azioni.raggio() }.apply { contentDescription = "Cambia il raggio" }, lp(0, TUTTO, 1f))
+            val mappa = Ui.riga(s, 12, Gravity.CENTER).apply {
+                background = superficie(60f, CONTORNO)
+                addView(Ui.icona(s, R.drawable.ic_mappa, ROSA), lp(40, 40))
+                addView(Ui.testo(s, 32, TESTO, medio, 38, "Mappa"))
+            }
+            arrotonda(mappa, 60f)
+            riga.addView(Ui.premibile(mappa, ONDA, "Mappa dei distributori") { azioni.mappa() }, lp(0, TUTTO, 1f))
+            return riga
+        }
+
+        private fun evidenziaIntorno(acceso: Boolean) {
+            intornoView.background = if (acceso) tramonto(60f) else superficie(60f, CONTORNO)
+            intornoIcona.imageTintList = android.content.res.ColorStateList.valueOf(if (acceso) NOTTE else ROSA)
+            intornoTesto.setTextColor(if (acceso) NOTTE else TESTO)
+            intornoTesto.typeface = if (acceso) grassetto else medio
+            intornoView.isSelected = acceso
+            intornoView.contentDescription = "Intorno a me, " + if (acceso) "acceso" else "spento"
         }
 
         private fun evidenziaOrdine(attivo: Ordine) {
@@ -725,11 +782,13 @@ object Synthwave : Tema {
                 is ElencoBenzinai.Errore -> messaggio(e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
+                    evidenziaIntorno(e.intornoAMe)
+                    raggioTesto.text = "Raggio ${e.raggioKm.toInt()} km"
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false)
-                    if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
+                    if (tutti.isEmpty()) messaggio("Nessun distributore entro ${e.raggioKm.toInt()} km")
                 }
             }
             aggiornaScheda()
