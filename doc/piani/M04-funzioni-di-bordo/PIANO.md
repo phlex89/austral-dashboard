@@ -66,7 +66,7 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 | Una playlist condivisa da Spotify si salva e parte da sola con un tocco (`:play`) | da provare |
 | Il pannello Wi‑Fi si apre sopra la Home; Bluetooth apre le sue impostazioni | da provare |
 | «−» e «+» cambiano il volume che si sente in auto | non funziona (2026-11-19): la Home mostra il volume al massimo e «−»/«+» non cambiano né il numero né l'audio. Da rifare con la Diagnostica della 0.4.1 |
-| Diagnostica → Audio: volume fisso, livelli, uscite; prove A, B, C; cambi dalla barra Ottocast e dalla manopola | da provare |
+| Diagnostica → Audio: volume fisso, livelli, uscite; prove A, B, C; cambi dalla barra Ottocast e dalla manopola | fatta (2026-11-22): nessun modo di cambiare il volume dal launcher; il volume si toglie in M05 |
 | La pioggia compare nel meteo quando arriva entro due ore | da provare |
 | Rifornimenti: tastiera del box con la virgola, consumo dal secondo pieno | da provare |
 | Le frecce dei prezzi compaiono nei Benzinai dal secondo giorno di download | da provare |
@@ -79,3 +79,4 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - 2026-11-19: pubblicata la v0.4.0 (codice 7, 511 KB); l'emulatore `box` l'ha ricevuta da Impostazioni → Controlla aggiornamenti. Resta la prova sul box.
 - 2026-11-19: prova in auto dell'utente: il volume non funziona. La Home mostra il massimo e «−»/«+» non cambiano niente. Ipotesi: il box ha il volume fisso (Android tiene i canali al massimo e il volume lo regola solo l'auto), oppure l'audio verso CarPlay passa da un canale o da un'uscita che `STREAM_MUSIC` non governa. Prima di correggere servono dati dal box: nella 0.4.1 Diagnostica ha la sezione Audio (volume fisso, livelli, uscite, tre modi di abbassare il volume, registro dei cambi fatti dalla barra Ottocast o dalla manopola).
 - 2026-11-19: pubblicata la v0.4.1 (codice 8) con la Diagnostica audio.
+- 2026-11-22: prove dell'utente con la Diagnostica: il volume non si riesce a controllare in nessun modo. Si toglie da tutti i temi in M05 (`doc/piani/M05-plancia-e-schermate/`).
