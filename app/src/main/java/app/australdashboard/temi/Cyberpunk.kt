@@ -187,12 +187,23 @@ object Cyberpunk : Tema {
         private val bluetooth = Ui.colonna(s, 4, Gravity.CENTER)
         private val iconaBluetooth = Ui.icona(s, R.drawable.ic_bluetooth_spento, SECONDARIO)
         private val scrittaBluetooth = testo(s, 28, SECONDARIO, true, 30, "BT")
-        private val volume = Ui.colonna(s, 8, Gravity.CENTER)
-        private val cifreVolume = testo(s, 72, TESTO, true, 60, "00").apply {
-            gravity = Gravity.CENTER
-            translationY = -16f
+        private val pinta = Ui.icona(s, R.drawable.ic_puntina, GIALLO).apply {
+            visibility = View.GONE
+            contentDescription = "Posizione attuale"
         }
-        private val tacchePerVolume = LivelloCyb(s, GIALLO, CONTORNO)
+        private val luogo = Ui.adatta(
+            testo(s, 32, TESTO, true, 36, maiuscolo = true, spaziatura = 1).apply { gravity = Gravity.CENTER_VERTICAL },
+            18,
+            32,
+        )
+        private val rigaLuogo = Ui.riga(s, 10).apply { visibility = View.GONE }
+        private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, GIALLO)
+        private val estremiDomani = Ui.adatta(
+            testo(s, 30, TESTO, true, 34, spaziatura = 1).apply { gravity = Gravity.CENTER_VERTICAL },
+            18,
+            30,
+        )
+        private val rigaDomani = Ui.riga(s, 12).apply { visibility = View.GONE }
 
         override val view: View = costruisci()
 
@@ -209,7 +220,7 @@ object Cyberpunk : Tema {
             corpo.addView(sinistra, lp(700, TUTTO))
             val destra = Ui.colonna(s, 20)
             destra.addView(boxOra(), lp(TUTTO, 300))
-            destra.addView(boxMeteo(), lp(TUTTO, 250))
+            destra.addView(boxMeteo(), lp(TUTTO, 324))
             destra.addView(griglia(), lp(TUTTO, 0, 1f))
             corpo.addView(destra, lp(0, TUTTO, 1f))
             radice.addView(corpo, lp(TUTTO, 0, 1f))
@@ -266,6 +277,9 @@ object Cyberpunk : Tema {
         private fun boxMeteo(): View {
             val p = Ui.colonna(s)
             p.addView(codice(s, "// 02 · METEO"))
+            rigaLuogo.addView(pinta, lp(30, 30))
+            rigaLuogo.addView(luogo, lp(0, TUTTO, 1f))
+            p.addView(rigaLuogo, lp(TUTTO, 38).apply { topMargin = 4 })
             p.addView(View(s), lp(TUTTO, 0, 1f))
             val riga = Ui.riga(s, 24)
             riga.addView(gradi, lp(ADATTA, ADATTA))
@@ -277,30 +291,50 @@ object Cyberpunk : Tema {
             colonna.addView(estremi, lp(TUTTO, 40))
             riga.addView(colonna, lp(0, ADATTA, 1f))
             p.addView(riga, lp(TUTTO, 112))
-            p.addView(asta, lp(TUTTO, 14).apply { topMargin = 10 })
-            p.addView(chipPioggia, lp(ADATTA, 34).apply { topMargin = 10 })
+            p.addView(asta, lp(TUTTO, 14).apply { topMargin = 8 })
+            rigaDomani.addView(testo(s, 28, SECONDARIO, true, 32, "Domani", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
+            rigaDomani.addView(iconaDomani, lp(32, 32))
+            rigaDomani.addView(estremiDomani, lp(0, TUTTO, 1f))
+            p.addView(rigaDomani, lp(TUTTO, 36).apply { topMargin = 8 })
+            p.addView(chipPioggia, lp(ADATTA, 34).apply { topMargin = 8 })
             taglia(p, PANNELLO, 28, 0, CONTORNO)
-            p.setPadding(30, 18, 30, 18)
+            p.setPadding(30, 14, 30, 14)
             return p
         }
 
         private fun sistema(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            riga.addView(tastoSistema(wifi, iconaWifi, scrittaWifi, "Wi-Fi") { azioni.wifi() }, lp(130, TUTTO))
-            riga.addView(tastoSistema(bluetooth, iconaBluetooth, scrittaBluetooth, "Bluetooth") { azioni.bluetooth() }, lp(130, TUTTO))
             riga.addView(
-                tasto(s, R.drawable.ic_meno, 52, TASTO, TESTO, 18, "Abbassa il volume", ONDA, CONTORNO) { azioni.volume(false) },
-                lp(120, TUTTO),
+                coppia(tastoSistema(wifi, iconaWifi, scrittaWifi, "Wi-Fi") { azioni.wifi() }, "Wi-Fi") { azioni.wifiDettaglio() },
+                lp(228, TUTTO),
             )
-            volume.addView(cifreVolume, lp(TUTTO, 64))
-            volume.addView(tacchePerVolume, lp(117, 14))
-            riga.addView(volume, lp(120, TUTTO))
             riga.addView(
-                tasto(s, R.drawable.ic_piu, 52, TASTO, TESTO, 18, "Alza il volume", ONDA, CONTORNO) { azioni.volume(true) },
-                lp(120, TUTTO),
+                coppia(tastoSistema(bluetooth, iconaBluetooth, scrittaBluetooth, "Bluetooth") { azioni.bluetooth() }, "Bluetooth") {
+                    azioni.bluetoothDettaglio()
+                },
+                lp(228, TUTTO),
             )
+            riga.addView(tastoTema(), lp(204, TUTTO))
             mostraSistema(StatoSistema(StatoWifi.SPENTO, false, 0, 0))
             return riga
+        }
+
+        private fun coppia(comando: View, nome: String, dettaglio: () -> Unit): View {
+            val c = Ui.riga(s, 8, Gravity.NO_GRAVITY)
+            c.addView(comando, lp(140, TUTTO))
+            val apri = testo(s, 64, TESTO, true, 64, "›").apply { gravity = Gravity.CENTER }
+            taglia(apri, TASTO, 18, contorno = CONTORNO)
+            Ui.premibile(apri, ONDA, "Dettagli $nome") { dettaglio() }
+            c.addView(apri, lp(80, TUTTO))
+            return c
+        }
+
+        private fun tastoTema(): View {
+            val t = Ui.colonna(s, 4, Gravity.CENTER)
+            t.addView(Ui.icona(s, R.drawable.ic_tavolozza, GIALLO), lp(48, 48))
+            t.addView(testo(s, 28, TESTO, true, 30, "TEMA"), lp(ADATTA, ADATTA))
+            taglia(t, TASTO, 18, contorno = CONTORNO)
+            return Ui.premibile(t, ONDA, "Tema") { azioni.temaSuccessivo() }
         }
 
         private fun tastoSistema(tasto: LinearLayout, icona: ImageView, scritta: TextView, nome: String, azione: () -> Unit): View {
@@ -503,16 +537,24 @@ object Cyberpunk : Tema {
                 statoTasto(bluetooth, iconaBluetooth, scrittaBluetooth, R.drawable.ic_bluetooth_spento, PANNELLO, SECONDARIO, CONTORNO)
             }
             bluetooth.contentDescription = if (stato.bluetooth) "Bluetooth acceso" else "Bluetooth spento"
-            cifreVolume.text = String.format(Locale.US, "%02d", stato.volume)
-            val massimo = stato.volumeMassimo
-            tacchePerVolume.mostra(if (massimo > 0) Math.round(stato.volume * 15f / massimo).coerceIn(0, 15) else 0)
-            volume.contentDescription = "Volume ${stato.volume} su $massimo"
         }
 
         override fun mostraMeteo(meteo: Meteo?) {
             val pioggia = meteo?.let { FonteMeteo.testoPioggia(it.pioggiaTraMinuti) }
             chipPioggia.text = pioggia?.uppercase(Locale.ITALIAN)
             chipPioggia.visibility = if (pioggia != null) View.VISIBLE else View.GONE
+            val nomeLuogo = meteo?.luogo?.take(30).orEmpty()
+            luogo.text = nomeLuogo
+            rigaLuogo.visibility = if (nomeLuogo.isNotEmpty()) View.VISIBLE else View.GONE
+            pinta.visibility = if (meteo?.gps == true) View.VISIBLE else View.GONE
+            val domani = meteo?.domani
+            rigaDomani.visibility = if (domani != null) View.VISIBLE else View.GONE
+            if (domani != null) {
+                iconaDomani.setImageResource(Ui.iconaCielo(domani.codice))
+                estremiDomani.text = "${domani.minima}° / ${domani.massima}°"
+                rigaDomani.contentDescription =
+                    "Domani ${FonteMeteo.descrizione(domani.codice)}, minima ${domani.minima}°, massima ${domani.massima}°"
+            }
             if (meteo == null) {
                 asta.mostra(null)
                 asta.contentDescription = null
@@ -563,6 +605,11 @@ object Cyberpunk : Tema {
             visibility = View.GONE
         }
         private val stato = StatoBenzinai()
+        private val iconaIntorno = Ui.icona(s, R.drawable.ic_mirino, GIALLO)
+        private val scrittaIntorno = testo(s, 32, TESTO, true, 36, "Intorno a me", maiuscolo = true, spaziatura = 2)
+        private val scrittaRaggio = testo(s, 32, TESTO, true, 36, maiuscolo = true, spaziatura = 2)
+        private lateinit var intorno: View
+        private lateinit var raggio: View
 
         override val view: View = costruisci()
 
@@ -572,6 +619,7 @@ object Cyberpunk : Tema {
                 setPadding(24, 24, 24, 24)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
+            radice.addView(filtri(), lp(TUTTO, 104))
             radice.addView(ordinamenti(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
@@ -601,9 +649,44 @@ object Cyberpunk : Tema {
             rifornimenti.addView(voce, lp(ADATTA, ADATTA))
             rifornimenti.setPadding(26, 0, 26, 0)
             taglia(rifornimenti, PANNELLO, 18, contorno = GIALLO)
-            Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti() }
+            Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti(stato.selezionato) }
             riga.addView(rifornimenti, lp(ADATTA, TUTTO))
             return riga
+        }
+
+        private fun filtri(): View {
+            val riga = Ui.riga(s, 20)
+            intorno = Ui.riga(s, 14, Gravity.CENTER).apply {
+                addView(iconaIntorno, lp(40, 40))
+                addView(scrittaIntorno, lp(ADATTA, ADATTA))
+                Ui.premibile(this, ONDA, "Intorno a me") { azioni.intornoAMe() }
+            }
+            riga.addView(intorno, lp(0, TUTTO, 1.2f))
+            raggio = Ui.riga(s, 14, Gravity.CENTER).apply {
+                addView(scrittaRaggio, lp(ADATTA, ADATTA))
+                Ui.premibile(this, ONDA, null) { azioni.raggio() }
+            }
+            riga.addView(raggio, lp(0, TUTTO, 1f))
+            val mappa = Ui.riga(s, 14, Gravity.CENTER).apply {
+                addView(Ui.icona(s, R.drawable.ic_mappa, GIALLO), lp(40, 40))
+                addView(testo(s, 32, TESTO, true, 36, "Mappa", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
+                taglia(this, PANNELLO, 18, contorno = CONTORNO)
+                Ui.premibile(this, ONDA, "Mappa dei distributori") { azioni.mappa() }
+            }
+            riga.addView(mappa, lp(0, TUTTO, 0.8f))
+            mostraFiltri(false, Benzinai.raggio(s))
+            return riga
+        }
+
+        private fun mostraFiltri(acceso: Boolean, km: Double) {
+            taglia(intorno, if (acceso) GIALLO else PANNELLO, 18, contorno = if (acceso) 0 else CONTORNO)
+            scrittaIntorno.setTextColor(if (acceso) SFONDO else TESTO)
+            iconaIntorno.imageTintList = ColorStateList.valueOf(if (acceso) SFONDO else GIALLO)
+            intorno.contentDescription = if (acceso) "Intorno a me, attivo" else "Intorno a me, spento"
+            val testoRaggio = "Raggio ${km.toInt()} km"
+            scrittaRaggio.text = testoRaggio
+            taglia(raggio, PANNELLO, 18, contorno = CONTORNO)
+            raggio.contentDescription = testoRaggio
         }
 
         private fun ordinamenti(): View {
@@ -664,6 +747,8 @@ object Cyberpunk : Tema {
 
         private fun disegna() {
             elencoView.removeAllViews()
+            val pronto = stato.ultimo as? ElencoBenzinai.Pronto
+            mostraFiltri(pronto?.intornoAMe == true, pronto?.raggioKm ?: Benzinai.raggio(s))
             when (val e = stato.ultimo) {
                 is ElencoBenzinai.Caricamento -> messaggio("// BENZINAI · AGGIORNAMENTO", "Caricamento dei prezzi…")
                 is ElencoBenzinai.SenzaPosizione ->
@@ -682,7 +767,7 @@ object Cyberpunk : Tema {
                         Ordine.DISTANZA -> "DISTANZA"
                     }
                     if (e.vicini.isNotEmpty()) sezione("ORDINE: $nomeOrdine", "Vicini", e.vicini, false)
-                    if (tutti.isEmpty()) messaggio("// BENZINAI", "Nessun distributore entro 15 km.")
+                    if (tutti.isEmpty()) messaggio("// BENZINAI", "Nessun distributore entro ${e.raggioKm.toInt()} km.")
                 }
             }
             aggiornaScheda()
@@ -844,24 +929,6 @@ private class FormaCyb(c: Context, private val disegna: (Canvas, Float, Float, P
 
     override fun onDraw(canvas: Canvas) {
         disegna(canvas, width.toFloat(), height.toFloat(), pennello)
-    }
-}
-
-private class LivelloCyb(c: Context, private val accesa: Int, private val spenta: Int) : View(c) {
-    private val pennello = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private var accese = 0
-
-    fun mostra(nuove: Int) {
-        if (nuove == accese) return
-        accese = nuove
-        invalidate()
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        for (i in 0 until 15) {
-            pennello.color = if (i < accese) accesa else spenta
-            canvas.drawRect(i * 8f, 0f, i * 8f + 5f, height.toFloat(), pennello)
-        }
     }
 }
 
