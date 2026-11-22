@@ -253,8 +253,12 @@ object Solari : Tema {
         private val play = tasto(s, R.drawable.ic_pausa, 60, "Pausa", ambra = true) { azioni.playPausa() }
         private val wifi = chiaveSistema(s, "WI-FI", "Wi-Fi") { azioni.wifi() }
         private val bluetooth = chiaveSistema(s, "BT", "Bluetooth") { azioni.bluetooth() }
-        private val cifreVolume = List(2) { piastra(s, "-", 56, perni = true) }
-        private val spieVolume = List(TACCHE) { View(s).also { spia -> accendi(spia, false) } }
+        private val puntina = Ui.icona(s, R.drawable.ic_puntina, AMBRA).apply { visibility = View.GONE }
+        private val luogo = Ui.adatta(piastra(s, "", 28, margine = 14, maiuscolo = true), 18, 28)
+        private val coda = Ui.riga(s, 8).apply { visibility = View.GONE }
+        private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, AMBRA)
+        private val temperatureDomani = piastra(s, "", 28, margine = 14)
+        private val domani = Ui.riga(s, 8).apply { visibility = View.GONE }
 
         override val view: View = costruisci()
 
@@ -303,9 +307,11 @@ object Solari : Tema {
 
         private fun boxMeteo(): View {
             val colonna = Ui.colonna(s, 8)
-            colonna.addView(intestazioneSezione(s, "METEO"), lp(TUTTO, 36))
+            coda.addView(puntina, lp(28, 28))
+            coda.addView(luogo, lp(330, 36))
+            colonna.addView(intestazioneSezione(s, "METEO", coda = coda), lp(TUTTO, 36))
             val riga = Ui.riga(s, 20)
-            riempi(s, gradi, "-°", 96, 140, 112)
+            riempi(s, gradi, "-°", 96, 124, 100)
             riga.addView(gradi)
             val lato = Ui.colonna(s, 12)
             lato.addView(iconaMeteo, lp(56, 56))
@@ -316,7 +322,11 @@ object Solari : Tema {
             estremi.addView(minima, lp(ADATTA, 56))
             estremi.addView(pioggia, lp(ADATTA, 56))
             estremi.visibility = View.INVISIBLE
-            colonna.addView(estremi, lp(ADATTA, ADATTA).apply { topMargin = 8 })
+            colonna.addView(estremi, lp(ADATTA, ADATTA))
+            domani.addView(piastra(s, "DOMANI", 28, SECONDARIO, margine = 14, maiuscolo = true), lp(ADATTA, 44))
+            domani.addView(iconaDomani, lp(36, 36))
+            domani.addView(temperatureDomani, lp(ADATTA, 44))
+            colonna.addView(domani, lp(ADATTA, ADATTA))
             return colonna
         }
 
@@ -450,23 +460,30 @@ object Solari : Tema {
 
         private fun rigaSistema(): View {
             val riga = Ui.riga(s, 20)
-            riga.addView(wifi.vista, lp(210, 120))
-            riga.addView(bluetooth.vista, lp(210, 120))
-            riga.addView(tasto(s, R.drawable.ic_meno, 52, "Abbassa il volume") { azioni.volume(false) }.vista, lp(120, 120))
-            val livello = Ui.riga(s, 16, Gravity.CENTER).apply {
-                val numeri = Ui.riga(s, 6)
-                cifreVolume.forEach { numeri.addView(it, lp(44, 72)) }
-                addView(numeri)
-                val colonna = Ui.colonna(s, 8)
-                colonna.addView(etichetta(s, "VOLUME"), lp(ADATTA, 34))
-                val spie = Ui.riga(s, 6)
-                spieVolume.forEach { spie.addView(it, lp(16, 16)) }
-                colonna.addView(spie, lp(ADATTA, ADATTA))
-                addView(colonna)
-            }
-            riga.addView(livello, lp(0, TUTTO, 1f))
-            riga.addView(tasto(s, R.drawable.ic_piu, 52, "Alza il volume") { azioni.volume(true) }.vista, lp(120, 120))
+            riga.addView(wifi.vista, lp(0, 120, 1f))
+            riga.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(90, 120))
+            riga.addView(bluetooth.vista, lp(0, 120, 1f))
+            riga.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(90, 120))
+            riga.addView(comandoTema(), lp(0, 120, 1f))
             return riga
+        }
+
+        private fun dettaglio(descrizione: String, azione: () -> Unit): View {
+            val segno = Ui.testo(s, 64, AMBRA, grassetto, 64, "›").apply {
+                gravity = Gravity.CENTER
+                background = paletta(6, 2)
+            }
+            return Ui.premibile(segno, ONDA, descrizione, azione)
+        }
+
+        private fun comandoTema(): View {
+            val riga = Ui.riga(s, 10, Gravity.CENTER).apply {
+                background = paletta(6, 2)
+                setPadding(14, 0, 14, 0)
+                addView(Ui.icona(s, R.drawable.ic_tavolozza, AMBRA), lp(44, 44))
+                addView(Ui.testo(s, 30, CARATTERI, grassetto, 34, "TEMA"))
+            }
+            return Ui.premibile(riga, ONDA, "Tema") { azioni.temaSuccessivo() }
         }
 
         override fun mostraOra(adesso: Date) {
@@ -485,17 +502,19 @@ object Solari : Tema {
         override fun mostraMeteo(meteo: Meteo?) {
             if (meteo == null) {
                 iconaMeteo.setImageResource(R.drawable.ic_nuvoloso)
-                riempi(s, gradi, "-°", 96, 140, 112)
+                riempi(s, gradi, "-°", 96, 124, 100)
                 cielo.text = "IN ATTESA"
                 massima.text = ""
                 minima.text = ""
                 pioggia.visibility = View.GONE
                 estremi.visibility = View.INVISIBLE
+                coda.visibility = View.GONE
+                domani.visibility = View.GONE
                 return
             }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             val testo = "${meteo.gradi}°"
-            if (testo.length > 2) riempi(s, gradi, testo, 80, 140, 112) else riempi(s, gradi, testo, 96, 140, 112)
+            if (testo.length > 2) riempi(s, gradi, testo, 80, 124, 100) else riempi(s, gradi, testo, 96, 124, 100)
             cielo.text = FonteMeteo.descrizione(meteo.codice)
             massima.text = "max ${meteo.massima}°"
             minima.text = "min ${meteo.minima}°"
@@ -503,6 +522,15 @@ object Solari : Tema {
             pioggia.text = avviso ?: ""
             pioggia.visibility = if (avviso != null) View.VISIBLE else View.GONE
             estremi.visibility = View.VISIBLE
+            luogo.text = meteo.luogo
+            puntina.visibility = if (meteo.gps) View.VISIBLE else View.GONE
+            coda.visibility = if (meteo.luogo.isNotEmpty()) View.VISIBLE else View.GONE
+            val previsione = meteo.domani
+            if (previsione != null) {
+                iconaDomani.setImageResource(Ui.iconaCielo(previsione.codice))
+                temperatureDomani.text = "${previsione.minima}° / ${previsione.massima}°"
+            }
+            domani.visibility = if (previsione != null) View.VISIBLE else View.GONE
         }
 
         init {
@@ -534,18 +562,8 @@ object Solari : Tema {
             } else {
                 aggiornaChiave(bluetooth, R.drawable.ic_bluetooth_spento, false, "SPENTO", SECONDARIO, false, SPENTA)
             }
-            val numero = String.format(Locale.ITALIAN, "%02d", stato.volume.coerceIn(0, 99))
-            cifreVolume.forEachIndexed { i, p -> p.text = numero[i].toString() }
-            val accese = if (stato.volumeMassimo > 0) {
-                Math.round(stato.volume.coerceAtLeast(0) * TACCHE / stato.volumeMassimo.toFloat()).coerceIn(0, TACCHE)
-            } else {
-                0
-            }
-            spieVolume.forEachIndexed { i, spia -> accendi(spia, i < accese) }
         }
     }
-
-    private const val TACCHE = 15
 
     override fun benzinai(s: Schermata, azioni: AzioniBenzinai): VistaBenzinai = BenzinaiSolari(s, azioni)
 
@@ -560,6 +578,10 @@ object Solari : Tema {
         private val distanzaScheda = piastra(s, "", 28, margine = 14, maiuscolo = true).apply { maxWidth = 150 }
         private val quandoScheda = piastra(s, "", 28, SECONDARIO, margine = 14, maiuscolo = true).apply { maxWidth = 220 }
         private val stato = StatoBenzinai()
+        private val intornoIcona = Ui.icona(s, R.drawable.ic_mirino, AMBRA)
+        private val intornoTesto = Ui.testo(s, 30, CARATTERI, grassetto, 34, "INTORNO A ME").apply { letterSpacing = 1 / 30f }
+        private val raggioTesto = Ui.testo(s, 30, CARATTERI, grassetto, 34, raggioEtichetta(Benzinai.raggio(s))).apply { letterSpacing = 1 / 30f }
+        private lateinit var intornoVista: View
 
         override val view: View = costruisci()
 
@@ -570,6 +592,7 @@ object Solari : Tema {
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
             radice.addView(rigaOrdini(), lp(TUTTO, 120))
+            radice.addView(rigaFiltri(), lp(TUTTO, 104))
             radice.addView(colonne(), lp(TUTTO, 34))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
@@ -594,7 +617,7 @@ object Solari : Tema {
                 addView(Ui.icona(s, R.drawable.ic_rifornimenti, AMBRA), lp(44, 44))
                 addView(testi)
             }
-            riga.addView(Ui.premibile(corpo, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, 120))
+            riga.addView(Ui.premibile(corpo, ONDA, "Rifornimenti") { azioni.rifornimenti(stato.selezionato) }, lp(ADATTA, 120))
             return riga
         }
 
@@ -611,6 +634,38 @@ object Solari : Tema {
             }
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
+        }
+
+        private fun raggioEtichetta(km: Double): String = "RAGGIO ${km.toInt()} KM"
+
+        private fun pulsante(icona: View?, testo: View, descrizione: String, azione: () -> Unit): View {
+            val corpo = Ui.riga(s, 12, Gravity.CENTER).apply {
+                background = paletta(6, 2)
+                setPadding(14, 0, 14, 0)
+                if (icona != null) addView(icona, lp(40, 40))
+                addView(testo)
+            }
+            return Ui.premibile(corpo, ONDA, descrizione, azione)
+        }
+
+        private fun rigaFiltri(): View {
+            val riga = Ui.riga(s, 20)
+            intornoVista = pulsante(intornoIcona, intornoTesto, "Intorno a me") { azioni.intornoAMe() }
+            riga.addView(intornoVista, lp(0, TUTTO, 1f))
+            riga.addView(pulsante(null, raggioTesto, "Raggio di ricerca") { azioni.raggio() }, lp(0, TUTTO, 1f))
+            riga.addView(
+                pulsante(Ui.icona(s, R.drawable.ic_mappa, AMBRA), Ui.testo(s, 30, CARATTERI, grassetto, 34, "MAPPA").apply { letterSpacing = 1 / 30f }, "Mappa dei distributori") { azioni.mappa() },
+                lp(0, TUTTO, 1f),
+            )
+            evidenziaIntorno(false)
+            return riga
+        }
+
+        private fun evidenziaIntorno(acceso: Boolean) {
+            intornoVista.background = if (acceso) pieno(AMBRA, 6) else paletta(6, 2)
+            intornoTesto.setTextColor(if (acceso) SFONDO else CARATTERI)
+            intornoIcona.imageTintList = ColorStateList.valueOf(if (acceso) SFONDO else AMBRA)
+            intornoVista.isSelected = acceso
         }
 
         private fun colonne(): View {
@@ -675,11 +730,13 @@ object Solari : Tema {
                 is ElencoBenzinai.Errore -> messaggio("ERRORE", e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
+                    evidenziaIntorno(e.intornoAMe)
+                    raggioTesto.text = raggioEtichetta(e.raggioKm)
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false)
-                    if (tutti.isEmpty()) messaggio("RISULTATI", "Nessun distributore entro 15 km.")
+                    if (tutti.isEmpty()) messaggio("RISULTATI", "Nessun distributore entro ${e.raggioKm.toInt()} km")
                 }
             }
             aggiornaScheda()
