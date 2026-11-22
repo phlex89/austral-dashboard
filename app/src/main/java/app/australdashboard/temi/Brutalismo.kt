@@ -181,8 +181,21 @@ object Brutalismo : Tema {
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, SFONDO)
         private val wifi = TastoSistema(s, "WIFI")
         private val bluetooth = TastoSistema(s, "BT")
-        private val volume = Ui.adatta(Ui.testo(s, 52, TESTO, nero, 52, "-").apply { gravity = Gravity.CENTER }, 30, 52)
-        private val volumeMassimo = Ui.adatta(Ui.testo(s, 28, SECONDARIO, mono, 30, "/-").apply { gravity = Gravity.CENTER }, 16, 28)
+        private val tema = TastoSistema(s, "TEMA").apply { imposta(R.drawable.ic_tavolozza, Livello.ACCESO) }
+        private val luogo = Ui.adatta(
+            Ui.testo(s, 28, TESTO, condensato, 32, "", true).apply { gravity = Gravity.CENTER_VERTICAL },
+            14,
+            28,
+        )
+        private val puntina = Ui.icona(s, R.drawable.ic_puntina, ROSSO)
+        private val domaniEtichetta = Ui.testo(s, 24, SECONDARIO, mono, 30, "DOMANI")
+        private val domaniIcona = Ui.icona(s, R.drawable.ic_nuvoloso, TESTO)
+        private val domaniGradi = Ui.adatta(
+            Ui.testo(s, 28, TESTO, mono, 32, " ").apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END },
+            18,
+            28,
+        )
+        private val domani = Ui.riga(s, 6)
 
         override val view: View = costruisci()
 
@@ -193,7 +206,7 @@ object Brutalismo : Tema {
             }
             val sinistra = Ui.colonna(s, 20)
             sinistra.addView(bloccoOra(), lp(TUTTO, 268))
-            sinistra.addView(bloccoMeteo(), lp(TUTTO, 204))
+            sinistra.addView(bloccoMeteo(), lp(TUTTO, 246))
             sinistra.addView(bloccoMusica(), lp(TUTTO, 0, 1f))
             val playlist = rigaPlaylist()
             if (playlist != null) sinistra.addView(playlist, lp(TUTTO, 126))
@@ -260,11 +273,12 @@ object Brutalismo : Tema {
         }
 
         private fun bloccoMeteo(): View {
-            val blocco = Ui.riga(s, 22).apply {
+            val blocco = Ui.colonna(s).apply {
                 background = Ui.bordo(TESTO, BORDO)
                 setPadding(20, 14, 20, 14)
             }
-            blocco.addView(gradi)
+            val principale = Ui.riga(s, 22)
+            principale.addView(gradi)
             val colonna = Ui.colonna(s)
             val rigaCielo = Ui.riga(s, 12)
             rigaCielo.addView(iconaMeteo, lp(44, 44))
@@ -273,8 +287,20 @@ object Brutalismo : Tema {
             colonna.addView(estremi, lp(TUTTO, 34))
             colonna.addView(barraMeteo, lp(TUTTO, 24).apply { topMargin = 4 })
             colonna.addView(pioggia, lp(TUTTO, 34).apply { topMargin = 8 })
-            blocco.addView(colonna, lp(0, ADATTA, 1f))
-            Ui.senzaRitaglio(blocco)
+            principale.addView(colonna, lp(0, ADATTA, 1f))
+            blocco.addView(principale, lp(TUTTO, 176))
+            val striscia = Ui.riga(s, 8)
+            puntina.visibility = View.GONE
+            domani.visibility = View.GONE
+            striscia.addView(puntina, lp(26, 26))
+            striscia.addView(luogo, lp(262, 34))
+            striscia.addView(View(s), lp(0, 1, 1f))
+            domani.addView(domaniEtichetta, lp(ADATTA, ADATTA))
+            domani.addView(domaniIcona, lp(30, 30))
+            domani.addView(domaniGradi, lp(140, 34))
+            striscia.addView(domani, lp(ADATTA, 34))
+            blocco.addView(striscia, lp(TUTTO, 34).apply { topMargin = 8 })
+            Ui.senzaRitaglio(blocco, principale)
             return blocco
         }
 
@@ -284,31 +310,31 @@ object Brutalismo : Tema {
             val alto = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             Ui.premibile(copertina, ONDA, "Apri l'app della musica") { azioni.apriMusica() }
             copertina.setBackgroundColor(SECONDARIO)
-            alto.addView(copertina, lp(140, 140))
+            alto.addView(copertina, lp(128, 128))
             val info = Ui.colonna(s)
             info.addView(statoMusica)
             info.addView(titolo, lp(TUTTO, ADATTA).apply { topMargin = 6 })
             info.addView(View(s), lp(1, 0, 1f))
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
-            alto.addView(info, lp(0, 140, 1f))
-            inAscolto.addView(alto, lp(TUTTO, 140))
+            alto.addView(info, lp(0, 128, 1f))
+            inAscolto.addView(alto, lp(TUTTO, 128))
             inAscolto.addView(View(s), lp(1, 0, 1f))
             inAscolto.addView(filetto(), lp(TUTTO, 4).apply { leftMargin = -18; rightMargin = -18 })
             inAscolto.addView(View(s), lp(1, 0, 1f))
             val comandi = Ui.riga(s, 20, Gravity.TOP)
-            comandi.addView(tasto(s, R.drawable.ic_precedente, TESTO, 56, "Brano precedente") { azioni.precedente() }, lp(0, 130, 1f))
+            comandi.addView(tasto(s, R.drawable.ic_precedente, TESTO, 56, "Brano precedente") { azioni.precedente() }, lp(0, 118, 1f))
             val play = FrameLayout(s).apply {
                 setBackgroundColor(ROSSO)
                 addView(iconaPlay, lpf(64, 64, Gravity.CENTER))
             }
             comandi.addView(
                 rilievo(Ui.premibile(play, ONDA, "Riproduci o metti in pausa") { azioni.playPausa() }),
-                lp(0, 130, 1f).apply { rightMargin = 8 },
+                lp(0, 118, 1f).apply { rightMargin = 8 },
             )
-            comandi.addView(tasto(s, R.drawable.ic_successivo, TESTO, 56, "Brano successivo") { azioni.successivo() }, lp(0, 130, 1f))
+            comandi.addView(tasto(s, R.drawable.ic_successivo, TESTO, 56, "Brano successivo") { azioni.successivo() }, lp(0, 118, 1f))
             Ui.senzaRitaglio(comandi, inAscolto)
-            inAscolto.addView(comandi, lp(TUTTO, 138))
+            inAscolto.addView(comandi, lp(TUTTO, 126))
 
             val intestazione = Ui.colonna(s)
             intestazione.addView(Ui.testo(s, 28, SECONDARIO, mono, 34, "MUSICA /"))
@@ -326,10 +352,10 @@ object Brutalismo : Tema {
                 gravity = Gravity.CENTER
                 background = Ui.bordo(TESTO, BORDO)
             }
-            basso.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(0, 130, 2f))
-            basso.addView(rilievo(tastoPieno(s, R.drawable.ic_play, 64, "Riproduci") { azioni.playPausa() }), lp(0, 130, 1f).apply { rightMargin = 8 })
+            basso.addView(Ui.premibile(apri, ONDA, null) { azioni.apriMusica() }, lp(0, 118, 2f))
+            basso.addView(rilievo(tastoPieno(s, R.drawable.ic_play, 64, "Riproduci") { azioni.playPausa() }), lp(0, 118, 1f).apply { rightMargin = 8 })
             Ui.senzaRitaglio(basso, fermo)
-            fermo.addView(basso, lp(TUTTO, 138))
+            fermo.addView(basso, lp(TUTTO, 126))
 
             sezione.addView(inAscolto, lpf(TUTTO, TUTTO).apply { setMargins(18, 18, 18, 18) })
             sezione.addView(fermo, lpf(TUTTO, TUTTO).apply { setMargins(18, 18, 18, 18) })
@@ -374,14 +400,26 @@ object Brutalismo : Tema {
 
         private fun rigaSistema(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            riga.addView(Ui.premibile(wifi.cornice, ONDA, "Wi-Fi") { azioni.wifi() }, lp(120, 120))
-            riga.addView(Ui.premibile(bluetooth.cornice, ONDA, "Bluetooth") { azioni.bluetooth() }, lp(120, 120))
-            riga.addView(tasto(s, R.drawable.ic_meno, TESTO, 60, "Abbassa il volume") { azioni.volume(false) }, lp(120, 120))
-            val livello = Ui.colonna(s, 0, Gravity.CENTER)
-            livello.addView(volume, lp(TUTTO, 52))
-            livello.addView(volumeMassimo, lp(TUTTO, 30))
-            riga.addView(livello, lp(56, TUTTO))
-            riga.addView(tasto(s, R.drawable.ic_piu, TESTO, 60, "Alza il volume") { azioni.volume(true) }, lp(120, 120))
+            riga.addView(
+                coppia(Ui.premibile(wifi.cornice, ONDA, "Wi-Fi") { azioni.wifi() }, "Dettagli Wi-Fi") { azioni.wifiDettaglio() },
+                lp(ADATTA, 120),
+            )
+            riga.addView(
+                coppia(Ui.premibile(bluetooth.cornice, ONDA, "Bluetooth") { azioni.bluetooth() }, "Dettagli Bluetooth") { azioni.bluetoothDettaglio() },
+                lp(ADATTA, 120),
+            )
+            riga.addView(Ui.premibile(tema.cornice, ONDA, "Cambia tema") { azioni.temaSuccessivo() }, lp(0, 120, 1f))
+            return riga
+        }
+
+        private fun coppia(comando: View, descrizione: String, azione: () -> Unit): View {
+            val dettaglio = Ui.testo(s, 72, TESTO, nero, 72, "›").apply {
+                gravity = Gravity.CENTER
+                background = Ui.bordo(GRIGIO, BORDO)
+            }
+            val riga = Ui.riga(s)
+            riga.addView(comando, lp(120, 120))
+            riga.addView(Ui.premibile(dettaglio, ONDA, descrizione) { azione() }, lp(80, 120).apply { leftMargin = -BORDO })
             return riga
         }
 
@@ -444,7 +482,21 @@ object Brutalismo : Tema {
                 cielo.text = "IN ATTESA"
                 estremi.text = " "
                 barraMeteo.frazione = null
+                luogo.visibility = View.GONE
+                puntina.visibility = View.GONE
+                domani.visibility = View.GONE
                 return
+            }
+            luogo.text = meteo.luogo.take(30)
+            luogo.visibility = if (meteo.luogo.isEmpty()) View.GONE else View.VISIBLE
+            puntina.visibility = if (meteo.gps && meteo.luogo.isNotEmpty()) View.VISIBLE else View.GONE
+            val previsione = meteo.domani
+            if (previsione == null) {
+                domani.visibility = View.GONE
+            } else {
+                domaniIcona.setImageResource(Ui.iconaCielo(previsione.codice))
+                domaniGradi.text = "${previsione.minima}° / ${previsione.massima}°"
+                domani.visibility = View.VISIBLE
             }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
             gradi.text = "${meteo.gradi}°"
@@ -475,8 +527,6 @@ object Brutalismo : Tema {
             }
             if (stato.bluetooth) bluetooth.imposta(R.drawable.ic_bluetooth, Livello.PIENO)
             else bluetooth.imposta(R.drawable.ic_bluetooth_spento, Livello.SPENTO)
-            volume.text = stato.volume.toString()
-            volumeMassimo.text = "/${stato.volumeMassimo}"
         }
     }
 
@@ -499,6 +549,11 @@ object Brutalismo : Tema {
         private val dettagli = Ui.testo(s, 28, SFONDO, mono, 34, maiuscolo = true)
         private val spesa = Ui.testo(s, 28, SECONDARIO, mono, 32, maiuscolo = true).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
+        private var raggioKm = Benzinai.raggio(s).toInt()
+        private val intornoIcona = Ui.icona(s, R.drawable.ic_mirino, TESTO)
+        private val intornoTesto = Ui.testo(s, 30, TESTO, mono, 34, "Intorno a me", maiuscolo = true)
+        private val intornoCornice = Ui.riga(s, 14, Gravity.CENTER)
+        private val raggio = Ui.testo(s, 30, TESTO, mono, 34, maiuscolo = true).apply { gravity = Gravity.CENTER }
 
         override val view: View = costruisci()
 
@@ -509,6 +564,7 @@ object Brutalismo : Tema {
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
             radice.addView(ordinamenti(), lp(TUTTO, 120))
+            radice.addView(filtri(), lp(TUTTO, 100))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -537,7 +593,7 @@ object Brutalismo : Tema {
             }
             cornice.addView(Ui.icona(s, R.drawable.ic_rifornimenti, TESTO), lp(52, 52))
             cornice.addView(testi, lp(ADATTA, ADATTA))
-            riga.addView(Ui.premibile(cornice, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, TUTTO))
+            riga.addView(Ui.premibile(cornice, ONDA, "Rifornimenti") { azioni.rifornimenti(stato.selezionato) }, lp(ADATTA, TUTTO))
             return riga
         }
 
@@ -551,6 +607,34 @@ object Brutalismo : Tema {
             }
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
+        }
+
+        private fun filtri(): View {
+            val riga = Ui.riga(s, 20)
+            intornoCornice.addView(intornoIcona, lp(44, 44))
+            intornoCornice.addView(intornoTesto, lp(ADATTA, ADATTA))
+            evidenziaIntorno(false)
+            riga.addView(Ui.premibile(intornoCornice, ONDA, "Intorno a me") { azioni.intornoAMe() }, lp(0, TUTTO, 1f))
+            mostraRaggio()
+            riga.addView(Ui.premibile(raggio, ONDA, "Cambia il raggio") { azioni.raggio() }, lp(0, TUTTO, 1f))
+            val mappa = Ui.riga(s, 14, Gravity.CENTER).apply { background = Ui.bordo(TESTO, BORDO) }
+            mappa.addView(Ui.icona(s, R.drawable.ic_mappa, TESTO), lp(44, 44))
+            mappa.addView(Ui.testo(s, 30, TESTO, mono, 34, "Mappa", maiuscolo = true), lp(ADATTA, ADATTA))
+            riga.addView(Ui.premibile(mappa, ONDA, "Mappa dei distributori") { azioni.mappa() }, lp(0, TUTTO, 1f))
+            return riga
+        }
+
+        private fun evidenziaIntorno(acceso: Boolean) {
+            val colore = if (acceso) SFONDO else TESTO
+            intornoCornice.background = if (acceso) Ui.pieno(TESTO) else Ui.bordo(TESTO, BORDO)
+            intornoIcona.imageTintList = ColorStateList.valueOf(colore)
+            intornoTesto.setTextColor(colore)
+            intornoCornice.isSelected = acceso
+        }
+
+        private fun mostraRaggio() {
+            raggio.text = "Raggio $raggioKm km"
+            raggio.background = Ui.bordo(TESTO, BORDO)
         }
 
         private fun evidenziaOrdine(attivo: Ordine) {
@@ -595,11 +679,14 @@ object Brutalismo : Tema {
                 is ElencoBenzinai.Errore -> messaggio(e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
+                    evidenziaIntorno(e.intornoAMe)
+                    raggioKm = e.raggioKm.toInt()
+                    mostraRaggio()
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("★ ${e.preferiti.size}", "Preferiti", e.preferiti, true)
                     if (e.vicini.isNotEmpty()) sezione(null, "Vicini", e.vicini, false)
-                    if (tutti.isEmpty()) messaggio("Nessun distributore entro 15 km.")
+                    if (tutti.isEmpty()) messaggio("Nessun distributore entro $raggioKm km")
                 }
             }
             aggiornaScheda()
