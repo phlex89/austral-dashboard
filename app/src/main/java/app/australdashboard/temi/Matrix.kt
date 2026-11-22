@@ -51,7 +51,6 @@ object Matrix : Tema {
     private const val BORDO = 0xFF1E7A3E.toInt()
     private const val ONDA = 0x5539FF7A
     private const val ONDA_SCURA = 0x55020A04
-    private const val TACCHE = 15
 
     private fun vt(context: Context): Typeface = Ui.font(context, R.font.vt323)
 
@@ -137,11 +136,11 @@ object Matrix : Tema {
         private val ora = Ui.testo(s, 250, VERDE, vt, 210).apply { letterSpacing = -0.016f }
         private val data = Ui.testo(s, 34, VERDE, Ui.mono, 40)
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, VERDE)
-        private val gradi = Ui.testo(s, 170, VERDE, vt, 150, "--°")
+        private val gradi = Ui.testo(s, 130, VERDE, vt, 116, "--°")
         private val cielo = Ui.testo(s, 34, VERDE, Ui.monoGrassetto, 40, "IN ATTESA", maiuscolo = true)
         private val estremi = Ui.testo(s, 30, ATTENUATO, Ui.mono, 36, " ")
-        private val minima = Ui.testo(s, 28, VERDE, Ui.mono, 30)
-        private val massima = Ui.testo(s, 28, VERDE, Ui.mono, 30)
+        private val minima = Ui.testo(s, 26, VERDE, Ui.mono, 30)
+        private val massima = Ui.testo(s, 26, VERDE, Ui.mono, 30)
         private val celle = List(9) { View(s) }
         private val barra = Ui.riga(s, 8)
         private val pioggia = Ui.testo(s, 28, NERO, Ui.monoGrassetto, 34, maiuscolo = true).apply {
@@ -166,8 +165,12 @@ object Matrix : Tema {
         private val iconaPlay = Ui.icona(s, R.drawable.ic_pausa, NERO)
         private val wifi = interruttore("WIFI", "Wi-Fi") { azioni.wifi() }
         private val bluetooth = interruttore("BT", "Bluetooth") { azioni.bluetooth() }
-        private val numeroVolume = Ui.testo(s, 72, VERDE, vt, 60, "00").apply { gravity = Gravity.CENTER }
-        private val tacche = List(TACCHE) { View(s) }
+        private val luogo = Ui.adatta(Ui.testo(s, 32, VERDE, vt, 36), 18, 32)
+        private val puntina = Ui.icona(s, R.drawable.ic_puntina, VERDE).apply { visibility = View.GONE }
+        private val rigaLuogo = Ui.riga(s, 8).apply { visibility = View.GONE }
+        private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, ATTENUATO)
+        private val domani = Ui.adatta(Ui.testo(s, 32, ATTENUATO, vt, 36), 18, 32)
+        private val rigaDomani = Ui.riga(s, 8).apply { visibility = View.GONE }
 
         override val view: View = costruisci()
 
@@ -185,7 +188,7 @@ object Matrix : Tema {
             sinistra.addView(boxMusica(), lp(TUTTO, if (playlist.isEmpty()) 176 else 316))
             sinistra.addView(boxApp(), lp(TUTTO, 188))
             sopra.addView(sinistra, lp(0, TUTTO, 1f))
-            sopra.addView(boxSistema(), lp(180, TUTTO))
+            sopra.addView(boxSistema(), lp(260, TUTTO))
             radice.addView(sopra, lp(TUTTO, 0, 1f))
             radice.addView(servizi(), lp(TUTTO, 124))
             Ui.senzaRitaglio(radice, sopra, sinistra, primaRiga)
@@ -222,23 +225,29 @@ object Matrix : Tema {
         }
 
         private fun boxMeteo(): View {
-            val r = riquadro(s, "[ 02 · METEO ]")
+            val r = riquadro(s, "[ 02 · METEO ]", lati = 18)
             r.interno.gravity = Gravity.CENTER_VERTICAL
-            r.interno.addView(prompt("~$ meteo --qui"))
-            val rigaGradi = Ui.riga(s, 20)
-            rigaGradi.addView(iconaMeteo, lp(72, 72))
-            rigaGradi.addView(gradi, lp(ADATTA, 150))
-            r.interno.addView(rigaGradi, lp(ADATTA, 150).apply { topMargin = 6 })
+            rigaLuogo.addView(puntina, lp(28, 28))
+            rigaLuogo.addView(luogo, lp(0, 36, 1f))
+            r.interno.addView(rigaLuogo, lp(TUTTO, 36))
+            val rigaGradi = Ui.riga(s, 12)
+            rigaGradi.addView(iconaMeteo, lp(56, 56))
+            rigaGradi.addView(Ui.adatta(gradi, 60, 130), lp(0, 116, 1f))
+            r.interno.addView(rigaGradi, lp(TUTTO, 116).apply { topMargin = 6 })
             r.interno.addView(cielo)
-            r.interno.addView(estremi, lp(ADATTA, ADATTA).apply { topMargin = 10 })
-            val celleGradi = Ui.riga(s, 5)
-            celle.forEach { celleGradi.addView(it, lp(19, 30)) }
+            r.interno.addView(Ui.adatta(estremi, 20, 30), lp(TUTTO, 36).apply { topMargin = 6 })
+            val celleGradi = Ui.riga(s, 3)
+            celle.forEach { celleGradi.addView(it, lp(12, 30)) }
             barra.addView(minima)
             barra.addView(celleGradi)
             barra.addView(massima)
             barra.visibility = View.INVISIBLE
-            r.interno.addView(barra, lp(ADATTA, ADATTA).apply { topMargin = 10 })
-            r.interno.addView(pioggia, lp(ADATTA, ADATTA).apply { topMargin = 10 })
+            r.interno.addView(barra, lp(ADATTA, ADATTA).apply { topMargin = 6 })
+            r.interno.addView(pioggia, lp(ADATTA, ADATTA).apply { topMargin = 6 })
+            rigaDomani.addView(Ui.testo(s, 32, ATTENUATO, vt, 36, "Domani", maiuscolo = true))
+            rigaDomani.addView(iconaDomani, lp(32, 32))
+            rigaDomani.addView(domani, lp(0, 36, 1f))
+            r.interno.addView(rigaDomani, lp(TUTTO, 36).apply { topMargin = 6 })
             return r.esterno
         }
 
@@ -320,7 +329,7 @@ object Matrix : Tema {
         private fun interruttore(sigla: String, nome: String, azione: () -> Unit): Interruttore {
             val icona = ImageView(s).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
             val siglaView = Ui.testo(s, 28, VERDE, Ui.monoGrassetto, 30, sigla).apply { gravity = Gravity.CENTER }
-            val stato = Ui.testo(s, 28, VERDE, Ui.mono, 30).apply { gravity = Gravity.CENTER }
+            val stato = Ui.testo(s, 24, VERDE, Ui.mono, 30).apply { gravity = Gravity.CENTER }
             val contenuto = Ui.colonna(s, 2, Gravity.CENTER).apply {
                 addView(icona, lp(44, 44))
                 addView(siglaView, lp(TUTTO, ADATTA))
@@ -333,23 +342,31 @@ object Matrix : Tema {
 
         private fun boxSistema(): View {
             val r = riquadro(s, "[ SYS ]", lati = 18, margine = 6)
-            r.interno.gravity = Gravity.CENTER_HORIZONTAL
             fun distanza() = View(s)
-            r.interno.addView(wifi.cornice, lp(140, 124))
+            fun dettaglio(descrizione: String, azione: () -> Unit): View {
+                val freccia = Ui.testo(s, 96, VERDE, vt, 80, "›").apply {
+                    gravity = Gravity.CENTER
+                    background = Ui.bordo(VERDE, 2)
+                }
+                return Ui.premibile(freccia, ONDA, descrizione, azione)
+            }
+            fun coppia(comando: View, descrizione: String, azione: () -> Unit): View {
+                val riga = Ui.riga(s, 8)
+                riga.addView(comando, lp(132, TUTTO))
+                riga.addView(dettaglio(descrizione, azione), lp(80, TUTTO))
+                return riga
+            }
+            val tema = Ui.colonna(s, 6, Gravity.CENTER).apply {
+                background = Ui.bordo(VERDE, 2)
+                addView(Ui.icona(s, R.drawable.ic_tavolozza, VERDE), lp(56, 56))
+                addView(Ui.testo(s, 44, VERDE, vt, 40, "Tema", maiuscolo = true).apply { gravity = Gravity.CENTER }, lp(TUTTO, ADATTA))
+            }
+            Ui.premibile(tema, ONDA, "Tema") { azioni.temaSuccessivo() }
+            r.interno.addView(coppia(wifi.cornice, "Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(TUTTO, 250))
             r.interno.addView(distanza(), lp(0, 0, 1f))
-            r.interno.addView(bluetooth.cornice, lp(140, 124))
+            r.interno.addView(coppia(bluetooth.cornice, "Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(TUTTO, 250))
             r.interno.addView(distanza(), lp(0, 0, 1f))
-            r.interno.addView(tasto(s, R.drawable.ic_piu, false, 56, "Alza il volume") { azioni.volume(true) }, lp(140, 124))
-            r.interno.addView(distanza(), lp(0, 0, 1f))
-            val livello = Ui.colonna(s, 8, Gravity.CENTER_HORIZONTAL)
-            livello.addView(numeroVolume)
-            val scala = Ui.colonna(s, 6)
-            scala.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-            tacche.forEach { scala.addView(it, lp(100, 12)) }
-            livello.addView(scala)
-            r.interno.addView(livello, lp(ADATTA, ADATTA))
-            r.interno.addView(distanza(), lp(0, 0, 1f))
-            r.interno.addView(tasto(s, R.drawable.ic_meno, false, 56, "Abbassa il volume") { azioni.volume(false) }, lp(140, 124))
+            r.interno.addView(tema, lp(TUTTO, 250))
             return r.esterno
         }
 
@@ -427,6 +444,8 @@ object Matrix : Tema {
                 estremi.text = " "
                 barra.contentDescription = null
                 barra.visibility = View.INVISIBLE
+                rigaLuogo.visibility = View.GONE
+                rigaDomani.visibility = View.GONE
                 return
             }
             iconaMeteo.setImageResource(Ui.iconaCielo(meteo.codice))
@@ -446,6 +465,19 @@ object Matrix : Tema {
             }
             barra.contentDescription = "Temperatura attuale ${meteo.gradi}° tra minima ${meteo.minima}° e massima ${meteo.massima}°"
             barra.visibility = View.VISIBLE
+            luogo.text = meteo.luogo.take(30)
+            puntina.visibility = if (meteo.gps) View.VISIBLE else View.GONE
+            puntina.contentDescription = if (meteo.gps) "Posizione attuale" else null
+            rigaLuogo.visibility = if (meteo.luogo.isEmpty()) View.GONE else View.VISIBLE
+            val previsione = meteo.domani
+            if (previsione == null) {
+                rigaDomani.visibility = View.GONE
+            } else {
+                iconaDomani.setImageResource(Ui.iconaCielo(previsione.codice))
+                domani.text = "${previsione.minima}° / ${previsione.massima}°"
+                rigaDomani.contentDescription = "Domani ${previsione.minima}° minima, ${previsione.massima}° massima"
+                rigaDomani.visibility = View.VISIBLE
+            }
         }
 
         override fun mostraMusica(musica: Musica?) {
@@ -473,13 +505,6 @@ object Matrix : Tema {
             }
             if (stato.bluetooth) bluetooth.mostra(R.drawable.ic_bluetooth, "acceso", 2)
             else bluetooth.mostra(R.drawable.ic_bluetooth_spento, "spento", 0)
-            val accese = if (stato.volumeMassimo > 0) {
-                (stato.volume * TACCHE.toFloat() / stato.volumeMassimo).roundToInt().coerceIn(0, TACCHE)
-            } else 0
-            numeroVolume.text = String.format(Locale.US, "%02d", stato.volume)
-            tacche.forEachIndexed { i, tacca ->
-                tacca.background = if (TACCHE - i <= accese) Ui.pieno(VERDE) else Ui.bordo(BORDO, 2)
-            }
         }
     }
 
@@ -494,6 +519,10 @@ object Matrix : Tema {
         private val dettagli = Ui.testo(s, 28, VERDE, Ui.mono, 34)
         private val spesa = Ui.testo(s, 28, ATTENUATO, Ui.mono, 32).apply { visibility = View.GONE }
         private val stato = StatoBenzinai()
+        private val iconaIntorno = Ui.icona(s, R.drawable.ic_mirino, VERDE)
+        private val testoIntorno = Ui.testo(s, 44, VERDE, vt, 40, "Intorno a me", maiuscolo = true)
+        private val cornaIntorno = Ui.riga(s, 12)
+        private val testoRaggio = Ui.testo(s, 44, VERDE, vt, 40, "Raggio ${Benzinai.raggio(s).toInt()} km", maiuscolo = true)
 
         override val view: View = costruisci()
 
@@ -504,6 +533,7 @@ object Matrix : Tema {
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
             radice.addView(rigaOrdini(), lp(TUTTO, 120).apply { topMargin = 20 })
+            radice.addView(rigaFiltri(), lp(TUTTO, 120).apply { topMargin = 20 })
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -537,7 +567,7 @@ object Matrix : Tema {
                 addView(Ui.icona(s, R.drawable.ic_rifornimenti, VERDE), lp(48, 48))
                 addView(testi)
             }
-            riga.addView(Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti() }, lp(ADATTA, TUTTO))
+            riga.addView(Ui.premibile(rifornimenti, ONDA, "Rifornimenti") { azioni.rifornimenti(stato.selezionato) }, lp(ADATTA, TUTTO))
             return riga
         }
 
@@ -551,6 +581,37 @@ object Matrix : Tema {
             }
             evidenziaOrdine(Ordine.CONVIENE)
             return riga
+        }
+
+        private fun rigaFiltri(): View {
+            val riga = Ui.riga(s, 20)
+            riga.addView(Ui.testo(s, 28, ATTENUATO, Ui.mono, 34, "filtri:"))
+            cornaIntorno.apply {
+                gravity = Gravity.CENTER
+                addView(iconaIntorno, lp(44, 44))
+                addView(testoIntorno)
+            }
+            evidenziaIntorno(false)
+            riga.addView(Ui.premibile(cornaIntorno, ONDA, "Intorno a me") { azioni.intornoAMe() }, lp(0, TUTTO, 1.2f))
+            testoRaggio.gravity = Gravity.CENTER
+            testoRaggio.background = Ui.bordo(VERDE, 2)
+            riga.addView(Ui.premibile(testoRaggio, ONDA, "Cambia il raggio") { azioni.raggio() }, lp(0, TUTTO, 1f))
+            val mappa = Ui.riga(s, 12).apply {
+                gravity = Gravity.CENTER
+                background = Ui.bordo(VERDE, 2)
+                addView(Ui.icona(s, R.drawable.ic_mappa, VERDE), lp(44, 44))
+                addView(Ui.testo(s, 44, VERDE, vt, 40, "Mappa", maiuscolo = true))
+            }
+            riga.addView(Ui.premibile(mappa, ONDA, "Apri la mappa") { azioni.mappa() }, lp(0, TUTTO, 0.9f))
+            return riga
+        }
+
+        private fun evidenziaIntorno(acceso: Boolean) {
+            val colore = if (acceso) NERO else VERDE
+            cornaIntorno.background = if (acceso) Ui.pieno(VERDE) else Ui.bordo(VERDE, 2)
+            iconaIntorno.imageTintList = ColorStateList.valueOf(colore)
+            testoIntorno.setTextColor(colore)
+            cornaIntorno.isSelected = acceso
         }
 
         private fun evidenziaOrdine(attivo: Ordine) {
@@ -600,6 +661,9 @@ object Matrix : Tema {
                 is ElencoBenzinai.Errore -> messaggio("~$ benzinai", e.messaggio)
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
+                    evidenziaIntorno(e.intornoAMe)
+                    val raggio = e.raggioKm.toInt()
+                    testoRaggio.text = "Raggio $raggio km"
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("[ ★ PREFERITI ]", "[ ${e.preferiti.size} ]", e.preferiti, true)
@@ -609,7 +673,7 @@ object Matrix : Tema {
                         Ordine.DISTANZA -> "DISTANZA"
                     }
                     if (e.vicini.isNotEmpty()) sezione("[ VICINI ]", "[ ORDINE: $nomeOrdine ]", e.vicini, false)
-                    if (tutti.isEmpty()) messaggio("~$ benzinai", "Nessun distributore entro 15 km.")
+                    if (tutti.isEmpty()) messaggio("~$ benzinai", "Nessun distributore entro $raggio km")
                 }
             }
             aggiornaScheda()
