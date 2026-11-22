@@ -62,7 +62,7 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - [ ] Fase 3 con le tavole: confronto e ritocchi.
 - [x] Prova della catena di aggiornamento sull'emulatore (manifest cambiato).
 - [x] Guida, riferimento, decisioni (volume tolto e perché; luoghi; mappa e tessere OSM).
-- [ ] Rilascio con `./release.sh minor`: v0.5.0.
+- [x] Rilascio con `./release.sh minor`: v0.5.0 (prima versione dei temi, senza tavole).
 - [ ] Prove sul box (Prove manuali).
 
 **Rischi.**
@@ -86,3 +86,4 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - 2026-11-22: niente da fare per il volume, nemmeno con la Diagnostica della 0.4.1 (prove dell'utente). Piano scritto dalle scelte dell'utente (D-1…D-8).
 - 2026-11-22: fase 1 fatta, quattro agenti in parallelo (Rifornimenti; Benzinai e Mappa; Luoghi e meteo; schermate interne e Bluetooth) sopra i mattoni comuni di `Schermata.kt`, poi unione e revisione. Correzioni dopo la revisione: «Aggiungi dove sono» non salva più la posizione di ripiego (`Posizione.aggiorna(ripiego = false)`), il comune più vicino è passato in `DatiMimit`. Provate sull'emulatore `box` tutte le schermate interne. Rifornimenti con sette pieni di prova, uno parziale: tratte, grafico, mesi. Mappa su Milano: 36 tessere scaricate, trascinamento, scheda e «Rifornimenti» con 50 € → 28,77 l a 1,738 €/l. Dopo la prima prova la mappa è stata scurita (tessere chiare in mezzo all'interfaccia scura) e le etichette sovrapposte diventano puntini. Meteo con il GPS: salvati «Milano» e domani. Il prezzo precompilato dal pannello Benzinai passa alla fase 3 (serve il contratto dei temi). APK release 537 KB.
 - 2026-11-22: l'utente chiede di non aspettare le tavole e di pubblicare: prima versione della fase 3 con la disposizione decisa tema per tema, un agente per tema, poi confronto a vista sull'emulatore `box` (Home con meteo completo e Benzinai, otto temi). Corretti dopo le foto: pioggia tagliata in Matrix, ora tagliata in alto in Art Déco (riga alta da 262 a 240 px: ora da 160 a 140 px), testo di «Intorno a me» non centrato in Synthwave; «Intorno a me» filtra subito invece di aspettare il GPS (fino a 30 s). Provati «Intorno a me», il giro del raggio, «Tema» (da Synthwave a Matrix). Misure in release (Matrix): avvio a freddo 122–135 ms, PSS 25,6 MB, 0 frame in ritardo, APK 562 KB. Catena: questa versione con `versionCode` 7, installata come installatrice di sé stessa, ha ricevuto da sola la 0.4.1 pubblicata senza conferma.
+- 2026-11-22: pubblicata la v0.5.0 (codice 9, 562 KB); l'emulatore `box` l'ha ricevuta da Impostazioni → Controlla aggiornamenti. Restano le tavole da rivedere con l'utente e le prove sul box.
