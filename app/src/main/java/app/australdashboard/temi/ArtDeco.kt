@@ -327,7 +327,7 @@ object ArtDeco : Tema {
         private val data = maiuscoletto(Ui.testo(s, 30, SABBIA, serif, 36, maiuscolo = true), 30, 5)
         private val iconaMeteo = Ui.icona(s, R.drawable.ic_nuvoloso, ORO)
         private val condizione = Ui.testo(s, 32, AVORIO, corsivo, 38, "In attesa", righe = 2).apply { gravity = Gravity.CENTER }
-        private val gradi = Ui.adatta(Ui.testo(s, 124, AVORIO, limelight, 124, "--°"), 80, 124).apply { gravity = Gravity.CENTER }
+        private val gradi = Ui.adatta(Ui.testo(s, 100, AVORIO, limelight, 100, "--°"), 64, 100).apply { gravity = Gravity.CENTER }
         private val massima = Ui.testo(s, 32, AVORIO, serif, 40, "max --°")
         private val minima = Ui.testo(s, 32, SABBIA, serif, 40, "min --°")
         private val pioggia = Ui.testo(s, 30, ORO, corsivo, 36)
@@ -350,18 +350,18 @@ object ArtDeco : Tema {
         private val wifi = Targa(s, "Wi-Fi", R.drawable.ic_wifi, R.drawable.ic_wifi_spento) { azioni.wifi() }
         private val bluetooth = Targa(s, "Bluetooth", R.drawable.ic_bluetooth, R.drawable.ic_bluetooth_spento) { azioni.bluetooth() }
         private val puntina = Ui.icona(s, R.drawable.ic_puntina, ORO).apply { visibility = View.GONE }
-        private val luogo = Ui.adatta(Ui.testo(s, 28, SABBIA, serif, 34), 18, 28)
-        private val rigaLuogo = Ui.riga(s, 8, Gravity.CENTER_VERTICAL).apply {
+        private val luogo = maiuscoletto(Ui.testo(s, 28, SABBIA, serif, 34, maiuscolo = true), 28, 4).apply { maxWidth = 600 }
+        private val rigaLuogo = Ui.riga(s, 12, Gravity.CENTER).apply {
             visibility = View.GONE
             addView(puntina, lp(28, 28))
-            addView(luogo, lp(320, 36))
+            addView(luogo)
         }
         private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, ORO)
-        private val testoDomani = Ui.testo(s, 28, AVORIO, serif, 34)
+        private val testoDomani = Ui.testo(s, 30, AVORIO, serif, 36)
         private val rigaDomani = Ui.riga(s, 10, Gravity.CENTER_VERTICAL).apply {
             visibility = View.GONE
-            addView(Ui.testo(s, 28, SABBIA, corsivo, 34, "Domani"))
-            addView(iconaDomani, lp(34, 34))
+            addView(Ui.testo(s, 30, SABBIA, corsivo, 36, "Domani"))
+            addView(iconaDomani, lp(30, 30))
             addView(testoDomani)
         }
         private lateinit var pulsantePlay: View
@@ -387,13 +387,13 @@ object ArtDeco : Tema {
             basso.addView(servizio("IV", R.drawable.ic_ingranaggio, "Launcher", 30, "Impostazioni del launcher") { azioni.impostazioniLauncher() }, lp(220, TUTTO))
             val sistema = Ui.riga(s, 20, Gravity.NO_GRAVITY)
             sistema.addView(wifi.view, lp(220, TUTTO))
-            sistema.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(84, TUTTO))
+            sistema.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(100, TUTTO))
             sistema.addView(comandoTema(), lp(0, TUTTO, 1f))
+            sistema.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(100, TUTTO))
             sistema.addView(bluetooth.view, lp(220, TUTTO))
-            sistema.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(84, TUTTO))
-            radice.addView(alto, lp(TUTTO, 240))
-            radice.addView(centro, lp(TUTTO, 470))
-            radice.addView(basso, lp(TUTTO, 256))
+            radice.addView(alto, lp(TUTTO, 262))
+            radice.addView(centro, lp(TUTTO, 472))
+            radice.addView(basso, lp(TUTTO, 232))
             radice.addView(sistema, lp(TUTTO, 120))
             Ui.senzaRitaglio(radice, alto, centro, basso, sistema)
             return radice
@@ -484,22 +484,20 @@ object ArtDeco : Tema {
                 gravity = Gravity.CENTER
                 addView(sinistra, lp(200, ADATTA))
                 addView(rombo(s, 16))
-                addView(gradi, lp(200, 130))
+                addView(gradi, lp(200, 108))
                 addView(rombo(s, 16))
                 addView(destra, lp(140, ADATTA))
             }
-            val dettagli = Ui.riga(s, 0, Gravity.CENTER_VERTICAL).apply {
-                setPadding(28, 0, 28, 0)
-                addView(rigaLuogo)
-                addView(View(s), lp(0, 0, 1f))
+            val piede = Ui.riga(s, 28, Gravity.CENTER).apply {
+                addView(rigaPioggia)
                 addView(rigaDomani)
             }
             return Ui.colonna(s, 8, Gravity.CENTER).apply {
                 background = Cornice(ORO, FILETTO_MEDIO, 12, true)
-                addView(dettagli, lp(TUTTO, 36))
+                addView(rigaLuogo, lp(ADATTA, 36))
                 addView(riga, lp(ADATTA, ADATTA))
                 addView(asta, lp(360, 18))
-                addView(rigaPioggia, lp(ADATTA, 36))
+                addView(piede, lp(ADATTA, 36))
             }
         }
 
@@ -690,7 +688,7 @@ object ArtDeco : Tema {
         private val rigaIntorno = Ui.riga(s, 12, Gravity.CENTER)
         private val iconaIntorno = Ui.icona(s, R.drawable.ic_mirino, ORO)
         private val testoIntorno = maiuscoletto(Ui.testo(s, 30, AVORIO, serif, 36, "Intorno a me"), 30, 2)
-        private val testoRaggio = maiuscoletto(Ui.testo(s, 30, AVORIO, serif, 36, "Raggio ${Benzinai.raggio(s).toInt()} km"), 30, 2).apply { gravity = Gravity.CENTER }
+        private val testoRaggio = Ui.testo(s, 40, ORO, limelight, 44, "${Benzinai.raggio(s).toInt()} km")
 
         override val view: View = costruisci()
 
@@ -700,8 +698,7 @@ object ArtDeco : Tema {
                 setPadding(24, 24, 24, 24)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
-            radice.addView(rigaOrdini(), lp(TUTTO, 120))
-            radice.addView(rigaFiltri(), lp(TUTTO, 100))
+            radice.addView(rigaFiltri(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -734,6 +731,13 @@ object ArtDeco : Tema {
                     lp(ADATTA, ADATTA),
                 )
             }
+            val mappa = Ui.riga(s, 14, Gravity.CENTER).apply {
+                background = Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
+                setPadding(28, 0, 28, 0)
+                addView(Ui.icona(s, R.drawable.ic_mappa, ORO), lp(44, 44))
+                addView(Ui.testo(s, 34, AVORIO, serif, 40, "Mappa"))
+            }
+            riga.addView(Ui.premibile(mappa, ONDA, "Mappa dei distributori") { azioni.mappa() }, lp(ADATTA, 120))
             riga.addView(Ui.premibile(targa, ONDA, "Rifornimenti") { azioni.rifornimenti(stato.selezionato) }, lp(ADATTA, 120))
             return riga
         }
@@ -741,18 +745,6 @@ object ArtDeco : Tema {
         override fun mostraSpesa(testo: String?) {
             spesa.text = testo.orEmpty()
             spesa.visibility = if (testo == null) View.GONE else View.VISIBLE
-        }
-
-        private fun rigaOrdini(): View {
-            val riga = Ui.riga(s, 20)
-            riga.addView(maiuscoletto(Ui.testo(s, 28, SABBIA, serif, 34, "ORDINA PER"), 28, 5))
-            for ((ordine, nome) in Ui.ORDINI) {
-                val tasto = maiuscoletto(Ui.testo(s, 30, AVORIO, serif, 36, nome), 30, 2).apply { gravity = Gravity.CENTER }
-                ordini[ordine] = tasto
-                riga.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, TUTTO, 1f))
-            }
-            evidenziaOrdine(Ordine.CONVIENE)
-            return riga
         }
 
         private fun rigaFiltri(): View {
@@ -763,16 +755,20 @@ object ArtDeco : Tema {
                 addView(testoIntorno)
             }
             evidenziaIntorno(false)
-            riga.addView(Ui.premibile(rigaIntorno, ONDA, "Intorno a me") { azioni.intornoAMe() }, lp(0, TUTTO, 1f))
-            testoRaggio.background = Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
-            riga.addView(Ui.premibile(testoRaggio, ONDA, "Raggio di ricerca") { azioni.raggio() }, lp(0, TUTTO, 1f))
-            val mappa = Ui.riga(s, 12, Gravity.CENTER).apply {
+            riga.addView(Ui.premibile(rigaIntorno, ONDA, "Intorno a me") { azioni.intornoAMe() }, lp(300, TUTTO))
+            val raggio = Ui.colonna(s, 0, Gravity.CENTER).apply {
                 background = Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
-                setPadding(12, 0, 12, 0)
-                addView(Ui.icona(s, R.drawable.ic_mappa, ORO), lp(40, 40))
-                addView(maiuscoletto(Ui.testo(s, 30, AVORIO, serif, 36, "Mappa"), 30, 2))
+                addView(maiuscoletto(Ui.testo(s, 28, SABBIA, serif, 32, "RAGGIO"), 28, 4))
+                addView(testoRaggio)
             }
-            riga.addView(Ui.premibile(mappa, ONDA, "Mappa dei distributori") { azioni.mappa() }, lp(0, TUTTO, 1f))
+            riga.addView(Ui.premibile(raggio, ONDA, "Raggio di ricerca") { azioni.raggio() }, lp(170, TUTTO))
+            riga.addView(rombo(s, 12), lp(12, 12).apply { leftMargin = 4; rightMargin = 4 })
+            for ((ordine, nome) in Ui.ORDINI) {
+                val tasto = maiuscoletto(Ui.testo(s, 30, AVORIO, serif, 36, nome), 30, 2).apply { gravity = Gravity.CENTER }
+                ordini[ordine] = tasto
+                riga.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, TUTTO, 1f))
+            }
+            evidenziaOrdine(Ordine.CONVIENE)
             return riga
         }
 
@@ -833,11 +829,14 @@ object ArtDeco : Tema {
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     evidenziaIntorno(e.intornoAMe)
-                    testoRaggio.text = "Raggio ${e.raggioKm.toInt()} km"
+                    testoRaggio.text = "${e.raggioKm.toInt()} km"
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
-                    if (e.vicini.isNotEmpty()) sezione("NEI DINTORNI", e.vicini, false)
+                    if (e.vicini.isNotEmpty()) {
+                        val titoloVicini = if (e.intornoAMe) "SOLO INTORNO A ME · ${e.raggioKm.toInt()} KM" else "DINTORNI + COMUNI PREFERITI"
+                        sezione(titoloVicini, e.vicini, false, if (e.intornoAMe) ORO else AVORIO, 36)
+                    }
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro ${e.raggioKm.toInt()} km")
                 }
             }
@@ -853,12 +852,12 @@ object ArtDeco : Tema {
             elencoView.addView(box, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean, colore: Int = AVORIO, px: Int = 40) {
             val blocco = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 0, Gravity.CENTER).apply {
                 addView(View(s).apply { setBackgroundColor(FILETTO_MEDIO) }, lp(0, 2, 1f))
                 addView(rombo(s, 16), lp(16, 16).apply { leftMargin = 22; rightMargin = 22 })
-                addView(maiuscoletto(Ui.testo(s, 40, AVORIO, serif, 48, titolo), 40, 8))
+                addView(maiuscoletto(Ui.testo(s, px, colore, serif, 48, titolo), px, px / 5))
                 addView(rombo(s, 16), lp(16, 16).apply { leftMargin = 22; rightMargin = 22 })
                 addView(View(s).apply { setBackgroundColor(FILETTO_MEDIO) }, lp(0, 2, 1f))
             }
