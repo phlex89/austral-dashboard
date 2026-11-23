@@ -50,4 +50,19 @@ class TessereTest {
             1e-9,
         )
     }
+
+    @Test
+    fun conLaRottaAEstIlPuntoAEstVaInAlto() {
+        val (x, y) = Mercatore.ruota(100.0, 0.0, -90.0)
+        assertEquals(0.0, x, 1e-9)
+        assertEquals(-100.0, y, 1e-9)
+    }
+
+    @Test
+    fun laRotazioneSiInverte() {
+        val (x, y) = Mercatore.ruota(30.0, -70.0, 137.0)
+        val (x0, y0) = Mercatore.ruota(x, y, -137.0)
+        assertEquals(30.0, x0, 1e-9)
+        assertEquals(-70.0, y0, 1e-9)
+    }
 }

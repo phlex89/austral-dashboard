@@ -4,11 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.location.Location
+import android.location.LocationListener
 import android.os.Bundle
 import android.view.Gravity
 import android.view.MotionEvent
@@ -31,6 +32,8 @@ class MappaActivity : Schermata() {
     private lateinit var mappa: VistaMappa
     private lateinit var messaggio: TextView
     private lateinit var scheda: LinearLayout
+    private lateinit var bussola: Bussola
+    private val ascoltatore = LocationListener { mappa.nuovaPosizione(it) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,12 +51,17 @@ class MappaActivity : Schermata() {
             visibility = View.GONE
         }
         mappa.alSelezionare = { mostraScheda(it) }
+        bussola = Bussola(this).apply {
+            contentDescription = "Orientamento della mappa"
+            setOnClickListener { mappa.alternaOrientamento() }
+        }
 
         val comandi = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(comando("+") { mappa.zoom(1) })
             addView(comando("−") { mappa.zoom(-1) })
             addView(comando("Centra") { mappa.centra() })
+            addView(bussola, LinearLayout.LayoutParams(dp(88), dp(104)).apply { setMargins(0, dp(6), 0, dp(6)) })
         }
         val area = FrameLayout(this).apply {
             addView(mappa, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
@@ -119,6 +127,16 @@ class MappaActivity : Schermata() {
         scheda.visibility = View.VISIBLE
     }
 
+    override fun onResume() {
+        super.onResume()
+        Posizione.ascolta(this, ascoltatore)
+    }
+
+    override fun onPause() {
+        Posizione.smetti(this, ascoltatore)
+        super.onPause()
+    }
+
     override fun onDestroy() {
         mappa.chiudi()
         super.onDestroy()
@@ -135,6 +153,11 @@ class MappaActivity : Schermata() {
         private var centroX = 0.0
         private var centroY = 0.0
         private var inquadrato = false
+        private var seguire = true
+        private var marcia = context.getSharedPreferences("mappa", Context.MODE_PRIVATE).getBoolean("marcia", false)
+        private var rotta: Float? = null
+        private var ultimaFix: Location? = null
+        val rotazione: Float get() = if (marcia) -(rotta ?: 0f) else 0f
         private var inizioX = 0f
         private var inizioY = 0f
         private var ultimoX = 0f
@@ -145,23 +168,8 @@ class MappaActivity : Schermata() {
         var alSelezionare: (Distributore?) -> Unit = {}
 
         private val pennello = Paint(Paint.ANTI_ALIAS_FLAG)
-        private val pennelloTessere = Paint(Paint.FILTER_BITMAP_FLAG).apply {
-            colorFilter = ColorMatrixColorFilter(
-                ColorMatrix(floatArrayOf(-1f, 0f, 0f, 0f, 255f, 0f, -1f, 0f, 0f, 255f, 0f, 0f, -1f, 0f, 255f, 0f, 0f, 0f, 1f, 0f)).apply {
-                    postConcat(
-                        ColorMatrix(
-                            floatArrayOf(
-                                -0.574f, 1.430f, 0.144f, 0f, 0f,
-                                0.426f, 0.430f, 0.144f, 0f, 0f,
-                                0.426f, 1.430f, -0.856f, 0f, 0f,
-                                0f, 0f, 0f, 1f, 0f,
-                            ),
-                        ),
-                    )
-                    postConcat(ColorMatrix().apply { setScale(0.8f, 0.8f, 0.85f, 1f) })
-                },
-            )
-        }
+        private val pennelloTessere = Paint(Paint.FILTER_BITMAP_FLAG)
+        private val freccia = Path()
         private val testoEtichetta = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = dp(22).toFloat()
             typeface = Typeface.DEFAULT_BOLD
@@ -196,11 +204,37 @@ class MappaActivity : Schermata() {
         }
 
         fun centra() {
+            seguire = true
+            vaiSuUtente()
+            invalidate()
+        }
+
+        fun alternaOrientamento() {
+            marcia = !marcia
+            context.getSharedPreferences("mappa", Context.MODE_PRIVATE).edit().putBoolean("marcia", marcia).apply()
+            bussola.aggiorna(rotazione, marcia)
+            invalidate()
+        }
+
+        fun nuovaPosizione(fix: Location) {
+            val precedente = ultimaFix
+            if (fix.hasBearing() && fix.speed > 1.5f) {
+                rotta = fix.bearing
+            } else if (precedente != null && precedente.distanceTo(fix) > 15f) {
+                rotta = (precedente.bearingTo(fix) + 360f) % 360f
+            }
+            if (precedente == null || precedente.distanceTo(fix) > 15f) ultimaFix = fix
+            utente = Luogo(fix.latitude, fix.longitude)
+            if (seguire) vaiSuUtente()
+            bussola.aggiorna(rotazione, marcia)
+            invalidate()
+        }
+
+        private fun vaiSuUtente() {
             val posizione = utente ?: return
             if (zoom == 0) return
             centroX = Mercatore.pixelX(posizione.lon, zoom)
             centroY = Mercatore.pixelY(posizione.lat, zoom)
-            invalidate()
         }
 
         fun chiudi() = archivio.chiudi()
@@ -210,7 +244,8 @@ class MappaActivity : Schermata() {
             if (inquadrato || width == 0) return
             inquadrato = true
             zoom = Mercatore.zoomPer(raggioKm, posizione.lat, minOf(width, height))
-            centra()
+            vaiSuUtente()
+            bussola.aggiorna(rotazione, marcia)
         }
 
         override fun onSizeChanged(w: Int, h: Int, vecchioW: Int, vecchioH: Int) {
@@ -219,11 +254,13 @@ class MappaActivity : Schermata() {
         }
 
         override fun onDraw(canvas: Canvas) {
-            canvas.drawColor(0xFF15171B.toInt())
+            canvas.drawColor(FONDO_MAPPA)
             if (zoom == 0) return
+            canvas.save()
+            canvas.rotate(rotazione, width / 2f, height / 2f)
             disegnaTessere(canvas)
+            canvas.restore()
             etichette.clear()
-            utente?.let { disegnaUtente(canvas, it) }
             val puntini = ArrayList<Distributore>()
             distributori.sortedWith(compareBy<Distributore> { it.id != selezionato?.id }.thenBy { it.prezzo }).forEach { d ->
                 val rettangolo = rettangoloDi(d) ?: return@forEach
@@ -231,6 +268,7 @@ class MappaActivity : Schermata() {
             }
             puntini.forEach { disegnaPuntino(canvas, it) }
             etichette.forEach { (rettangolo, d) -> disegnaEtichetta(canvas, rettangolo, d) }
+            utente?.let { disegnaUtente(canvas, it) }
             val testo = "© OpenStreetMap"
             val larghezza = testoAttribuzione.measureText(testo)
             pennello.color = 0xAA000000.toInt()
@@ -242,11 +280,12 @@ class MappaActivity : Schermata() {
         private fun disegnaTessere(canvas: Canvas) {
             val sinistra = centroX - width / 2.0
             val alto = centroY - height / 2.0
+            val margine = if (rotazione == 0f) 0.0 else Math.hypot(width.toDouble(), height.toDouble()) / 2
             val massimo = (1 shl zoom) - 1
-            val primoX = Math.floor(sinistra / Mercatore.LATO).toInt()
-            val ultimoX = Math.floor((sinistra + width) / Mercatore.LATO).toInt()
-            val primoY = Math.floor(alto / Mercatore.LATO).toInt().coerceAtLeast(0)
-            val ultimoY = Math.floor((alto + height) / Mercatore.LATO).toInt().coerceAtMost(massimo)
+            val primoX = Math.floor((centroX - maxOf(width / 2.0, margine)) / Mercatore.LATO).toInt()
+            val ultimoX = Math.floor((centroX + maxOf(width / 2.0, margine)) / Mercatore.LATO).toInt()
+            val primoY = Math.floor((centroY - maxOf(height / 2.0, margine)) / Mercatore.LATO).toInt().coerceAtLeast(0)
+            val ultimoY = Math.floor((centroY + maxOf(height / 2.0, margine)) / Mercatore.LATO).toInt().coerceAtMost(massimo)
             for (ty in primoY..ultimoY) {
                 for (tx in primoX..ultimoX) {
                     val x = (tx * Mercatore.LATO - sinistra).toFloat()
@@ -255,43 +294,57 @@ class MappaActivity : Schermata() {
                     if (bitmap != null) {
                         canvas.drawBitmap(bitmap, x, y, pennelloTessere)
                     } else {
-                        pennello.style = Paint.Style.FILL
-                        pennello.color = 0xFF1B1D22.toInt()
-                        canvas.drawRect(x, y, x + Mercatore.LATO, y + Mercatore.LATO, pennello)
                         pennello.style = Paint.Style.STROKE
                         pennello.strokeWidth = 2f
-                        pennello.color = 0xFF2A2D34.toInt()
+                        pennello.color = RIGHE_MAPPA
                         canvas.drawRect(x, y, x + Mercatore.LATO, y + Mercatore.LATO, pennello)
                     }
                 }
             }
         }
 
-        private fun schermoX(lon: Double) = (Mercatore.pixelX(lon, zoom) - centroX + width / 2.0).toFloat()
-
-        private fun schermoY(lat: Double) = (Mercatore.pixelY(lat, zoom) - centroY + height / 2.0).toFloat()
+        private fun schermo(luogo: Luogo): Pair<Float, Float> {
+            val (x, y) = Mercatore.ruota(
+                Mercatore.pixelX(luogo.lon, zoom) - centroX,
+                Mercatore.pixelY(luogo.lat, zoom) - centroY,
+                rotazione.toDouble(),
+            )
+            return Pair((x + width / 2.0).toFloat(), (y + height / 2.0).toFloat())
+        }
 
         private fun disegnaUtente(canvas: Canvas, posizione: Luogo) {
-            val x = schermoX(posizione.lon)
-            val y = schermoY(posizione.lat)
+            val (x, y) = schermo(posizione)
+            val direzione = rotta
+            if (direzione != null) {
+                canvas.save()
+                canvas.rotate(direzione + rotazione, x, y)
+                freccia.reset()
+                freccia.moveTo(x, y - dp(30))
+                freccia.lineTo(x - dp(14), y - dp(8))
+                freccia.lineTo(x + dp(14), y - dp(8))
+                freccia.close()
+                pennello.style = Paint.Style.FILL
+                pennello.color = BLU
+                canvas.drawPath(freccia, pennello)
+                canvas.restore()
+            }
             pennello.style = Paint.Style.FILL
             pennello.color = Color.WHITE
             canvas.drawCircle(x, y, dp(14).toFloat(), pennello)
-            pennello.color = 0xFF2A7FFF.toInt()
+            pennello.color = BLU
             canvas.drawCircle(x, y, dp(10).toFloat(), pennello)
         }
 
         private fun rettangoloDi(d: Distributore): RectF? {
-            val x = schermoX(d.luogo.lon)
-            val y = schermoY(d.luogo.lat)
+            val (x, y) = schermo(d.luogo)
             if (x < -dp(100) || x > width + dp(100) || y < -dp(100) || y > height + dp(100)) return null
             val mezza = testoEtichetta.measureText(Benzinai.prezzo(d.prezzo)) / 2 + dp(12)
             return RectF(x - mezza, y - dp(44).toFloat(), x + mezza, y - dp(8).toFloat())
         }
 
         private fun disegnaPuntino(canvas: Canvas, d: Distributore) {
-            val x = schermoX(d.luogo.lon)
-            val y = schermoY(d.luogo.lat) - dp(4)
+            val (x, punta) = schermo(d.luogo)
+            val y = punta - dp(4)
             pennello.style = Paint.Style.FILL
             pennello.color = accento
             canvas.drawCircle(x, y, dp(7).toFloat(), pennello)
@@ -302,8 +355,7 @@ class MappaActivity : Schermata() {
         }
 
         private fun disegnaEtichetta(canvas: Canvas, rettangolo: RectF, d: Distributore) {
-            val x = schermoX(d.luogo.lon)
-            val y = schermoY(d.luogo.lat)
+            val (x, y) = schermo(d.luogo)
             val testo = Benzinai.prezzo(d.prezzo)
             val migliore = d.id == economico?.id
             val scelto = d.id == selezionato?.id
@@ -335,8 +387,10 @@ class MappaActivity : Schermata() {
                         trascinato = true
                     }
                     if (trascinato && zoom != 0) {
-                        centroX -= evento.x - ultimoX
-                        centroY -= evento.y - ultimoY
+                        val (dx, dy) = Mercatore.ruota((evento.x - ultimoX).toDouble(), (evento.y - ultimoY).toDouble(), -rotazione.toDouble())
+                        centroX -= dx
+                        centroY -= dy
+                        seguire = false
                         invalidate()
                     }
                     ultimoX = evento.x
@@ -353,5 +407,63 @@ class MappaActivity : Schermata() {
             alSelezionare(colpita)
             invalidate()
         }
+    }
+
+    private inner class Bussola(context: Context) : View(context) {
+        private var angolo = 0f
+        private var marcia = false
+        private val ago = Path()
+        private val pennello = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val scritta = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = dp(15).toFloat()
+            typeface = Typeface.DEFAULT_BOLD
+            textAlign = Paint.Align.CENTER
+            color = Color.WHITE
+        }
+
+        fun aggiorna(rotazione: Float, inMarcia: Boolean) {
+            angolo = rotazione
+            marcia = inMarcia
+            invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            val cx = width / 2f
+            val raggio = width / 2f - dp(2)
+            val cy = raggio + dp(2)
+            pennello.style = Paint.Style.FILL
+            pennello.color = SCHEDA
+            canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), dp(14).toFloat(), dp(14).toFloat(), pennello)
+            pennello.style = Paint.Style.STROKE
+            pennello.strokeWidth = dp(2).toFloat()
+            pennello.color = accento
+            canvas.drawRoundRect(dp(1).toFloat(), dp(1).toFloat(), width - dp(1).toFloat(), height - dp(1).toFloat(), dp(14).toFloat(), dp(14).toFloat(), pennello)
+            canvas.save()
+            canvas.rotate(angolo, cx, cy)
+            pennello.style = Paint.Style.FILL
+            ago.reset()
+            ago.moveTo(cx, cy - raggio * 0.62f)
+            ago.lineTo(cx - dp(10), cy)
+            ago.lineTo(cx + dp(10), cy)
+            ago.close()
+            pennello.color = ROSSO
+            canvas.drawPath(ago, pennello)
+            ago.reset()
+            ago.moveTo(cx, cy + raggio * 0.62f)
+            ago.lineTo(cx - dp(10), cy)
+            ago.lineTo(cx + dp(10), cy)
+            ago.close()
+            pennello.color = SECONDARIO
+            canvas.drawPath(ago, pennello)
+            canvas.restore()
+            canvas.drawText(if (marcia) "Marcia" else "Nord", cx, height - dp(10).toFloat(), scritta)
+        }
+    }
+
+    private companion object {
+        const val FONDO_MAPPA = 0xFFF2EFE9.toInt()
+        const val RIGHE_MAPPA = 0xFFDDD8CF.toInt()
+        const val BLU = 0xFF2A7FFF.toInt()
+        const val ROSSO = 0xFFE5484D.toInt()
     }
 }

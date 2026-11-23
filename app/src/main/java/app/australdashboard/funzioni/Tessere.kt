@@ -13,6 +13,7 @@ import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.math.sinh
 import kotlin.math.tan
 
@@ -49,6 +50,11 @@ object Mercatore {
         }
         return ZOOM_MIN
     }
+
+    fun ruota(dx: Double, dy: Double, gradi: Double): Pair<Double, Double> {
+        val a = Math.toRadians(gradi)
+        return Pair(dx * cos(a) - dy * sin(a), dx * sin(a) + dy * cos(a))
+    }
 }
 
 class ArchivioTessere(context: Context, private val nuova: () -> Unit) {
@@ -58,7 +64,8 @@ class ArchivioTessere(context: Context, private val nuova: () -> Unit) {
     }.getOrNull().orEmpty()
     private val esecutore = Executors.newFixedThreadPool(2)
     private val inCorso = HashSet<String>()
-    private val memoria = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 16).toInt()) {
+    private val opzioni = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 }
+    private val memoria = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 8).toInt()) {
         override fun sizeOf(chiave: String, valore: Bitmap): Int = valore.byteCount
     }
 
@@ -84,7 +91,7 @@ class ArchivioTessere(context: Context, private val nuova: () -> Unit) {
             val file = File(cartella, "$chiave.png")
             val fresco = file.exists() && System.currentTimeMillis() - file.lastModified() < SETTE_GIORNI_MS
             if (!fresco) scarica(zoom, x, y, file)
-            val bitmap = file.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) }
+            val bitmap = file.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path, opzioni) }
             if (bitmap != null) {
                 memoria.put(chiave, bitmap)
                 nuova()

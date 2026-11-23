@@ -4,7 +4,9 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Looper
 
 object Posizione {
     private const val PREFERENZE = "posizione"
@@ -52,6 +54,25 @@ object Posizione {
         } catch (e: IllegalArgumentException) {
             altrimenti()
         }
+    }
+
+    fun ascolta(context: Context, ascoltatore: LocationListener): Boolean {
+        if (!permessoConcesso(context)) return false
+        val gestore = context.getSystemService(LocationManager::class.java)
+        val provider = listOf(LocationManager.GPS_PROVIDER, LocationManager.FUSED_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            .firstOrNull { gestore.isProviderEnabled(it) } ?: return false
+        return try {
+            gestore.requestLocationUpdates(provider, 1000L, 3f, ascoltatore, Looper.getMainLooper())
+            true
+        } catch (e: SecurityException) {
+            false
+        } catch (e: IllegalArgumentException) {
+            false
+        }
+    }
+
+    fun smetti(context: Context, ascoltatore: LocationListener) {
+        context.getSystemService(LocationManager::class.java).removeUpdates(ascoltatore)
     }
 
     fun cittaDiRiserva(context: Context): Pair<String, Luogo>? = Luoghi.riserva(context)
