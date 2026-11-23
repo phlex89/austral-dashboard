@@ -191,17 +191,13 @@ object Cyberpunk : Tema {
             visibility = View.GONE
             contentDescription = "Posizione attuale"
         }
-        private val luogo = Ui.adatta(
-            testo(s, 32, TESTO, true, 36, maiuscolo = true, spaziatura = 1).apply { gravity = Gravity.CENTER_VERTICAL },
-            18,
-            32,
-        )
-        private val rigaLuogo = Ui.riga(s, 10).apply { visibility = View.GONE }
+        private val luogo = testo(s, 28, TESTO, false, 32, maiuscolo = true, spaziatura = 1).apply { gravity = Gravity.CENTER_VERTICAL }
+        private val rigaLuogo = Ui.riga(s, 10, Gravity.END or Gravity.CENTER_VERTICAL).apply { visibility = View.GONE }
         private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, GIALLO)
         private val estremiDomani = Ui.adatta(
-            testo(s, 30, TESTO, true, 34, spaziatura = 1).apply { gravity = Gravity.CENTER_VERTICAL },
+            testo(s, 28, TESTO, false, 32, spaziatura = 1).apply { gravity = Gravity.CENTER_VERTICAL },
             18,
-            30,
+            28,
         )
         private val rigaDomani = Ui.riga(s, 12).apply { visibility = View.GONE }
 
@@ -276,10 +272,12 @@ object Cyberpunk : Tema {
 
         private fun boxMeteo(): View {
             val p = Ui.colonna(s)
-            p.addView(codice(s, "// 02 · METEO"))
-            rigaLuogo.addView(pinta, lp(30, 30))
-            rigaLuogo.addView(luogo, lp(0, TUTTO, 1f))
-            p.addView(rigaLuogo, lp(TUTTO, 38).apply { topMargin = 4 })
+            val intestazione = Ui.riga(s, 16)
+            intestazione.addView(codice(s, "// 02"), lp(ADATTA, ADATTA))
+            rigaLuogo.addView(pinta, lp(26, 26))
+            rigaLuogo.addView(luogo, lp(ADATTA, TUTTO))
+            intestazione.addView(rigaLuogo, lp(0, TUTTO, 1f))
+            p.addView(intestazione, lp(TUTTO, 38))
             p.addView(View(s), lp(TUTTO, 0, 1f))
             val riga = Ui.riga(s, 24)
             riga.addView(gradi, lp(ADATTA, ADATTA))
@@ -289,13 +287,13 @@ object Cyberpunk : Tema {
             rigaCielo.addView(cielo, lp(0, 46, 1f))
             colonna.addView(rigaCielo, lp(TUTTO, 48))
             colonna.addView(estremi, lp(TUTTO, 40))
-            riga.addView(colonna, lp(0, ADATTA, 1f))
-            p.addView(riga, lp(TUTTO, 112))
-            p.addView(asta, lp(TUTTO, 14).apply { topMargin = 8 })
-            rigaDomani.addView(testo(s, 28, SECONDARIO, true, 32, "Domani", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
-            rigaDomani.addView(iconaDomani, lp(32, 32))
+            rigaDomani.addView(testo(s, 28, SECONDARIO, false, 32, "Domani", maiuscolo = true), lp(ADATTA, ADATTA))
+            rigaDomani.addView(iconaDomani, lp(28, 28))
             rigaDomani.addView(estremiDomani, lp(0, TUTTO, 1f))
-            p.addView(rigaDomani, lp(TUTTO, 36).apply { topMargin = 8 })
+            colonna.addView(rigaDomani, lp(TUTTO, 36))
+            riga.addView(colonna, lp(0, ADATTA, 1f))
+            p.addView(riga, lp(TUTTO, 148))
+            p.addView(asta, lp(TUTTO, 14).apply { topMargin = 8 })
             p.addView(chipPioggia, lp(ADATTA, 34).apply { topMargin = 8 })
             taglia(p, PANNELLO, 28, 0, CONTORNO)
             p.setPadding(30, 14, 30, 14)
@@ -304,34 +302,24 @@ object Cyberpunk : Tema {
 
         private fun sistema(): View {
             val riga = Ui.riga(s, 20, Gravity.NO_GRAVITY)
-            riga.addView(
-                coppia(tastoSistema(wifi, iconaWifi, scrittaWifi, "Wi-Fi") { azioni.wifi() }, "Wi-Fi") { azioni.wifiDettaglio() },
-                lp(228, TUTTO),
-            )
-            riga.addView(
-                coppia(tastoSistema(bluetooth, iconaBluetooth, scrittaBluetooth, "Bluetooth") { azioni.bluetooth() }, "Bluetooth") {
-                    azioni.bluetoothDettaglio()
-                },
-                lp(228, TUTTO),
-            )
-            riga.addView(tastoTema(), lp(204, TUTTO))
+            riga.addView(tastoSistema(wifi, iconaWifi, scrittaWifi, "Wi-Fi") { azioni.wifi() }, lp(150, TUTTO))
+            riga.addView(dettaglio("Wi-Fi") { azioni.wifiDettaglio() }, lp(90, TUTTO))
+            riga.addView(tastoSistema(bluetooth, iconaBluetooth, scrittaBluetooth, "Bluetooth") { azioni.bluetooth() }, lp(150, TUTTO))
+            riga.addView(dettaglio("Bluetooth") { azioni.bluetoothDettaglio() }, lp(90, TUTTO))
+            riga.addView(tastoTema(), lp(140, TUTTO))
             mostraSistema(StatoSistema(StatoWifi.SPENTO, false))
             return riga
         }
 
-        private fun coppia(comando: View, nome: String, dettaglio: () -> Unit): View {
-            val c = Ui.riga(s, 8, Gravity.NO_GRAVITY)
-            c.addView(comando, lp(140, TUTTO))
-            val apri = testo(s, 64, TESTO, true, 64, "›").apply { gravity = Gravity.CENTER }
+        private fun dettaglio(nome: String, azione: () -> Unit): View {
+            val apri = testo(s, 48, GIALLO, true, 48, "›").apply { gravity = Gravity.CENTER }
             taglia(apri, TASTO, 18, contorno = CONTORNO)
-            Ui.premibile(apri, ONDA, "Dettagli $nome") { dettaglio() }
-            c.addView(apri, lp(80, TUTTO))
-            return c
+            return Ui.premibile(apri, ONDA, "Dettagli $nome", azione)
         }
 
         private fun tastoTema(): View {
             val t = Ui.colonna(s, 4, Gravity.CENTER)
-            t.addView(Ui.icona(s, R.drawable.ic_tavolozza, GIALLO), lp(48, 48))
+            t.addView(Ui.icona(s, R.drawable.ic_tavolozza, GIALLO), lp(44, 44))
             t.addView(testo(s, 28, TESTO, true, 30, "TEMA"), lp(ADATTA, ADATTA))
             taglia(t, TASTO, 18, contorno = CONTORNO)
             return Ui.premibile(t, ONDA, "Tema") { azioni.temaSuccessivo() }
@@ -607,7 +595,7 @@ object Cyberpunk : Tema {
         private val stato = StatoBenzinai()
         private val iconaIntorno = Ui.icona(s, R.drawable.ic_mirino, GIALLO)
         private val scrittaIntorno = testo(s, 32, TESTO, true, 36, "Intorno a me", maiuscolo = true, spaziatura = 2)
-        private val scrittaRaggio = testo(s, 32, TESTO, true, 36, maiuscolo = true, spaziatura = 2)
+        private val scrittaRaggio = testo(s, 40, TESTO, true, 44, maiuscolo = true).apply { gravity = Gravity.CENTER }
         private lateinit var intorno: View
         private lateinit var raggio: View
 
@@ -619,8 +607,7 @@ object Cyberpunk : Tema {
                 setPadding(24, 24, 24, 24)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
-            radice.addView(filtri(), lp(TUTTO, 104))
-            radice.addView(ordinamenti(), lp(TUTTO, 120))
+            radice.addView(comandi(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -641,6 +628,14 @@ object Cyberpunk : Tema {
             titoli.addView(codice(s, "// CARBURANTE · SELF").apply { translationY = 6f })
             titoli.addView(testo(s, 80, TESTO, true, 74, "Benzinai", maiuscolo = true, spaziatura = 1).apply { translationY = -11f })
             riga.addView(titoli, lp(0, ADATTA, 1f))
+            val mappa = Ui.riga(s, 14, Gravity.CENTER).apply {
+                addView(Ui.icona(s, R.drawable.ic_mappa, GIALLO), lp(44, 44))
+                addView(testo(s, 34, TESTO, true, 38, "Mappa", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
+                setPadding(26, 0, 26, 0)
+                taglia(this, PANNELLO, 18, contorno = CONTORNO)
+                Ui.premibile(this, ONDA, "Mappa dei distributori") { azioni.mappa() }
+            }
+            riga.addView(mappa, lp(ADATTA, TUTTO))
             val rifornimenti = Ui.riga(s, 14)
             rifornimenti.addView(Ui.icona(s, R.drawable.ic_rifornimenti, GIALLO), lp(44, 44))
             val voce = Ui.colonna(s)
@@ -654,26 +649,28 @@ object Cyberpunk : Tema {
             return riga
         }
 
-        private fun filtri(): View {
+        private fun comandi(): View {
             val riga = Ui.riga(s, 20)
             intorno = Ui.riga(s, 14, Gravity.CENTER).apply {
                 addView(iconaIntorno, lp(40, 40))
                 addView(scrittaIntorno, lp(ADATTA, ADATTA))
                 Ui.premibile(this, ONDA, "Intorno a me") { azioni.intornoAMe() }
             }
-            riga.addView(intorno, lp(0, TUTTO, 1.2f))
-            raggio = Ui.riga(s, 14, Gravity.CENTER).apply {
+            riga.addView(intorno, lp(310, TUTTO))
+            raggio = Ui.colonna(s, 0, Gravity.CENTER).apply {
+                addView(testo(s, 28, SECONDARIO, true, 32, "Raggio", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
                 addView(scrittaRaggio, lp(ADATTA, ADATTA))
                 Ui.premibile(this, ONDA, null) { azioni.raggio() }
             }
-            riga.addView(raggio, lp(0, TUTTO, 1f))
-            val mappa = Ui.riga(s, 14, Gravity.CENTER).apply {
-                addView(Ui.icona(s, R.drawable.ic_mappa, GIALLO), lp(40, 40))
-                addView(testo(s, 32, TESTO, true, 36, "Mappa", maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
-                taglia(this, PANNELLO, 18, contorno = CONTORNO)
-                Ui.premibile(this, ONDA, "Mappa dei distributori") { azioni.mappa() }
+            riga.addView(raggio, lp(160, TUTTO))
+            riga.addView(View(s).apply { setBackgroundColor(CONTORNO) }, lp(2, 70))
+            for ((ordine, nome) in Ui.ORDINI) {
+                val t = testo(s, 32, TESTO, true, 36, nome, maiuscolo = true, spaziatura = 2).apply { gravity = Gravity.CENTER }
+                ordini[ordine] = t
+                Ui.premibile(t, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }
+                riga.addView(t, lp(0, TUTTO, 1f))
             }
-            riga.addView(mappa, lp(0, TUTTO, 0.8f))
+            evidenziaOrdine(Ordine.CONVIENE)
             mostraFiltri(false, Benzinai.raggio(s))
             return riga
         }
@@ -683,23 +680,9 @@ object Cyberpunk : Tema {
             scrittaIntorno.setTextColor(if (acceso) SFONDO else TESTO)
             iconaIntorno.imageTintList = ColorStateList.valueOf(if (acceso) SFONDO else GIALLO)
             intorno.contentDescription = if (acceso) "Intorno a me, attivo" else "Intorno a me, spento"
-            val testoRaggio = "Raggio ${km.toInt()} km"
-            scrittaRaggio.text = testoRaggio
+            scrittaRaggio.text = "${km.toInt()} km"
             taglia(raggio, PANNELLO, 18, contorno = CONTORNO)
-            raggio.contentDescription = testoRaggio
-        }
-
-        private fun ordinamenti(): View {
-            val riga = Ui.riga(s, 20)
-            riga.addView(codice(s, "// ORDINA PER"), lp(ADATTA, ADATTA))
-            for ((ordine, nome) in Ui.ORDINI) {
-                val t = testo(s, 32, TESTO, true, 36, nome, maiuscolo = true, spaziatura = 2).apply { gravity = Gravity.CENTER }
-                ordini[ordine] = t
-                Ui.premibile(t, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }
-                riga.addView(t, lp(0, TUTTO, 1f))
-            }
-            evidenziaOrdine(Ordine.CONVIENE)
-            return riga
+            raggio.contentDescription = "Raggio ${km.toInt()} km"
         }
 
         override fun mostraSpesa(testo: String?) {
@@ -761,12 +744,11 @@ object Cyberpunk : Tema {
                     if (e.preferiti.isNotEmpty()) {
                         sezione("★ ${e.preferiti.size.toString().padStart(2, '0')}", "Preferiti", e.preferiti, true)
                     }
-                    val nomeOrdine = when (e.ordine) {
-                        Ordine.CONVIENE -> "CONVIENE"
-                        Ordine.PREZZO -> "PREZZO"
-                        Ordine.DISTANZA -> "DISTANZA"
+                    if (e.vicini.isNotEmpty()) {
+                        val km = e.raggioKm.toInt()
+                        if (e.intornoAMe) sezione("SOLO INTORNO A ME · $km KM", "Vicini", e.vicini, false)
+                        else sezione(null, "Vicini", e.vicini, false, "// + COMUNI PREFERITI · $km KM")
                     }
-                    if (e.vicini.isNotEmpty()) sezione("ORDINE: $nomeOrdine", "Vicini", e.vicini, false)
                     if (tutti.isEmpty()) messaggio("// BENZINAI", "Nessun distributore entro ${e.raggioKm.toInt()} km.")
                 }
             }
@@ -782,12 +764,13 @@ object Cyberpunk : Tema {
             elencoView.addView(p, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(chip: String, titolo: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(chip: String?, titolo: String, distributori: List<Distributore>, luogo: Boolean, coda: String? = null) {
             val g = Ui.colonna(s, 12)
             val intestazione = Ui.riga(s, 16)
-            intestazione.addView(etichetta(s, chip), lp(ADATTA, 42))
+            if (chip != null) intestazione.addView(etichetta(s, chip), lp(ADATTA, 42))
             intestazione.addView(testo(s, 42, TESTO, true, 48, titolo, maiuscolo = true, spaziatura = 2), lp(ADATTA, ADATTA))
             intestazione.addView(View(s).apply { setBackgroundColor(CONTORNO) }, lp(0, 2, 1f))
+            if (coda != null) intestazione.addView(codice(s, coda), lp(ADATTA, ADATTA))
             g.addView(intestazione, lp(TUTTO, 48))
             val righe = Ui.colonna(s, 20)
             distributori.forEachIndexed { i, d -> righe.addView(riga(d, luogo, i + 1), lp(TUTTO, 120)) }
