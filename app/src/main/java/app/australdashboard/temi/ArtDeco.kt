@@ -758,8 +758,8 @@ object ArtDeco : Tema {
             riga.addView(Ui.premibile(rigaIntorno, ONDA, "Intorno a me") { azioni.intornoAMe() }, lp(300, TUTTO))
             val raggio = Ui.colonna(s, 0, Gravity.CENTER).apply {
                 background = Cornice(FILETTO_ESTERNO, FILETTO_INTERNO, 8, false)
-                addView(maiuscoletto(Ui.testo(s, 28, SABBIA, serif, 32, "RAGGIO"), 28, 4))
-                addView(testoRaggio)
+                addView(maiuscoletto(Ui.testo(s, 28, SABBIA, serif, 32, "RAGGIO"), 28, 4).apply { gravity = Gravity.CENTER })
+                addView(testoRaggio.apply { gravity = Gravity.CENTER })
             }
             riga.addView(Ui.premibile(raggio, ONDA, "Raggio di ricerca") { azioni.raggio() }, lp(170, TUTTO))
             riga.addView(rombo(s, 12), lp(12, 12).apply { leftMargin = 4; rightMargin = 4 })
