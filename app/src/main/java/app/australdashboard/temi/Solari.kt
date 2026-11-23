@@ -252,13 +252,13 @@ object Solari : Tema {
         private val artista = piastra(s, "", 28, SECONDARIO, margine = 14, maiuscolo = true).apply { maxWidth = 420 }
         private val play = tasto(s, R.drawable.ic_pausa, 60, "Pausa", ambra = true) { azioni.playPausa() }
         private val wifi = chiaveSistema(s, "WI-FI", "Wi-Fi") { azioni.wifi() }
-        private val bluetooth = chiaveSistema(s, "BT", "Bluetooth") { azioni.bluetooth() }
+        private val bluetooth = chiaveSistema(s, "BLUETOOTH", "Bluetooth") { azioni.bluetooth() }
         private val puntina = Ui.icona(s, R.drawable.ic_puntina, AMBRA).apply { visibility = View.GONE }
         private val luogo = Ui.adatta(piastra(s, "", 28, margine = 14, maiuscolo = true), 18, 28)
         private val coda = Ui.riga(s, 8).apply { visibility = View.GONE }
         private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, AMBRA)
         private val temperatureDomani = piastra(s, "", 28, margine = 14)
-        private val domani = Ui.riga(s, 8).apply { visibility = View.GONE }
+        private val domani = Ui.colonna(s, 8).apply { visibility = View.GONE }
 
         override val view: View = costruisci()
 
@@ -317,16 +317,16 @@ object Solari : Tema {
             lato.addView(iconaMeteo, lp(56, 56))
             lato.addView(cielo, lp(ADATTA, 56))
             riga.addView(lato, lp(0, ADATTA, 1f))
+            domani.addView(etichetta(s, "DOMANI"), lp(ADATTA, ADATTA))
+            domani.addView(iconaDomani, lp(40, 40))
+            domani.addView(temperatureDomani, lp(ADATTA, 48))
+            riga.addView(domani, lp(ADATTA, ADATTA))
             colonna.addView(riga, lp(TUTTO, ADATTA))
             estremi.addView(massima, lp(ADATTA, 56))
             estremi.addView(minima, lp(ADATTA, 56))
             estremi.addView(pioggia, lp(ADATTA, 56))
             estremi.visibility = View.INVISIBLE
             colonna.addView(estremi, lp(ADATTA, ADATTA))
-            domani.addView(piastra(s, "DOMANI", 28, SECONDARIO, margine = 14, maiuscolo = true), lp(ADATTA, 44))
-            domani.addView(iconaDomani, lp(36, 36))
-            domani.addView(temperatureDomani, lp(ADATTA, 44))
-            colonna.addView(domani, lp(ADATTA, ADATTA))
             return colonna
         }
 
@@ -460,16 +460,16 @@ object Solari : Tema {
 
         private fun rigaSistema(): View {
             val riga = Ui.riga(s, 20)
-            riga.addView(wifi.vista, lp(0, 120, 1f))
-            riga.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(90, 120))
-            riga.addView(bluetooth.vista, lp(0, 120, 1f))
-            riga.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(90, 120))
+            riga.addView(wifi.vista, lp(260, 120))
+            riga.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(100, 120))
+            riga.addView(bluetooth.vista, lp(260, 120))
+            riga.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(100, 120))
             riga.addView(comandoTema(), lp(0, 120, 1f))
             return riga
         }
 
         private fun dettaglio(descrizione: String, azione: () -> Unit): View {
-            val segno = Ui.testo(s, 64, AMBRA, grassetto, 64, "›").apply {
+            val segno = Ui.testo(s, 48, AMBRA, grassetto, 48, "›").apply {
                 gravity = Gravity.CENTER
                 background = paletta(6, 2)
             }
@@ -579,8 +579,8 @@ object Solari : Tema {
         private val quandoScheda = piastra(s, "", 28, SECONDARIO, margine = 14, maiuscolo = true).apply { maxWidth = 220 }
         private val stato = StatoBenzinai()
         private val intornoIcona = Ui.icona(s, R.drawable.ic_mirino, AMBRA)
-        private val intornoTesto = Ui.testo(s, 30, CARATTERI, grassetto, 34, "INTORNO A ME").apply { letterSpacing = 1 / 30f }
-        private val raggioTesto = Ui.testo(s, 30, CARATTERI, grassetto, 34, raggioEtichetta(Benzinai.raggio(s))).apply { letterSpacing = 1 / 30f }
+        private val intornoTesto = Ui.testo(s, 32, CARATTERI, grassetto, 36, "INTORNO A ME").apply { letterSpacing = 1 / 32f }
+        private val raggioTesto = Ui.testo(s, 32, CARATTERI, grassetto, 60, raggioEtichetta(Benzinai.raggio(s))).apply { gravity = Gravity.CENTER }
         private lateinit var intornoVista: View
 
         override val view: View = costruisci()
@@ -591,8 +591,7 @@ object Solari : Tema {
                 setPadding(28, 28, 28, 28)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
-            radice.addView(rigaOrdini(), lp(TUTTO, 120))
-            radice.addView(rigaFiltri(), lp(TUTTO, 104))
+            radice.addView(rigaComandi(), lp(TUTTO, 120))
             radice.addView(colonne(), lp(TUTTO, 34))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
@@ -608,6 +607,10 @@ object Solari : Tema {
             val riga = Ui.riga(s, 24)
             riga.addView(tasto(s, R.drawable.ic_indietro, 52, "Indietro") { azioni.indietro() }.vista, lp(120, 120))
             riga.addView(cifre(s, "BENZINAI", 46, 72, 52, 6), lp(0, ADATTA, 1f))
+            riga.addView(
+                pulsante(Ui.icona(s, R.drawable.ic_mappa, AMBRA), Ui.testo(s, 32, CARATTERI, grassetto, 36, "MAPPA").apply { letterSpacing = 1 / 32f }, "Mappa dei distributori") { azioni.mappa() },
+                lp(ADATTA, 120),
+            )
             val testi = Ui.colonna(s, 14)
             testi.addView(Ui.testo(s, 32, CARATTERI, grassetto, 32, "RIFORNIMENTI").apply { letterSpacing = 1 / 32f }, lp(ADATTA, ADATTA))
             testi.addView(spesa, lp(ADATTA, ADATTA))
@@ -621,22 +624,7 @@ object Solari : Tema {
             return riga
         }
 
-        private fun rigaOrdini(): View {
-            val riga = Ui.riga(s, 20)
-            riga.addView(etichetta(s, "ORDINA PER"))
-            for ((ordine, nome) in Ui.ORDINI) {
-                val tasto = Ui.testo(s, 32, CARATTERI, grassetto, 36, nome, maiuscolo = true).apply {
-                    gravity = Gravity.CENTER
-                    letterSpacing = 1 / 32f
-                }
-                ordini[ordine] = tasto
-                riga.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, 120, 1f))
-            }
-            evidenziaOrdine(Ordine.CONVIENE)
-            return riga
-        }
-
-        private fun raggioEtichetta(km: Double): String = "RAGGIO ${km.toInt()} KM"
+        private fun raggioEtichetta(km: Double): String = "${km.toInt()} KM"
 
         private fun pulsante(icona: View?, testo: View, descrizione: String, azione: () -> Unit): View {
             val corpo = Ui.riga(s, 12, Gravity.CENTER).apply {
@@ -648,17 +636,39 @@ object Solari : Tema {
             return Ui.premibile(corpo, ONDA, descrizione, azione)
         }
 
-        private fun rigaFiltri(): View {
+        private fun rigaComandi(): View {
             val riga = Ui.riga(s, 20)
             intornoVista = pulsante(intornoIcona, intornoTesto, "Intorno a me") { azioni.intornoAMe() }
-            riga.addView(intornoVista, lp(0, TUTTO, 1f))
-            riga.addView(pulsante(null, raggioTesto, "Raggio di ricerca") { azioni.raggio() }, lp(0, TUTTO, 1f))
-            riga.addView(
-                pulsante(Ui.icona(s, R.drawable.ic_mappa, AMBRA), Ui.testo(s, 30, CARATTERI, grassetto, 34, "MAPPA").apply { letterSpacing = 1 / 30f }, "Mappa dei distributori") { azioni.mappa() },
-                lp(0, TUTTO, 1f),
-            )
+            riga.addView(intornoVista, lp(310, 120))
+            val raggio = Ui.colonna(s).apply { background = paletta(6, 2) }
+            raggio.addView(Ui.testo(s, 28, AMBRA, grassetto, 60, "RAGGIO").apply {
+                gravity = Gravity.CENTER
+                letterSpacing = 1 / 28f
+            }, lp(TUTTO, 60))
+            raggio.addView(raggioTesto, lp(TUTTO, 60))
+            riga.addView(Ui.premibile(raggio, ONDA, "Raggio di ricerca") { azioni.raggio() }, lp(170, 120))
+            riga.addView(View(s).apply { setBackgroundColor(FILETTO) }, lp(2, 70))
+            for ((ordine, nome) in Ui.ORDINI) {
+                val tasto = Ui.testo(s, 32, CARATTERI, grassetto, 36, nome, maiuscolo = true).apply {
+                    gravity = Gravity.CENTER
+                    letterSpacing = 1 / 32f
+                }
+                ordini[ordine] = tasto
+                riga.addView(Ui.premibile(tasto, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, 120, 1f))
+            }
+            evidenziaOrdine(Ordine.CONVIENE)
             evidenziaIntorno(false)
             return riga
+        }
+
+        private fun statoVicini(acceso: Boolean, km: Double): View {
+            val spia = View(s)
+            accendi(spia, acceso)
+            val testo = if (acceso) "SOLO INTORNO A ME · ${km.toInt()} KM" else "+ COMUNI PREFERITI · ${km.toInt()} KM"
+            return Ui.riga(s, 10).apply {
+                addView(spia, lp(14, 14))
+                addView(Ui.testo(s, 28, if (acceso) AMBRA else SECONDARIO, grassetto, 34, testo).apply { letterSpacing = 1 / 28f })
+            }
         }
 
         private fun evidenziaIntorno(acceso: Boolean) {
@@ -735,7 +745,7 @@ object Solari : Tema {
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("PREFERITI", e.preferiti, true)
-                    if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false)
+                    if (e.vicini.isNotEmpty()) sezione("VICINI", e.vicini, false, statoVicini(e.intornoAMe, e.raggioKm))
                     if (tutti.isEmpty()) messaggio("RISULTATI", "Nessun distributore entro ${e.raggioKm.toInt()} km")
                 }
             }
@@ -752,9 +762,9 @@ object Solari : Tema {
             elencoView.addView(pannello, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean, coda: View? = null) {
             val colonna = Ui.colonna(s, 8)
-            colonna.addView(intestazioneSezione(s, titolo, 40, 3), lp(TUTTO, 40))
+            colonna.addView(intestazioneSezione(s, titolo, 40, 3, coda = coda), lp(TUTTO, 40))
             val righe = Ui.colonna(s, 20)
             distributori.forEach { righe.addView(riga(it, luogo), lp(TUTTO, 120)) }
             colonna.addView(righe, lp(TUTTO, ADATTA))
