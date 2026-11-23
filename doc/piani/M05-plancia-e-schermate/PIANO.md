@@ -61,7 +61,7 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - [x] Fase 3, prima versione senza tavole (richiesta dell'utente): contratto, otto temi, prove sull'emulatore, misure.
 - [x] Fase 3 con le tavole: confronto e ritocchi.
 - [x] Mappa dopo la prova in auto: stile stradale, posizione dal vivo, «Centra» che segue, bussola Nord/Marcia.
-- [ ] Rilascio dei ritocchi (patch).
+- [x] Rilascio dei ritocchi (patch).
 - [x] Prova della catena di aggiornamento sull'emulatore (manifest cambiato).
 - [x] Guida, riferimento, decisioni (volume tolto e perché; luoghi; mappa e tessere OSM).
 - [x] Rilascio con `./release.sh minor`: v0.5.0 (prima versione dei temi, senza tavole).
@@ -82,6 +82,9 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 | Il meteo mostra il nome del comune con il GPS (geocoder del box) | da provare |
 | Mappa: le tessere si caricano con la rete del box, il trascinamento risponde via CarPlay | da provare |
 | Tema successivo: un tocco cambia tema senza ritardi visibili | da provare |
+| Il box riceve la 0.5.1 | da provare |
+| Mappa stradale; «Centra» riprende a seguire; bussola «Marcia» gira la mappa con la direzione guidando | da provare |
+| Nuove disposizioni dei temi (Benzinai a riga unica, Matrix, Hud, luogo del meteo) | da provare |
 
 ## Diario
 
@@ -90,3 +93,4 @@ Si chiude quando la versione è pubblicata e il box l'ha ricevuta.
 - 2026-11-22: l'utente chiede di non aspettare le tavole e di pubblicare: prima versione della fase 3 con la disposizione decisa tema per tema, un agente per tema, poi confronto a vista sull'emulatore `box` (Home con meteo completo e Benzinai, otto temi). Corretti dopo le foto: pioggia tagliata in Matrix, ora tagliata in alto in Art Déco (riga alta da 262 a 240 px: ora da 160 a 140 px), testo di «Intorno a me» non centrato in Synthwave; «Intorno a me» filtra subito invece di aspettare il GPS (fino a 30 s). Provati «Intorno a me», il giro del raggio, «Tema» (da Synthwave a Matrix). Misure in release (Matrix): avvio a freddo 122–135 ms, PSS 25,6 MB, 0 frame in ritardo, APK 562 KB. Catena: questa versione con `versionCode` 7, installata come installatrice di sé stessa, ha ricevuto da sola la 0.4.1 pubblicata senza conferma.
 - 2026-11-22: pubblicata la v0.5.0 (codice 9, 562 KB); l'emulatore `box` l'ha ricevuta da Impostazioni → Controlla aggiornamenti. Restano le tavole da rivedere con l'utente e le prove sul box.
 - 2026-11-23: prima prova in auto della 0.5.0 (utente): piace; la mappa la vuole stradale e non «satellite» (le tessere scurite), con un tasto per ricentrare e uno per l'orientamento, perché a nord fisso era capovolta rispetto alla direzione. Mappa rifatta: tessere senza filtro, posizione dal vivo con freccia della rotta, «Centra» che riprende a seguire, bussola Nord/Marcia salvata; con la mappa ruotata le tessere sparivano (cache in memoria troppo piccola), ora `RGB_565` e 1/8 dell'heap. Tavole rese a 1244×1194 con il runtime della tela e confrontate con la 0.5.0: adottate per tutti la riga unica dei Benzinai con «Mappa» in intestazione e la scritta di stato sui vicini, la nuova disposizione di Matrix (riquadro [ SYS ], Tema F5, app su una riga) e di Hud (fascia di sistema sotto il quadrante), il luogo in testa al meteo negli altri; scartati i tre rombi di dettaglio in Art Déco (resta «›»). Quattro agenti, due temi ciascuno, poi foto sull'emulatore: corretto «Raggio» non centrato in Art Déco. Un primo giro di foto era a 1194×1244 per un `wm size` rimasto sull'emulatore: rifatte dopo `wm size reset`.
+- 2026-11-23: pubblicata la v0.5.1 (codice 10, 564 KB). Restano le prove sul box.
