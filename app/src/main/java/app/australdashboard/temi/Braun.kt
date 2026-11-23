@@ -262,7 +262,7 @@ object Braun : Tema {
         private lateinit var play: Tasto
         private val wifi = Interruttore(s, "Wi-Fi", "Wi-Fi") { azioni.wifi() }
         private val bluetooth = Interruttore(s, "Bluetooth", "Bluetooth") { azioni.bluetooth() }
-        private val luogo = Ui.adatta(Ui.testo(s, 30, TESTO, normale, 36), 20, 30)
+        private val luogo = Ui.adatta(Ui.testo(s, 28, TESTO, normale, 34), 20, 28)
         private val puntina = Ui.icona(s, R.drawable.ic_puntina, ARANCIO)
         private val rigaLuogo = Ui.riga(s, 10)
         private val iconaDomani = Ui.icona(s, R.drawable.ic_nuvoloso, TESTO)
@@ -294,7 +294,7 @@ object Braun : Tema {
                 setPadding(42, 20, 42, 16)
             }
             val contenuto = Ui.riga(s, 0, Gravity.NO_GRAVITY)
-            val sinistra = Ui.colonna(s, 6, Gravity.CENTER_VERTICAL)
+            val sinistra = Ui.colonna(s, 0, Gravity.CENTER_VERTICAL)
             val rigaMeteo = Ui.riga(s, 24)
             val rigaGradi = Ui.riga(s, 20)
             val margineGradi = margineInterlinea(gradi, 104)
@@ -305,6 +305,11 @@ object Braun : Tema {
             rigaGradi.addView(termometro, lp(25, 100))
             rigaMeteo.addView(rigaGradi, lp(ADATTA, ADATTA))
             val colonnaMeteo = Ui.colonna(s, 2, Gravity.CENTER_VERTICAL)
+            puntina.visibility = View.GONE
+            rigaLuogo.addView(puntina, lp(24, 24))
+            rigaLuogo.addView(luogo, lp(0, 36, 1f))
+            rigaLuogo.visibility = View.GONE
+            colonnaMeteo.addView(rigaLuogo, lp(TUTTO, 36))
             val rigaCielo = Ui.riga(s, 10)
             rigaCielo.addView(iconaMeteo, lp(40, 40))
             rigaCielo.addView(cielo, lp(0, 42, 1f))
@@ -314,19 +319,14 @@ object Braun : Tema {
             rigaPioggia.addView(pioggia, lp(0, 36, 1f))
             rigaPioggia.visibility = View.GONE
             colonnaMeteo.addView(rigaPioggia, lp(TUTTO, 36))
-            rigaMeteo.addView(colonnaMeteo, lp(0, ADATTA, 1f))
-            sinistra.addView(rigaMeteo, lp(TUTTO, 120))
-            puntina.visibility = View.GONE
-            rigaLuogo.addView(puntina, lp(28, 28))
-            rigaLuogo.addView(luogo, lp(0, 40, 1f))
-            rigaLuogo.visibility = View.GONE
-            sinistra.addView(rigaLuogo, lp(TUTTO, 40))
             rigaDomani.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "Domani"), lp(ADATTA, ADATTA))
-            rigaDomani.addView(iconaDomani, lp(36, 36))
-            rigaDomani.addView(previsioneDomani, lp(0, 40, 1f))
+            rigaDomani.addView(iconaDomani, lp(28, 28))
+            rigaDomani.addView(previsioneDomani, lp(0, 36, 1f))
             rigaDomani.visibility = View.GONE
-            sinistra.addView(rigaDomani, lp(TUTTO, 40))
-            contenuto.addView(sinistra, lp(500, TUTTO))
+            colonnaMeteo.addView(rigaDomani, lp(TUTTO, 36))
+            rigaMeteo.addView(colonnaMeteo, lp(0, ADATTA, 1f))
+            sinistra.addView(rigaMeteo, lp(TUTTO, ADATTA))
+            contenuto.addView(sinistra, lp(480, TUTTO))
             contenuto.addView(View(s).apply { setBackgroundColor(FILETTO) }, lp(2, TUTTO).apply {
                 leftMargin = 40
                 rightMargin = 40
@@ -339,7 +339,7 @@ object Braun : Tema {
             })
             destra.addView(data, lp(TUTTO, ADATTA))
             contenuto.addView(destra, lp(0, TUTTO, 1f))
-            Ui.senzaRitaglio(riquadro, contenuto, destra, sinistra, rigaGradi, rigaMeteo, rigaLuogo, rigaDomani)
+            Ui.senzaRitaglio(riquadro, contenuto, destra, sinistra, rigaGradi, rigaMeteo, colonnaMeteo, rigaLuogo, rigaDomani)
             riquadro.addView(contenuto, lp(TUTTO, 0, 1f))
             riquadro.addView(scala, lp(TUTTO, 18).apply { topMargin = 4 })
             return riquadro
@@ -405,13 +405,13 @@ object Braun : Tema {
 
         private fun dettaglio(descrizione: String, azione: () -> Unit): View {
             val glifo = Ui.testo(s, 56, TESTO, leggero, 0, "›").apply { gravity = Gravity.CENTER }
-            val tondo = cornice(s, Tipo.SCURO, 62, glifo)
-            return Ui.premibile(FrameLayout(s).apply { addView(tondo, lpf(80, 80, Gravity.CENTER)) }, ONDA, descrizione, azione)
+            val tondo = cornice(s, Tipo.SCURO, 80, glifo)
+            return Ui.premibile(FrameLayout(s).apply { addView(tondo, lpf(100, 100, Gravity.CENTER)) }, ONDA, descrizione, azione)
         }
 
         private fun comandoTema(): View {
-            val icona = Ui.icona(s, R.drawable.ic_tavolozza, TESTO)
-            val tondo = cornice(s, Tipo.SCURO, 80, FrameLayout(s).apply { addView(icona, lpf(44, 44, Gravity.CENTER)) })
+            val icona = Ui.icona(s, R.drawable.ic_tavolozza, CORPO)
+            val tondo = cornice(s, Tipo.CHIARO, 80, FrameLayout(s).apply { addView(icona, lpf(44, 44, Gravity.CENTER)) })
             val riga = Ui.riga(s, 14).apply {
                 addView(tondo, lp(104, 104))
                 addView(Ui.adatta(Ui.testo(s, 30, TESTO, normale, 34, "Tema"), 20, 30), lp(0, 38, 1f))
@@ -421,10 +421,11 @@ object Braun : Tema {
 
         private fun sistema(): View {
             val riga = Ui.riga(s, 20)
-            riga.addView(wifi.view, lp(296, TUTTO))
-            riga.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(88, TUTTO))
-            riga.addView(bluetooth.view, lp(296, TUTTO))
-            riga.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(88, TUTTO))
+            riga.addView(wifi.view, lp(276, TUTTO))
+            riga.addView(dettaglio("Dettagli Wi-Fi") { azioni.wifiDettaglio() }, lp(100, TUTTO))
+            riga.addView(bluetooth.view, lp(276, TUTTO))
+            riga.addView(dettaglio("Dettagli Bluetooth") { azioni.bluetoothDettaglio() }, lp(100, TUTTO))
+            riga.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 56))
             riga.addView(comandoTema(), lp(0, TUTTO, 1f))
             return riga
         }
@@ -551,7 +552,7 @@ object Braun : Tema {
     private class BenzinaiBraun(private val s: Schermata, private val azioni: AzioniBenzinai) : VistaBenzinai {
         private val ordini = LinkedHashMap<Ordine, TextView>()
         private lateinit var intorno: Pulsante
-        private lateinit var raggio: Pulsante
+        private val raggio = Ui.testo(s, 36, TESTO, leggero, 40, "${Benzinai.raggio(s).toInt()} km").apply { gravity = Gravity.CENTER }
         private val elencoView = Ui.colonna(s, 20)
         private lateinit var scheda: View
         private val spesa = Ui.testo(s, 28, SECONDARIO, normale, 32).apply { visibility = View.GONE }
@@ -572,8 +573,7 @@ object Braun : Tema {
                 setPadding(32, 32, 32, 32)
             }
             radice.addView(intestazione(), lp(TUTTO, 120))
-            radice.addView(ordinamenti(), lp(TUTTO, 120))
-            radice.addView(filtri(), lp(TUTTO, 112))
+            radice.addView(filtri(), lp(TUTTO, 120))
             val scorrimento = ScrollView(s).apply {
                 isVerticalScrollBarEnabled = false
                 overScrollMode = View.OVER_SCROLL_NEVER
@@ -590,9 +590,10 @@ object Braun : Tema {
         }
 
         private fun intestazione(): View {
-            val riga = Ui.riga(s, 28)
+            val riga = Ui.riga(s, 20)
             riga.addView(tasto(s, 44, 92, R.drawable.ic_indietro, Tipo.SCURO, TESTO, "Indietro") { azioni.indietro() }.view, lp(120, 120))
-            riga.addView(Ui.testo(s, 64, TESTO, leggero, 72, "Benzinai"), lp(0, ADATTA, 1f))
+            riga.addView(Ui.testo(s, 64, TESTO, leggero, 72, "Benzinai"), lp(0, ADATTA, 1f).apply { leftMargin = 8 })
+            riga.addView(pulsante(R.drawable.ic_mappa, "Mappa") { azioni.mappa() }.view, lp(215, 120))
             val pillola = Ui.riga(s, 16).apply {
                 background = arrotondato(TASTO, 60, ANELLO, 3)
                 clipToOutline = true
@@ -607,30 +608,27 @@ object Braun : Tema {
             return riga
         }
 
-        private fun ordinamenti(): View {
+        private fun filtri(): View {
             val riga = Ui.riga(s, 20)
-            riga.addView(Ui.testo(s, 28, SECONDARIO, normale, 34, "Ordina per"), lp(ADATTA, ADATTA).apply {
-                leftMargin = 12
-                rightMargin = 8
-            })
+            intorno = pulsante(R.drawable.ic_mirino, "Intorno a me") { azioni.intornoAMe() }
+            riga.addView(intorno.view, lp(300, TUTTO))
+            val corpoRaggio = Ui.colonna(s, 0, Gravity.CENTER).apply {
+                background = arrotondato(TASTO, 60, ANELLO, 3)
+                clipToOutline = true
+                addView(Ui.testo(s, 28, SECONDARIO, normale, 32, "Raggio").apply { gravity = Gravity.CENTER })
+                addView(raggio)
+            }
+            riga.addView(Ui.premibile(corpoRaggio, ONDA, "Raggio") { azioni.raggio() }, lp(170, TUTTO))
+            riga.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(2, 56))
             for ((ordine, nome) in Ui.ORDINI) {
                 val pulsante = Ui.testo(s, 32, TESTO, normale, 38, nome).apply {
                     gravity = Gravity.CENTER
                     clipToOutline = true
                 }
                 ordini[ordine] = pulsante
-                riga.addView(Ui.premibile(pulsante, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, 120, 1f))
+                riga.addView(Ui.premibile(pulsante, ONDA, "Ordina per $nome") { azioni.ordina(ordine) }, lp(0, TUTTO, 1f))
             }
             evidenziaOrdine(Ordine.CONVIENE)
-            return riga
-        }
-
-        private fun filtri(): View {
-            val riga = Ui.riga(s, 20)
-            intorno = pulsante(R.drawable.ic_mirino, "Intorno a me") { azioni.intornoAMe() }
-            raggio = pulsante(null, "Raggio ${Benzinai.raggio(s).toInt()} km") { azioni.raggio() }
-            val mappa = pulsante(R.drawable.ic_mappa, "Mappa") { azioni.mappa() }
-            for (p in listOf(intorno, raggio, mappa)) riga.addView(p.view, lp(0, TUTTO, 1f))
             evidenziaIntorno(false)
             return riga
         }
@@ -705,11 +703,11 @@ object Braun : Tema {
                 is ElencoBenzinai.Pronto -> {
                     evidenziaOrdine(e.ordine)
                     evidenziaIntorno(e.intornoAMe)
-                    raggio.testo.text = "Raggio ${e.raggioKm.toInt()} km"
+                    raggio.text = "${e.raggioKm.toInt()} km"
                     val tutti = e.preferiti + e.vicini
                     stato.riallinea(tutti)
                     if (e.preferiti.isNotEmpty()) sezione("Preferiti", e.preferiti, true)
-                    if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false)
+                    if (e.vicini.isNotEmpty()) sezione("Vicini", e.vicini, false, e)
                     if (tutti.isEmpty()) messaggio("Nessun distributore entro ${e.raggioKm.toInt()} km")
                 }
             }
@@ -725,11 +723,19 @@ object Braun : Tema {
             elencoView.addView(card, lp(TUTTO, ADATTA))
         }
 
-        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean) {
+        private fun sezione(titolo: String, distributori: List<Distributore>, luogo: Boolean, pronto: ElencoBenzinai.Pronto? = null) {
             val colonna = Ui.colonna(s, 10)
             val intestazioneSezione = Ui.riga(s, 20)
             intestazioneSezione.addView(Ui.testo(s, 40, TESTO, normale, 44, titolo))
             intestazioneSezione.addView(View(s).apply { setBackgroundColor(ANELLO) }, lp(0, 2, 1f))
+            if (pronto != null) {
+                val km = pronto.raggioKm.toInt()
+                val acceso = pronto.intornoAMe
+                val stato = Ui.riga(s, 10)
+                stato.addView(View(s).apply { background = if (acceso) ovale(ARANCIO) else contorno(TACCA) }, lp(12, 12))
+                stato.addView(Ui.testo(s, 28, if (acceso) ARANCIO else SECONDARIO, normale, 34, if (acceso) "solo intorno a me · $km km" else "+ comuni preferiti · $km km"))
+                intestazioneSezione.addView(stato)
+            }
             intestazioneSezione.setPadding(12, 0, 0, 0)
             colonna.addView(intestazioneSezione, lp(TUTTO, ADATTA))
             val righe = Ui.colonna(s, 20)
