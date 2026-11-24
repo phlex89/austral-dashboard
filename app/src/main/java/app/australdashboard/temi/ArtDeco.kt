@@ -803,6 +803,7 @@ object ArtDeco : Tema {
             riga.addView(aggiornato)
             testi.addView(riga)
             scheda.addView(testi, lp(0, ADATTA, 1f))
+            scheda.addView(tasto(s, Ui.icona(s, R.drawable.ic_mappa, ORO), 48, false, "Visualizza sulla mappa") { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }, lp(120, 120))
             scheda.addView(
                 tasto(s, Ui.icona(s, R.drawable.ic_chiudi, ORO), 48, false, "Chiudi scheda") { seleziona(null) },
                 lp(120, 120),

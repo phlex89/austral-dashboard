@@ -670,6 +670,7 @@ object Hud : Tema {
             testi.addView(indirizzo, lp(TUTTO, 66))
             testi.addView(dettaglioScheda)
             riga.addView(testi, lp(0, ADATTA, 1f))
+            riga.addView(tastoContorno(s, R.drawable.ic_mappa, 52, "Visualizza sulla mappa") { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }, lp(120, 120))
             riga.addView(tastoContorno(s, R.drawable.ic_chiudi, 52, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             scheda.addView(riga, lpf(TUTTO, TUTTO, Gravity.CENTER_VERTICAL))
             scheda.visibility = View.GONE

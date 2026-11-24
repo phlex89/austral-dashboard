@@ -742,6 +742,7 @@ object Synthwave : Tema {
                 background = GradientDrawable().apply { setColor(SUPERFICIE); cornerRadius = 28f }
                 setPadding(34, 0, 28, 0)
                 addView(testi, lp(0, ADATTA, 1f))
+                addView(tondo(s, R.drawable.ic_mappa, 44, TESTO, "Visualizza sulla mappa") { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }, lp(120, 120))
                 addView(tondo(s, R.drawable.ic_chiudi, 44, TESTO, "Chiudi scheda") { seleziona(null) }, lp(120, 120))
             }
             scheda = cornice(s, 32f, 4, interno)

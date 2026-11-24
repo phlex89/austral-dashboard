@@ -1,6 +1,7 @@
 package app.australdashboard.funzioni
 
 import android.graphics.Bitmap
+import java.io.Serializable
 
 data class Meteo(
     val gradi: Int,
@@ -26,7 +27,7 @@ data class Musica(
     val pacchetto: String,
 )
 
-data class Luogo(val lat: Double, val lon: Double)
+data class Luogo(val lat: Double, val lon: Double) : Serializable
 
 data class Distributore(
     val id: Long,
@@ -39,7 +40,7 @@ data class Distributore(
     val aggiornato: Long,
     val distanzaKm: Double,
     val prezzoPrima: Double? = null,
-)
+) : Serializable
 
 enum class Ordine { CONVIENE, PREZZO, DISTANZA }
 

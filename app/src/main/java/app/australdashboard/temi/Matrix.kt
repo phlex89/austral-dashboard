@@ -632,6 +632,10 @@ object Matrix : Tema {
             testi.addView(dettagli, lp(ADATTA, ADATTA).apply { topMargin = 6 })
             scheda.interno.addView(testi, lp(0, ADATTA, 1f))
             scheda.interno.addView(
+                tasto(s, R.drawable.ic_mappa, false, 52, "Visualizza sulla mappa") { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } },
+                lp(120, 120).apply { leftMargin = 24 },
+            )
+            scheda.interno.addView(
                 tasto(s, R.drawable.ic_chiudi, false, 52, "Chiudi scheda") { seleziona(null) },
                 lp(120, 120).apply { leftMargin = 24 },
             )

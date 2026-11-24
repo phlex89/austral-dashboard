@@ -638,6 +638,7 @@ object Brutalismo : Tema {
             testi.addView(indirizzo, lp(TUTTO, 68))
             testi.addView(dettagli)
             scheda.addView(testi, lp(0, ADATTA, 1f))
+            scheda.addView(tasto(s, R.drawable.ic_mappa, SFONDO, 56, "Visualizza sulla mappa", onda = ONDA_SCURA) { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }, lp(120, 120))
             scheda.addView(tasto(s, R.drawable.ic_chiudi, SFONDO, 56, "Chiudi scheda", onda = ONDA_SCURA) { seleziona(null) }, lp(120, 120))
             return scheda
         }

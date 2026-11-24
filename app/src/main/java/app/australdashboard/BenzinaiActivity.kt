@@ -102,4 +102,8 @@ class BenzinaiActivity : Schermata(), AzioniBenzinai {
     }
 
     override fun mappa() = startActivity(Intent(this, MappaActivity::class.java).putExtra("intornoAMe", intornoAMe))
+
+    override fun visualizzaSullaMappa(distributore: Distributore) = startActivity(
+        Intent(this, MappaActivity::class.java).putExtra("intornoAMe", intornoAMe).putExtra("selezionato", distributore),
+    )
 }

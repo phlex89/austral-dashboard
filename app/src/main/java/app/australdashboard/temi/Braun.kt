@@ -678,6 +678,7 @@ object Braun : Tema {
             testi.addView(indirizzo, lp(TUTTO, 62))
             testi.addView(dettagli)
             riquadro.addView(testi, lp(0, ADATTA, 1f))
+            riquadro.addView(tasto(s, 44, 92, R.drawable.ic_mappa, Tipo.SCURO, TESTO, "Visualizza sulla mappa") { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }.view, lp(120, 120))
             riquadro.addView(tasto(s, 44, 92, R.drawable.ic_chiudi, Tipo.SCURO, TESTO, "Chiudi scheda") { seleziona(null) }.view, lp(120, 120))
             riquadro.visibility = View.GONE
             scheda = riquadro

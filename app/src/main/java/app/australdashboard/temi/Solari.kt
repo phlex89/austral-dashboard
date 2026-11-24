@@ -711,6 +711,7 @@ object Solari : Tema {
             riga.addView(quandoScheda, lp(ADATTA, 48))
             sinistra.addView(riga, lp(TUTTO, 48))
             corpo.addView(sinistra, lp(0, TUTTO, 1f))
+            corpo.addView(tasto(s, R.drawable.ic_mappa, 52, "Visualizza sulla mappa") { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }.vista, lp(120, 120))
             corpo.addView(tasto(s, R.drawable.ic_chiudi, 52, "Chiudi scheda") { seleziona(null) }.vista, lp(120, 120))
             scheda = corpo
             scheda.visibility = View.GONE

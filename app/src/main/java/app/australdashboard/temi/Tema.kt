@@ -72,6 +72,7 @@ interface AzioniBenzinai {
     fun intornoAMe()
     fun raggio()
     fun mappa()
+    fun visualizzaSullaMappa(distributore: Distributore)
 }
 
 class StatoBenzinai {

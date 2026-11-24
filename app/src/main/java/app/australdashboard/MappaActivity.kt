@@ -38,6 +38,8 @@ class MappaActivity : Schermata() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val intornoAMe = intent.getBooleanExtra("intornoAMe", false)
+        @Suppress("DEPRECATION")
+        val selezionato = intent.getSerializableExtra("selezionato") as? Distributore
         mappa = VistaMappa(this)
         messaggio = TextView(this).apply {
             textSize = 24f
@@ -77,7 +79,7 @@ class MappaActivity : Schermata() {
             addView(intestazione("Mappa dei benzinai"))
             addView(area, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         })
-        carica(intornoAMe)
+        carica(intornoAMe, selezionato)
     }
 
     private fun comando(etichetta: String, azione: () -> Unit) = pulsante(etichetta, true, azione).apply {
@@ -86,7 +88,7 @@ class MappaActivity : Schermata() {
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(88)).apply { setMargins(0, dp(6), 0, dp(6)) }
     }
 
-    private fun carica(intornoAMe: Boolean) {
+    private fun carica(intornoAMe: Boolean, selezionato: Distributore?) {
         val contesto = applicationContext
         Thread {
             val luogo = Posizione.attuale(contesto)
@@ -98,7 +100,9 @@ class MappaActivity : Schermata() {
                     elenco is ElencoBenzinai.Errore -> messaggio.text = elenco.messaggio
                     elenco is ElencoBenzinai.Pronto -> {
                         messaggio.visibility = View.GONE
-                        mappa.imposta(luogo, elenco.raggioKm, elenco.preferiti + elenco.vicini)
+                        val tutti = elenco.preferiti + elenco.vicini
+                        val scelto = selezionato?.let { s -> tutti.firstOrNull { it.id == s.id } ?: s }
+                        mappa.imposta(luogo, elenco.raggioKm, if (scelto == null || scelto in tutti) tutti else tutti + scelto, scelto)
                     }
                     else -> messaggio.text = "Prezzi non disponibili."
                 }
@@ -181,11 +185,16 @@ class MappaActivity : Schermata() {
             textAlign = Paint.Align.RIGHT
         }
 
-        fun imposta(posizione: Luogo, raggio: Double, elenco: List<Distributore>) {
+        fun imposta(posizione: Luogo, raggio: Double, elenco: List<Distributore>, scelto: Distributore?) {
             utente = posizione
             raggioKm = raggio
             distributori = elenco
             economico = elenco.minByOrNull { it.prezzo }
+            selezionato = scelto
+            if (scelto != null) {
+                seguire = false
+                alSelezionare(scelto)
+            }
             inquadrato = false
             inquadra()
             invalidate()
@@ -230,11 +239,12 @@ class MappaActivity : Schermata() {
             invalidate()
         }
 
-        private fun vaiSuUtente() {
-            val posizione = utente ?: return
-            if (zoom == 0) return
-            centroX = Mercatore.pixelX(posizione.lon, zoom)
-            centroY = Mercatore.pixelY(posizione.lat, zoom)
+        private fun vaiSuUtente() = vaiSu(utente)
+
+        private fun vaiSu(luogo: Luogo?) {
+            if (luogo == null || zoom == 0) return
+            centroX = Mercatore.pixelX(luogo.lon, zoom)
+            centroY = Mercatore.pixelY(luogo.lat, zoom)
         }
 
         fun chiudi() = archivio.chiudi()
@@ -244,7 +254,7 @@ class MappaActivity : Schermata() {
             if (inquadrato || width == 0) return
             inquadrato = true
             zoom = Mercatore.zoomPer(raggioKm, posizione.lat, minOf(width, height))
-            vaiSuUtente()
+            vaiSu(selezionato?.luogo ?: posizione)
             bussola.aggiorna(rotazione, marcia)
         }
 

@@ -707,6 +707,7 @@ object Cyberpunk : Tema {
             testi.addView(dettagli, lp(TUTTO, 34))
             p.addView(testi, lp(0, TUTTO, 1f))
             val comandi = Ui.riga(s, 20)
+            comandi.addView(tasto(s, R.drawable.ic_mappa, 52, SFONDO, GIALLO, 18, "Visualizza sulla mappa", ONDA) { stato.selezionato?.let { azioni.visualizzaSullaMappa(it) } }, lp(120, 120))
             comandi.addView(
                 tasto(s, R.drawable.ic_chiudi, 52, SFONDO, GIALLO, 18, "Chiudi scheda", ONDA) { seleziona(null) },
                 lp(120, 120),
