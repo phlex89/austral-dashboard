@@ -13,6 +13,7 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.KeyEvent
 
@@ -96,6 +97,21 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
         }, ATTESA_AVVIO_MS)
     }
 
+    fun posizioneMs(): Long? {
+        val stato = controller?.playbackState ?: return null
+        return posizioneStimata(
+            stato.position,
+            stato.lastPositionUpdateTime,
+            stato.playbackSpeed,
+            statoInRiproduzione(stato.state),
+            SystemClock.elapsedRealtime(),
+        )
+    }
+
+    fun vaiA(ms: Long) {
+        controller?.transportControls?.seekTo(ms)
+    }
+
     fun apriApp() {
         apri(controller?.packageName ?: SPOTIFY)
     }
@@ -164,6 +180,7 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
             inRiproduzione = inRiproduzione(c),
             app = etichetta(c.packageName),
             pacchetto = c.packageName,
+            durataMs = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0,
         )
     }
 
@@ -202,7 +219,7 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
     private fun uguali(a: Musica?, b: Musica?): Boolean {
         if (a == null || b == null) return a == null && b == null
         return a.titolo == b.titolo && a.artista == b.artista && a.inRiproduzione == b.inRiproduzione &&
-            a.pacchetto == b.pacchetto && a.copertina === b.copertina
+            a.pacchetto == b.pacchetto && a.copertina === b.copertina && a.durataMs == b.durataMs
     }
 
     companion object {
@@ -224,6 +241,12 @@ class Lettore(private val context: Context, private val ascolto: (Musica?) -> Un
 
 fun statoInRiproduzione(stato: Int?): Boolean =
     stato == PlaybackState.STATE_PLAYING || stato == PlaybackState.STATE_BUFFERING
+
+fun posizioneStimata(posizione: Long, aggiornata: Long, velocita: Float, inRiproduzione: Boolean, adesso: Long): Long? {
+    if (posizione < 0) return null
+    if (!inRiproduzione || aggiornata <= 0) return posizione
+    return posizione + ((adesso - aggiornata) * velocita).toLong()
+}
 
 fun scegliControllerIndice(controller: List<Pair<Int, Boolean>>): Int {
     val inCorso = controller.indexOfFirst { statoInRiproduzione(it.first) }

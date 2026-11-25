@@ -352,6 +352,7 @@ object Solari : Tema {
             comandi.addView(tasto(s, R.drawable.ic_precedente, 52, "Brano precedente") { azioni.precedente() }.vista, lp(140, 140))
             comandi.addView(play.vista, lp(140, 140))
             comandi.addView(tasto(s, R.drawable.ic_successivo, 52, "Brano successivo") { azioni.successivo() }.vista, lp(140, 140))
+            comandi.addView(tasto(s, R.drawable.ic_testo, 52, "Testo della canzone") { azioni.testo() }.vista, lp(140, 140))
             inAscolto.addView(comandi)
 
             val testi = Ui.colonna(s, 8, Gravity.CENTER_VERTICAL)

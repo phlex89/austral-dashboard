@@ -325,6 +325,7 @@ object Brutalismo : Tema {
                 lp(0, 124, 1f).apply { rightMargin = 8 },
             )
             comandi.addView(tasto(s, R.drawable.ic_successivo, TESTO, 56, "Brano successivo") { azioni.successivo() }, lp(0, 124, 1f))
+            comandi.addView(tasto(s, R.drawable.ic_testo, TESTO, 56, "Testo della canzone") { azioni.testo() }, lp(0, 124, 1f))
             Ui.senzaRitaglio(comandi, inAscolto)
             inAscolto.addView(comandi, lp(TUTTO, 132))
 

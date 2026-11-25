@@ -19,6 +19,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Funzioni di bordo: come funzionano e perché](#funzioni-di-bordo-come-funzionano-e-perche)
 - [Luoghi del meteo e mappa dei benzinai](#luoghi-del-meteo-e-mappa-dei-benzinai)
 - [Niente volume dal launcher, Bluetooth diretto](#niente-volume-dal-launcher-bluetooth-diretto)
+- [Il testo delle canzoni nel launcher, da LRCLIB](#il-testo-delle-canzoni-nel-launcher-da-lrclib)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -164,3 +165,13 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 
 **Dettagli.** Prove in auto dell'utente con la Diagnostica della 0.4.1 (2026-11-22): né `adjustStreamVolume`, né `adjustSuggestedStreamVolume`, né il tasto volume simulato cambiavano l'audio. La sezione Audio della Diagnostica serviva solo a questo ed è stata tolta. Lo spazio liberato ospita i «›» e il tasto Tema (D-2 di M05). `BluetoothAdapter.enable()` è deprecato da API 33, ma il box resta su API 32. Questa voce aggiorna «Funzioni di bordo» per il Bluetooth.
 
+## Il testo delle canzoni nel launcher, da LRCLIB
+
+**In breve.** Deciso il 2026-11-25: il tasto Testo apre una schermata del launcher, non la vista del testo di Spotify. Spotify non ha un link pubblico per aprirla, e premere il suo tasto con l'accessibilità si romperebbe a ogni aggiornamento. I testi arrivano da LRCLIB: gratuito, senza chiave né account, spesso con i tempi di ogni riga, e funziona con qualsiasi app musicale.
+
+**Dettagli.**
+
+- `spotify:track:<id>` apre la pagina del brano, non il testo; nella sessione media non c'è nessun riferimento al testo.
+- LRCLIB si interroga con titolo, artista e durata, che la sessione media dà già; la posizione per seguire il testo viene da `PlaybackState`, quindi niente permessi nuovi.
+- Limite: LRCLIB non ha tutti i brani, soprattutto quelli italiani meno noti; in quel caso la schermata lo dice.
+- Seguire il testo si ferma appena l'utente scorre a mano, e riparte solo col tasto: un aggancio a tempo farebbe saltare la pagina mentre si legge.

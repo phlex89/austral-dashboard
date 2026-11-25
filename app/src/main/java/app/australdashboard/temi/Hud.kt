@@ -408,15 +408,16 @@ object Hud : Tema {
             info.addView(artista.apply { setPadding(28, 0, 0, 0) })
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(0, ADATTA, 1f))
-            val comandi = Ui.riga(s, 20)
-            comandi.addView(tastoContorno(s, R.drawable.ic_precedente, 52, "Brano precedente") { azioni.precedente() }, lp(120, 120))
+            val comandi = Ui.riga(s, 8)
+            comandi.addView(tastoContorno(s, R.drawable.ic_precedente, 52, "Brano precedente") { azioni.precedente() }, lp(100, 120))
             val play = FrameLayout(s).apply {
                 background = Smusso(CIANO, 0, 0f, 20f)
                 addView(iconaPlay, lpf(60, 60, Gravity.CENTER))
             }
             smussa(play, 20)
-            comandi.addView(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }, lp(160, 120))
-            comandi.addView(tastoContorno(s, R.drawable.ic_successivo, 52, "Brano successivo") { azioni.successivo() }, lp(120, 120))
+            comandi.addView(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }, lp(120, 120))
+            comandi.addView(tastoContorno(s, R.drawable.ic_successivo, 52, "Brano successivo") { azioni.successivo() }, lp(100, 120))
+            comandi.addView(tastoContorno(s, R.drawable.ic_testo, 52, "Testo della canzone") { azioni.testo() }, lp(100, 120))
             inAscolto.addView(comandi)
 
             fermo.setPadding(40, 0, 24, 0)

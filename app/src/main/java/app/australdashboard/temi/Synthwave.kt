@@ -405,11 +405,12 @@ object Synthwave : Tema {
             info.addView(View(s), lp(TUTTO, 0, 1f))
             info.addView(Righe(s), lp(TUTTO, 19))
             info.addView(View(s), lp(TUTTO, 0, 1f))
-            val comandi = Ui.riga(s, 20)
-            comandi.addView(tondo(s, R.drawable.ic_precedente, 44, TESTO, "Brano precedente") { azioni.precedente() }, lp(120, 120))
+            val comandi = Ui.riga(s, 10)
+            comandi.addView(tondo(s, R.drawable.ic_precedente, 44, TESTO, "Brano precedente") { azioni.precedente() }, lp(100, 100))
             playIn = cerchioPlay(s, iconaPlay, "Pausa") { azioni.playPausa() }
-            comandi.addView(playIn, lp(140, 140))
-            comandi.addView(tondo(s, R.drawable.ic_successivo, 44, TESTO, "Brano successivo") { azioni.successivo() }, lp(120, 120))
+            comandi.addView(playIn, lp(120, 120))
+            comandi.addView(tondo(s, R.drawable.ic_successivo, 44, TESTO, "Brano successivo") { azioni.successivo() }, lp(100, 100))
+            comandi.addView(tondo(s, R.drawable.ic_testo, 44, TESTO, "Testo della canzone") { azioni.testo() }, lp(100, 100))
             info.addView(comandi, lp(ADATTA, 140))
             inAscolto.addView(info, lp(0, 420, 1f))
 

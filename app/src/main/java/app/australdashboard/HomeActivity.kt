@@ -163,6 +163,8 @@ class HomeActivity : Schermata(), AzioniHome {
         lettore?.apriApp()
     }
 
+    override fun testo() = startActivity(Intent(this, TestoActivity::class.java))
+
     override fun precedente() {
         lettore?.precedente()
     }

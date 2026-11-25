@@ -358,11 +358,12 @@ object Braun : Tema {
             info.addView(artista)
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(0, TUTTO, 1f))
-            val comandi = Ui.riga(s, 22)
-            comandi.addView(tasto(s, 40, 92, R.drawable.ic_precedente, Tipo.SCURO, TESTO, "Brano precedente") { azioni.precedente() }.view, lp(120, 120))
+            val comandi = Ui.riga(s, 10)
+            comandi.addView(tasto(s, 40, 92, R.drawable.ic_precedente, Tipo.SCURO, TESTO, "Brano precedente") { azioni.precedente() }.view, lp(100, 100))
             play = tasto(s, 48, 100, R.drawable.ic_pausa, Tipo.PLAY, CORPO, "Pausa") { azioni.playPausa() }
-            comandi.addView(play.view, lp(130, 130))
-            comandi.addView(tasto(s, 40, 92, R.drawable.ic_successivo, Tipo.SCURO, TESTO, "Brano successivo") { azioni.successivo() }.view, lp(120, 120))
+            comandi.addView(play.view, lp(112, 112))
+            comandi.addView(tasto(s, 40, 92, R.drawable.ic_successivo, Tipo.SCURO, TESTO, "Brano successivo") { azioni.successivo() }.view, lp(100, 100))
+            comandi.addView(tasto(s, 40, 92, R.drawable.ic_testo, Tipo.SCURO, TESTO, "Testo della canzone") { azioni.testo() }.view, lp(100, 100))
             inAscolto.addView(comandi)
 
             fermo.gravity = Gravity.CENTER_VERTICAL

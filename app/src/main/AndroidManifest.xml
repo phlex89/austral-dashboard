@@ -46,6 +46,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".TestoActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".DiagnosticaActivity"
             android:exported="false" />
 

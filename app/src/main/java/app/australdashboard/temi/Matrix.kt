@@ -268,14 +268,15 @@ object Matrix : Tema {
             info.addView(artista, lp(ADATTA, ADATTA).apply { topMargin = 6 })
             Ui.premibile(info, ONDA, null) { azioni.apriMusica() }
             inAscolto.addView(info, lp(0, ADATTA, 1f))
-            val comandi = Ui.riga(s, 20)
-            comandi.addView(tasto(s, R.drawable.ic_precedente, false, 48, "Brano precedente") { azioni.precedente() }, lp(124, 124))
+            val comandi = Ui.riga(s, 8)
+            comandi.addView(tasto(s, R.drawable.ic_precedente, false, 48, "Brano precedente") { azioni.precedente() }, lp(100, 124))
             val play = FrameLayout(s).apply {
                 background = Ui.pieno(VERDE)
                 addView(iconaPlay, lpf(56, 56, Gravity.CENTER))
             }
-            comandi.addView(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }, lp(124, 124))
-            comandi.addView(tasto(s, R.drawable.ic_successivo, false, 48, "Brano successivo") { azioni.successivo() }, lp(124, 124))
+            comandi.addView(Ui.premibile(play, ONDA_SCURA, "Riproduci o metti in pausa") { azioni.playPausa() }, lp(100, 124))
+            comandi.addView(tasto(s, R.drawable.ic_successivo, false, 48, "Brano successivo") { azioni.successivo() }, lp(100, 124))
+            comandi.addView(tasto(s, R.drawable.ic_testo, false, 48, "Testo della canzone") { azioni.testo() }, lp(100, 124))
             inAscolto.addView(comandi)
 
             val testi = Ui.colonna(s)

@@ -54,6 +54,7 @@ interface AzioniHome {
     fun impostazioniLauncher()
     fun apri(app: AppHome)
     fun apriMusica()
+    fun testo()
     fun precedente()
     fun playPausa()
     fun successivo()

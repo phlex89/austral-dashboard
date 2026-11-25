@@ -25,6 +25,7 @@ data class Musica(
     val inRiproduzione: Boolean,
     val app: String,
     val pacchetto: String,
+    val durataMs: Long = 0,
 )
 
 data class Luogo(val lat: Double, val lon: Double) : Serializable

@@ -560,15 +560,20 @@ object ArtDeco : Tema {
             val comandi = Ui.riga(s)
             comandi.addView(
                 tasto(s, Ui.icona(s, R.drawable.ic_precedente, ORO), 44, false, "Brano precedente") { azioni.precedente() },
-                lp(120, 120),
+                lp(100, 100),
             )
             comandi.addView(View(s), lp(0, 0, 1f))
             pulsantePlay = tasto(s, iconaPlay, 48, true, "Riproduci o metti in pausa") { azioni.playPausa() }
-            comandi.addView(pulsantePlay, lp(120, 120))
+            comandi.addView(pulsantePlay, lp(100, 100))
             comandi.addView(View(s), lp(0, 0, 1f))
             comandi.addView(
                 tasto(s, Ui.icona(s, R.drawable.ic_successivo, ORO), 44, false, "Brano successivo") { azioni.successivo() },
-                lp(120, 120),
+                lp(100, 100),
+            )
+            comandi.addView(View(s), lp(0, 0, 1f))
+            comandi.addView(
+                tasto(s, Ui.icona(s, R.drawable.ic_testo, ORO), 44, false, "Testo della canzone") { azioni.testo() },
+                lp(100, 100),
             )
             val destra = Ui.colonna(s).apply {
                 addView(info, lp(TUTTO, ADATTA))

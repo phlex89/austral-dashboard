@@ -452,6 +452,10 @@ object Cyberpunk : Tema {
                 tasto(s, R.drawable.ic_successivo, 52, TASTO, TESTO, 18, "Brano successivo", ONDA, CONTORNO) { azioni.successivo() },
                 lp(160, 140),
             )
+            comandi.addView(
+                tasto(s, R.drawable.ic_testo, 52, TASTO, TESTO, 18, "Testo della canzone", ONDA, CONTORNO) { azioni.testo() },
+                lp(160, 140),
+            )
             inAscolto.addView(comandi, lp(TUTTO, 140))
 
             fermo.setPadding(30, 30, 30, 30)

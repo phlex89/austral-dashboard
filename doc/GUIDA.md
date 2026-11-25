@@ -17,6 +17,8 @@
 
 Un'app della Home che non è installata resta spenta. Toccando la copertina o il titolo del brano si apre l'app che lo suona; senza musica, «Apri Spotify» apre Spotify e il tasto play riprende l'ultima app musicale.
 
+Mentre suona un brano, il tasto **Testo** nella scheda della musica apre il testo della canzone, con qualsiasi app musicale. Se il testo ha i tempi, la riga cantata è bianca e la pagina la segue da sola. Scorrendo a mano la pagina smette di seguire: **Segui il testo** la riaggancia. Toccando una riga il brano salta lì. **A−** e **A+** cambiano la grandezza delle lettere, che resta per le volte successive. Il testo arriva da internet (LRCLIB): un brano che non c'è mostra «Testo non disponibile per questo brano».
+
 «Conviene» mette in cima il distributore con cui spendi meno contando un pieno da 40 litri e il viaggio di andata e ritorno. I prezzi si scaricano quando apri Benzinai, al massimo una volta al giorno, dopo la pubblicazione del mattino.
 
 Wi‑Fi apre il pannello delle reti di Android; Bluetooth si accende e si spegne con un tocco (la prima volta Android chiede il permesso «Dispositivi nelle vicinanze»). Il «›» accanto a ciascuno apre le impostazioni complete. «Tema» passa al tema successivo. Il volume si regola dall'auto: dal launcher non si può. Il meteo mostra il luogo che sta seguendo, con la puntina quando segue il GPS. Una playlist si fa partire con un tocco. «Piove» o «Pioggia tra 20 min» compare nel meteo solo se la pioggia arriva entro due ore.
