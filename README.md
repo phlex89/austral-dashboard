@@ -27,7 +27,7 @@ Auto: all'accensione o dal tasto in Impostazioni → scarica → installa
 | [M01 · La catena di aggiornamento](doc/piani/M01-catena-aggiornamenti/PIANO.md) | Fatto sull'emulatore; manca il test sul box, previsto il 2026-11-19 |
 | [M02 · La Home vera, in otto temi](doc/piani/M02-home-a-temi/PIANO.md) | Otto temi con i dettagli delle tavole nuove, pubblicati nella v0.2.1; manca la prova sul box, prevista il 2026-11-19 |
 | [M03 · Catena robusta e rifiniture](doc/piani/M03-catena-robusta-e-rifiniture/PIANO.md) | 0.3.0 in uso sul box; pubblicata la 0.3.1, da ricevere sul box |
-| [M04 · Funzioni di bordo](doc/piani/M04-funzioni-di-bordo/PIANO.md) | Pubblicata la 0.4.1; il volume non funziona sul box, si indaga con Diagnostica → Audio |
+| [M04 · Funzioni di bordo](doc/piani/M04-funzioni-di-bordo/PIANO.md) | Pubblicata la 0.4.1; il volume non si controlla dal launcher sul box ed è stato tolto con M05 |
 
 Prima installazione sul box, aggiornamenti e chiave di firma: [doc/GUIDA.md](doc/GUIDA.md).
 

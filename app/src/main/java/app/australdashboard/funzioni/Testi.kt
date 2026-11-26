@@ -82,7 +82,7 @@ object FonteTesti {
         val connessione = URL(indirizzo).openConnection() as HttpURLConnection
         connessione.connectTimeout = 10_000
         connessione.readTimeout = 15_000
-        connessione.setRequestProperty("User-Agent", "AustralDashboard")
+        connessione.setRequestProperty("User-Agent", "AustralDashboard (https://github.com/phlex89/austral-dashboard)")
         try {
             val codice = connessione.responseCode
             if (codice != HttpURLConnection.HTTP_OK) error("HTTP $codice")
