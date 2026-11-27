@@ -72,7 +72,10 @@ object Benzinai {
         if (compatto == null || compatto.impianti.isEmpty()) {
             return ElencoBenzinai.Errore("Prezzi non disponibili. Controlla la connessione.")
         }
-        val pronto = DatiMimit.filtra(compatto.impianti, luogo, preferiti(context), ordine, raggio(context), intornoAMe)
+        val pronto = DatiMimit.filtra(
+            compatto.impianti, luogo, preferiti(context), ordine, raggio(context), intornoAMe,
+            Rifornimenti.pieno(Rifornimenti.elenco(context)),
+        )
         val richiesti = (pronto.preferiti + pronto.vicini).map { it.id }.toSet()
         val mancanti = richiesti.filter { it !in prezziPrima }.toSet()
         if (mancanti.isNotEmpty()) {

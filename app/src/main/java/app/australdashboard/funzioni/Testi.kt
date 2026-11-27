@@ -1,8 +1,11 @@
 package app.australdashboard.funzioni
 
+import android.content.Context
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.security.MessageDigest
 import kotlin.math.abs
 import org.json.JSONArray
 import org.json.JSONObject
@@ -11,15 +14,53 @@ data class RigaTesto(val ms: Long, val testo: String)
 
 data class TestoBrano(val righe: List<RigaTesto>, val sincronizzato: Boolean, val strumentale: Boolean = false)
 
+class Archivio(private val cartella: File, private val massimo: Int = MASSIMO_FILE) {
+    @Synchronized
+    fun leggi(chiave: String): String? {
+        val file = File(cartella, nome(chiave))
+        if (!file.exists()) return null
+        file.setLastModified(System.currentTimeMillis())
+        return runCatching { file.readText() }.getOrNull()
+    }
+
+    @Synchronized
+    fun scrivi(chiave: String, contenuto: String) {
+        cartella.mkdirs()
+        val file = File(cartella, nome(chiave))
+        val temporaneo = File(cartella, file.name + ".tmp")
+        temporaneo.writeText(contenuto)
+        if (!temporaneo.renameTo(file)) temporaneo.delete()
+        val tutti = cartella.listFiles { f -> !f.name.endsWith(".tmp") }.orEmpty()
+        if (tutti.size > massimo) tutti.sortedBy { it.lastModified() }.take(tutti.size - massimo).forEach { it.delete() }
+    }
+
+    private fun nome(chiave: String): String =
+        MessageDigest.getInstance("SHA-256").digest(chiave.toByteArray()).take(16).joinToString("") { "%02x".format(it) }
+
+    companion object {
+        private const val MASSIMO_FILE = 300
+        private var unico: Archivio? = null
+
+        @Synchronized
+        fun di(context: Context): Archivio =
+            unico ?: Archivio(File(context.applicationContext.filesDir, "testi")).also { unico = it }
+    }
+}
+
 object FonteTesti {
     private const val TOLLERANZA_S = 3.0
     private const val MASSIMO_IN_MEMORIA = 20
     private val tempo = Regex("""\[(\d+):(\d{1,2})(?:[.:](\d{1,3}))?]""")
     private val inMemoria = LinkedHashMap<String, TestoBrano?>()
 
-    fun scarica(titolo: String, artista: String, durataMs: Long): TestoBrano? {
+    fun scarica(titolo: String, artista: String, durataMs: Long, archivio: Archivio? = null): TestoBrano? {
         val chiave = "$titolo|$artista"
         synchronized(inMemoria) { if (inMemoria.containsKey(chiave)) return inMemoria[chiave] }
+        val salvato = archivio?.leggi("testo|$chiave")?.let { runCatching { daJson(it) }.getOrNull() }
+        if (salvato != null) {
+            ricorda(chiave, salvato)
+            return salvato
+        }
         val durataS = if (durataMs > 0) durataMs / 1000.0 else null
         var trovato = scegli(cerca(titolo, artista), durataS)
         val pulito = titoloPulito(titolo)
@@ -27,11 +68,36 @@ object FonteTesti {
         if (trovato == null && (pulito != titolo || primoArtista != artista)) {
             trovato = scegli(cerca(pulito, primoArtista), durataS)
         }
-        synchronized(inMemoria) {
-            inMemoria[chiave] = trovato
-            if (inMemoria.size > MASSIMO_IN_MEMORIA) inMemoria.remove(inMemoria.keys.first())
-        }
+        if (trovato != null) archivio?.scrivi("testo|$chiave", inJson(trovato))
+        ricorda(chiave, trovato)
         return trovato
+    }
+
+    fun spostamento(archivio: Archivio, chiave: String): Long =
+        archivio.leggi("spostamento|$chiave")?.toLongOrNull() ?: 0
+
+    fun salvaSpostamento(archivio: Archivio, chiave: String, ms: Long) =
+        archivio.scrivi("spostamento|$chiave", ms.toString())
+
+    fun inJson(t: TestoBrano): String = JSONObject()
+        .put("sincronizzato", t.sincronizzato)
+        .put("strumentale", t.strumentale)
+        .put("righe", JSONArray().apply { t.righe.forEach { put(JSONArray().put(it.ms).put(it.testo)) } })
+        .toString()
+
+    fun daJson(json: String): TestoBrano {
+        val o = JSONObject(json)
+        val righe = o.getJSONArray("righe")
+        return TestoBrano(
+            List(righe.length()) { righe.getJSONArray(it).let { r -> RigaTesto(r.getLong(0), r.getString(1)) } },
+            o.getBoolean("sincronizzato"),
+            o.optBoolean("strumentale"),
+        )
+    }
+
+    private fun ricorda(chiave: String, testo: TestoBrano?) = synchronized(inMemoria) {
+        inMemoria[chiave] = testo
+        if (inMemoria.size > MASSIMO_IN_MEMORIA) inMemoria.remove(inMemoria.keys.first())
     }
 
     fun scegli(json: String, durataS: Double?): TestoBrano? {
@@ -101,8 +167,13 @@ object FonteTraduzioni {
     private val inMemoria = LinkedHashMap<String, List<String>?>()
     private val entita = Regex("""&(#\d+|#x[0-9a-fA-F]+|quot|amp|lt|gt|apos);""")
 
-    fun traduci(chiave: String, righe: List<String>, email: String): List<String>? {
+    fun traduci(chiave: String, righe: List<String>, email: String, archivio: Archivio? = null): List<String>? {
         synchronized(inMemoria) { if (inMemoria.containsKey(chiave)) return inMemoria[chiave] }
+        val salvata = archivio?.leggi("traduzione|$chiave")?.let { runCatching { daJson(it) } }
+        if (salvata != null && salvata.isSuccess) {
+            ricorda(chiave, salvata.getOrNull())
+            return salvata.getOrNull()
+        }
         val diverse = righe.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         val tradotte = HashMap<String, String>()
         var tutteItaliane = true
@@ -117,11 +188,25 @@ object FonteTraduzioni {
             blocco.forEachIndexed { i, riga -> tradotte[riga] = linee.getOrNull(i)?.trim().orEmpty() }
         }
         val esito = if (tutteItaliane) null else righe.map { tradotte[it.trim()].orEmpty() }
-        synchronized(inMemoria) {
-            inMemoria[chiave] = esito
-            if (inMemoria.size > MASSIMO_IN_MEMORIA) inMemoria.remove(inMemoria.keys.first())
-        }
+        archivio?.scrivi("traduzione|$chiave", inJson(esito))
+        ricorda(chiave, esito)
         return esito
+    }
+
+    fun inJson(righe: List<String>?): String =
+        if (righe == null) JSONObject().put("italiano", true).toString()
+        else JSONObject().put("righe", JSONArray(righe)).toString()
+
+    fun daJson(json: String): List<String>? {
+        val o = JSONObject(json)
+        if (o.optBoolean("italiano")) return null
+        val righe = o.getJSONArray("righe")
+        return List(righe.length()) { righe.getString(it) }
+    }
+
+    private fun ricorda(chiave: String, righe: List<String>?) = synchronized(inMemoria) {
+        inMemoria[chiave] = righe
+        if (inMemoria.size > MASSIMO_IN_MEMORIA) inMemoria.remove(inMemoria.keys.first())
     }
 
     fun blocchi(righe: List<String>): List<List<String>> {

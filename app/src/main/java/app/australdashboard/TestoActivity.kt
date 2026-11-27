@@ -16,18 +16,23 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import app.australdashboard.funzioni.Archivio
 import app.australdashboard.funzioni.FonteTesti
 import app.australdashboard.funzioni.FonteTraduzioni
 import app.australdashboard.funzioni.LimiteTraduzioni
 import app.australdashboard.funzioni.Lettore
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.TestoBrano
+import java.util.Locale
 import kotlin.math.abs
 
 class TestoActivity : Schermata() {
     private val principale = Handler(Looper.getMainLooper())
     private lateinit var brano: TextView
     private lateinit var nota: TextView
+    private lateinit var tempi: LinearLayout
+    private lateinit var etichettaSpostamento: TextView
+    private lateinit var archivio: Archivio
     private lateinit var traduci: TextView
     private lateinit var avviso: TextView
     private lateinit var scorrimento: ScrollView
@@ -41,6 +46,7 @@ class TestoActivity : Schermata() {
     private var traduzioneAccesa = false
     private var traduzione: List<String>? = null
     private var traducendo = false
+    private var spostamento = 0L
     private var corrente = -1
     private var seguendo = true
     private var daCentrare = false
@@ -55,6 +61,7 @@ class TestoActivity : Schermata() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        archivio = Archivio.di(this)
         val preferenze = getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE)
         dimensione = preferenze.getFloat(CHIAVE_DIMENSIONE, DIMENSIONE_PREDEFINITA)
         traduzioneAccesa = preferenze.getBoolean(CHIAVE_TRADUZIONE, false)
@@ -69,9 +76,31 @@ class TestoActivity : Schermata() {
             addView(tastoDimensione("A−", "Testo più piccolo", -PASSO), LinearLayout.LayoutParams(dp(96), dp(80)))
             addView(tastoDimensione("A+", "Testo più grande", PASSO), LinearLayout.LayoutParams(dp(96), dp(80)).apply { marginStart = dp(12) })
         }
-        brano = secondario("", 22f).apply {
-            isSingleLine = true
-            setPadding(dp(40), 0, dp(40), dp(8))
+        brano = secondario("", 22f).apply { isSingleLine = true }
+        etichettaSpostamento = secondario("", 22f).apply {
+            gravity = Gravity.CENTER
+            contentDescription = "Spostamento del testo"
+        }
+        tempi = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            visibility = View.GONE
+            addView(tastoDimensione("−0,5 s", "Testo prima", 0f).apply {
+                textSize = 22f
+                setOnClickListener { cambiaSpostamento(-PASSO_SPOSTAMENTO_MS) }
+            }, LinearLayout.LayoutParams(dp(120), dp(64)))
+            addView(etichettaSpostamento, LinearLayout.LayoutParams(dp(96), ViewGroup.LayoutParams.WRAP_CONTENT))
+            addView(tastoDimensione("+0,5 s", "Testo dopo", 0f).apply {
+                textSize = 22f
+                setOnClickListener { cambiaSpostamento(PASSO_SPOSTAMENTO_MS) }
+            }, LinearLayout.LayoutParams(dp(120), dp(64)))
+        }
+        val rigaBrano = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(40), 0, dp(32), dp(8))
+            addView(brano, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(tempi)
         }
         nota = secondario("", 20f).apply {
             setPadding(dp(40), 0, dp(40), dp(8))
@@ -109,7 +138,7 @@ class TestoActivity : Schermata() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(SFONDO)
             addView(intestazione("Testo", dimensioni))
-            addView(brano)
+            addView(rigaBrano)
             addView(nota)
             addView(avviso, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(scorrimento, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
@@ -150,9 +179,11 @@ class TestoActivity : Schermata() {
         brano.text = if (musica.artista.isEmpty()) musica.titolo else "${musica.titolo} · ${musica.artista}"
         mostraAvviso("Cerco il testo…")
         Thread {
-            val esito = runCatching { FonteTesti.scarica(musica.titolo, musica.artista, musica.durataMs) }
+            val esito = runCatching { FonteTesti.scarica(musica.titolo, musica.artista, musica.durataMs, archivio) }
+            val salvato = FonteTesti.spostamento(archivio, nuova)
             runOnUiThread {
                 if (isDestroyed || chiave != nuova) return@runOnUiThread
+                spostamento = salvato
                 val trovato = esito.getOrNull()
                 when {
                     esito.isFailure -> mostraAvviso("Testo non raggiungibile: controlla la connessione")
@@ -170,6 +201,7 @@ class TestoActivity : Schermata() {
         tradotte = emptyList()
         traduzione = null
         traduci.visibility = View.GONE
+        tempi.visibility = View.GONE
         mostraNota("")
         corrente = -1
         colonnaRighe.removeAllViews()
@@ -203,7 +235,7 @@ class TestoActivity : Schermata() {
                 addView(tradotta, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
                 if (nuovo.sincronizzato) {
                     setOnClickListener {
-                        lettore?.vaiA(riga.ms)
+                        lettore?.vaiA((riga.ms + spostamento).coerceAtLeast(0))
                         seguendo = true
                         segui.visibility = View.GONE
                     }
@@ -215,6 +247,8 @@ class TestoActivity : Schermata() {
         righe = originali
         tradotte = traduzioni
         traduci.visibility = View.VISIBLE
+        tempi.visibility = if (nuovo.sincronizzato) View.VISIBLE else View.GONE
+        mostraSpostamento()
         aggiornaTasto()
         mostraNota("")
         if (traduzioneAccesa) caricaTraduzione()
@@ -255,7 +289,7 @@ class TestoActivity : Schermata() {
         mostraNota("Traduco…")
         val email = getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getString(CHIAVE_EMAIL, "").orEmpty()
         Thread {
-            val esito = runCatching { FonteTraduzioni.traduci(perBrano, attuale.righe.map { it.testo }, email) }
+            val esito = runCatching { FonteTraduzioni.traduci(perBrano, attuale.righe.map { it.testo }, email, archivio) }
             runOnUiThread {
                 traducendo = false
                 if (isDestroyed || chiave != perBrano || caricato !== attuale) return@runOnUiThread
@@ -291,6 +325,19 @@ class TestoActivity : Schermata() {
         scorrimento.post { centra(false) }
     }
 
+    private fun cambiaSpostamento(passo: Long) {
+        val perBrano = chiave ?: return
+        spostamento = (spostamento + passo).coerceIn(-SPOSTAMENTO_MASSIMO_MS, SPOSTAMENTO_MASSIMO_MS)
+        mostraSpostamento()
+        aggiornaRiga()
+        val valore = spostamento
+        Thread { FonteTesti.salvaSpostamento(archivio, perBrano, valore) }.start()
+    }
+
+    private fun mostraSpostamento() {
+        etichettaSpostamento.text = if (spostamento == 0L) "0 s" else String.format(Locale.ITALY, "%+.1f s", spostamento / 1000.0)
+    }
+
     private fun mostraNota(messaggio: String) {
         nota.text = messaggio
         nota.visibility = if (messaggio.isEmpty()) View.GONE else View.VISIBLE
@@ -300,7 +347,7 @@ class TestoActivity : Schermata() {
         val attuale = caricato ?: return
         if (!attuale.sincronizzato) return
         val posizione = lettore?.posizioneMs() ?: return
-        val indice = FonteTesti.rigaCorrente(attuale.righe, posizione)
+        val indice = FonteTesti.rigaCorrente(attuale.righe, posizione - spostamento)
         if (daCentrare && seguendo && indice == corrente && righe.firstOrNull()?.isLaidOut == true) {
             daCentrare = false
             centra(false)
@@ -370,6 +417,8 @@ class TestoActivity : Schermata() {
         private const val DIMENSIONE_MINIMA = 22f
         private const val DIMENSIONE_MASSIMA = 58f
         private const val PASSO = 4f
+        private const val PASSO_SPOSTAMENTO_MS = 500L
+        private const val SPOSTAMENTO_MASSIMO_MS = 10_000L
         private const val INTERVALLO_MS = 200L
         private const val SPENTA = 0xFF5E636C.toInt()
     }

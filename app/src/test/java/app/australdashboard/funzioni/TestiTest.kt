@@ -1,5 +1,6 @@
 package app.australdashboard.funzioni
 
+import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -98,5 +99,41 @@ class TestiTest {
     fun limiteRaggiunto() {
         val json = """{"responseData":{"translatedText":"MYMEMORY WARNING"},"quotaFinished":true,"responseStatus":429}"""
         assertThrows(LimiteTraduzioni::class.java) { FonteTraduzioni.leggiRisposta(json) }
+    }
+
+    @Test
+    fun testoSalvatoERiletto() {
+        val testo = TestoBrano(listOf(RigaTesto(1330, "Is this the real life?"), RigaTesto(7000, "")), sincronizzato = true)
+        assertEquals(testo, FonteTesti.daJson(FonteTesti.inJson(testo)))
+    }
+
+    @Test
+    fun traduzioneSalvataERiletta() {
+        assertEquals(listOf("uno", ""), FonteTraduzioni.daJson(FonteTraduzioni.inJson(listOf("uno", ""))))
+        assertNull(FonteTraduzioni.daJson(FonteTraduzioni.inJson(null)))
+    }
+
+    @Test
+    fun archivioTieneIPiuRecenti() {
+        val cartella = Files.createTempDirectory("archivio").toFile()
+        val archivio = Archivio(cartella, massimo = 2)
+        archivio.scrivi("a", "primo")
+        archivio.scrivi("b", "secondo")
+        cartella.listFiles()!!.forEach { it.setLastModified(if (it.readText() == "primo") 1_000 else 2_000) }
+        archivio.scrivi("c", "terzo")
+        assertNull(archivio.leggi("a"))
+        assertEquals("secondo", archivio.leggi("b"))
+        assertEquals("terzo", archivio.leggi("c"))
+        cartella.deleteRecursively()
+    }
+
+    @Test
+    fun spostamentoPerBrano() {
+        val cartella = Files.createTempDirectory("archivio").toFile()
+        val archivio = Archivio(cartella)
+        assertEquals(0L, FonteTesti.spostamento(archivio, "Vita|Dalla"))
+        FonteTesti.salvaSpostamento(archivio, "Vita|Dalla", -1500)
+        assertEquals(-1500L, FonteTesti.spostamento(archivio, "Vita|Dalla"))
+        cartella.deleteRecursively()
     }
 }

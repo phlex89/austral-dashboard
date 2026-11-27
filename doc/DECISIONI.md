@@ -21,6 +21,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Niente volume dal launcher, Bluetooth diretto](#niente-volume-dal-launcher-bluetooth-diretto)
 - [Il testo delle canzoni nel launcher, da LRCLIB](#il-testo-delle-canzoni-nel-launcher-da-lrclib)
 - [La traduzione dei testi, da MyMemory](#la-traduzione-dei-testi-da-mymemory)
+- [Testi sul box, tempi corretti, Conviene dai rifornimenti](#testi-sul-box-tempi-corretti-conviene-dai-rifornimenti)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -75,7 +76,7 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 
 - I due CSV del MIMIT pesano circa 7,5 MB insieme. Dopo il download se ne tiene un file compatto con i soli impianti che hanno la benzina self, e lo si filtra per posizione a ogni apertura: così ci si può spostare senza riscaricare.
 - Se il box non ha una posizione, meteo e Benzinai usano una città di riserva scelta in Impostazioni (Open-Meteo Geocoding).
-- «Conviene» ordina per il costo di un pieno da 40 litri più andata e ritorno a 6 l/100 km.
+- «Conviene» ordina per il costo di un pieno più andata e ritorno. Dal 2026-11-27 pieno e consumo vengono da Rifornimenti (vedi «Testi sul box, tempi corretti, Conviene dai rifornimenti»); senza dati, 40 litri e 6 l/100 km.
 - I preferiti sono tre comuni scelti dall'utente, fissi nel codice (Torino, Cellamare, Valenzano), non distributori: un comune ha molti distributori e quello più economico cambia di giorno in giorno. Di ognuno si mostra il più economico, anche se è lontano (D-6 del piano M02).
 
 ## Dettagli dei temi legati ai dati
@@ -188,3 +189,16 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - L'email non sta nel codice né nell'APK, che sono pubblici: si scrive sul box e va solo a MyMemory.
 - Con `autodetect` MyMemory riconosce la lingua; un testo italiano risponde «two distinct languages», e allora il tasto sparisce.
 - Su circa 620 dp di larghezza le due colonne vanno a capo più spesso: ogni riga è un contenitore orizzontale, così una riga lunga spinge giù tutte e due le colonne e restano allineate.
+
+## Testi sul box, tempi corretti, Conviene dai rifornimenti
+
+**In breve.** Deciso il 2026-11-27, tra le idee proposte dopo la 0.6.0. Testi, traduzioni e correzioni dei tempi restano sul box. Il testo si scarica appena parte un brano. «−0,5 s / +0,5 s» correggono i tempi di LRCLIB per brano. «Conviene» usa il pieno medio e il consumo reali di Rifornimenti. Le prove della musica sull'emulatore usano una piccola app a parte invece di Chrome.
+
+**Dettagli.**
+
+- Sul disco: in galleria o senza segnale il testo di un brano già sentito resta leggibile, e riascoltarlo non consuma il limite di MyMemory. Al massimo 300 file (circa cento brani con testo, traduzione e correzione), poi si tolgono i meno usati.
+- Il download anticipato vive nel servizio delle notifiche, l'unico pezzo del launcher sempre acceso mentre si usano altre app: la Home non è visibile quando cambia il brano. Scarica solo il testo, che è gratis; la traduzione resta a richiesta.
+- I tempi di LRCLIB a volte sono avanti o indietro di qualche secondo rispetto alla versione che suona. La correzione è per brano perché l'errore dipende dalla versione caricata.
+- «Conviene» con 40 litri fissi favoriva i distributori lontani per chi fa pieni più piccoli; ora la media degli ultimi cinque pieni completi e il consumo tra pieni.
+- Il brano finto con Chrome dipendeva dal rendering della pagina, che sull'emulatore restava nero. `provamusica` crea una `MediaSession` in poche righe, senza rete né audio; è un modulo a parte, che `release.sh` non costruisce e non pubblica.
+

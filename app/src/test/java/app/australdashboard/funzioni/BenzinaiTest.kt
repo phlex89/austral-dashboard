@@ -268,6 +268,7 @@ class BenzinaiTest {
     fun ilCostoComprendeIlViaggio() {
         val impianto = d(1, 2.0, 45.0).copy(distanzaKm = 10.0)
         assertEquals(2.0 * (40 + 10 * 2 * 0.06), DatiMimit.costo(impianto), 1e-9)
+        assertEquals(2.0 * (25 + 10 * 2 * 0.05), DatiMimit.costo(impianto, Pieno(25.0, 0.05)), 1e-9)
     }
 
     @Test

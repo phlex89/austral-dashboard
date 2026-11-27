@@ -20,8 +20,11 @@ data class Totali(val km: Int, val euro: Double, val litri: Double) {
 
 data class Mese(val anno: Int, val mese: Int, val spesa: Double, val km: Int)
 
+data class Pieno(val litri: Double = 40.0, val litriAlKm: Double = 0.06)
+
 object Rifornimenti {
     private const val FILE = "rifornimenti.txt"
+    private const val PIENI_PER_MEDIA = 5
 
     fun elenco(context: Context): List<Rifornimento> {
         val file = File(context.filesDir, FILE)
@@ -94,6 +97,15 @@ object Rifornimenti {
     fun consumo(elenco: List<Rifornimento>): Double? {
         val tratte = tratte(elenco).ifEmpty { return null }
         return tratte.sumOf { it.km } / tratte.sumOf { it.litri }
+    }
+
+    fun pieno(elenco: List<Rifornimento>): Pieno {
+        val ultimi = elenco.filter { it.pieno && it.litri > 0 }.sortedBy { it.km }.takeLast(PIENI_PER_MEDIA)
+        val predefinito = Pieno()
+        return Pieno(
+            litri = if (ultimi.isEmpty()) predefinito.litri else ultimi.sumOf { it.litri } / ultimi.size,
+            litriAlKm = consumo(elenco)?.let { 1 / it } ?: predefinito.litriAlKm,
+        )
     }
 
     fun costoCentoKm(elenco: List<Rifornimento>): Double? {

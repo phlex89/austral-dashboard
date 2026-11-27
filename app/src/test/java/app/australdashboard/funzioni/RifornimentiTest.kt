@@ -144,4 +144,16 @@ class RifornimentiTest {
         assertEquals("90 € a novembre", Rifornimenti.spesaDelMese(pieni, 2026, 11))
         assertNull(Rifornimenti.spesaDelMese(pieni, 2026, 12))
     }
+
+    @Test
+    fun pienoDaiRifornimenti() {
+        val pieno = Rifornimenti.pieno(pieni)
+        assertEquals(30.0, pieno.litri, 0.001)
+        assertEquals(50.0 / 1000.0, pieno.litriAlKm, 0.0001)
+    }
+
+    @Test
+    fun pienoPredefinitoSenzaRifornimenti() {
+        assertEquals(Pieno(), Rifornimenti.pieno(emptyList()))
+    }
 }

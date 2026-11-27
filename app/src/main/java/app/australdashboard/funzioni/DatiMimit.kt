@@ -155,6 +155,7 @@ object DatiMimit {
         ordine: Ordine,
         raggioKm: Double,
         intornoAMe: Boolean,
+        pieno: Pieno = Pieno(),
     ): ElencoBenzinai.Pronto {
         val conDistanza = tutti.map { it.copy(distanzaKm = distanzaKm(luogo, it.luogo)) }
         val scelti = if (intornoAMe) emptyList() else comuni.mapNotNull { comune ->
@@ -164,7 +165,7 @@ object DatiMimit {
         }
         val esclusi = scelti.map { it.id }.toSet()
         val vicini = conDistanza.filter { it.id !in esclusi && it.distanzaKm <= raggioKm }
-            .sortedWith(confronto(ordine)).take(MASSIMO_VICINI)
+            .sortedWith(confronto(ordine, pieno)).take(MASSIMO_VICINI)
         return ElencoBenzinai.Pronto(scelti, vicini, ordine, raggioKm, intornoAMe)
     }
 
@@ -177,12 +178,12 @@ object DatiMimit {
         return 2 * 6371.0088 * asin(min(1.0, sqrt(max(0.0, h))))
     }
 
-    fun costo(d: Distributore): Double = d.prezzo * (40 + d.distanzaKm * 2 * 0.06)
+    fun costo(d: Distributore, pieno: Pieno = Pieno()): Double = d.prezzo * (pieno.litri + d.distanzaKm * 2 * pieno.litriAlKm)
 
-    private fun confronto(ordine: Ordine): Comparator<Distributore> = when (ordine) {
+    private fun confronto(ordine: Ordine, pieno: Pieno): Comparator<Distributore> = when (ordine) {
         Ordine.PREZZO -> compareBy<Distributore> { it.prezzo }.thenBy { it.distanzaKm }
         Ordine.DISTANZA -> compareBy<Distributore> { it.distanzaKm }.thenBy { it.prezzo }
-        Ordine.CONVIENE -> compareBy<Distributore> { costo(it) }.thenBy { it.distanzaKm }
+        Ordine.CONVIENE -> compareBy<Distributore> { costo(it, pieno) }.thenBy { it.distanzaKm }
     }
 
     fun prezzo(valore: Double): String = String.format(Locale.ITALY, "%.3f", valore)

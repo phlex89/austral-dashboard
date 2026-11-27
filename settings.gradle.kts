@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "austral-dashboard"
-include(":app")
+include(":app", ":provamusica")
