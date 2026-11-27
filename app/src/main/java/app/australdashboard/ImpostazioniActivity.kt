@@ -1,5 +1,6 @@
 package app.australdashboard
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
@@ -17,6 +18,7 @@ class ImpostazioniActivity : Schermata() {
     private lateinit var comuni: Riga
     private lateinit var permessoMusica: Riga
     private lateinit var playlist: Riga
+    private lateinit var traduzioni: Riga
     private lateinit var aggiornamenti: Riga
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,9 +40,11 @@ class ImpostazioniActivity : Schermata() {
         radice.addView(sezione("Musica"))
         permessoMusica = riga("Consenti la lettura della musica", icona = R.drawable.ic_musica) { Lettore.apriPermesso(this) }
         playlist = riga("Playlist preferite", icona = R.drawable.ic_play) { vai(PlaylistActivity::class.java) }
+        traduzioni = riga("Traduzione dei testi", icona = R.drawable.ic_testo) { vai(TraduzioniActivity::class.java) }
         radice.addView(scheda().apply {
             addView(permessoMusica.view)
             addView(playlist.view)
+            addView(traduzioni.view)
         })
         radice.addView(sezione("Sistema e aggiornamenti"))
         aggiornamenti = riga("Controlla aggiornamenti", icona = R.drawable.ic_aggiorna, freccia = false) { controllaOra() }
@@ -65,6 +69,8 @@ class ImpostazioniActivity : Schermata() {
         mostra(comuni, Benzinai.preferiti(this).joinToString(", ").ifEmpty { "nessuno" })
         permessoMusica.view.visibility = if (Lettore.permessoConcesso(this)) View.GONE else View.VISIBLE
         mostra(playlist, Playlists.elenco(this).joinToString(", ") { it.nome }.ifEmpty { "nessuna" })
+        val email = getSharedPreferences(TestoActivity.PREFERENZE, Context.MODE_PRIVATE).getString(TestoActivity.CHIAVE_EMAIL, "").orEmpty()
+        mostra(traduzioni, email.ifEmpty { "senza email, circa 3 brani al giorno" })
         mostra(aggiornamenti, Stato.esito(this))
     }
 

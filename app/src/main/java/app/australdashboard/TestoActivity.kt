@@ -17,6 +17,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import app.australdashboard.funzioni.FonteTesti
+import app.australdashboard.funzioni.FonteTraduzioni
+import app.australdashboard.funzioni.LimiteTraduzioni
 import app.australdashboard.funzioni.Lettore
 import app.australdashboard.funzioni.Musica
 import app.australdashboard.funzioni.TestoBrano
@@ -25,6 +27,8 @@ import kotlin.math.abs
 class TestoActivity : Schermata() {
     private val principale = Handler(Looper.getMainLooper())
     private lateinit var brano: TextView
+    private lateinit var nota: TextView
+    private lateinit var traduci: TextView
     private lateinit var avviso: TextView
     private lateinit var scorrimento: ScrollView
     private lateinit var colonnaRighe: LinearLayout
@@ -33,6 +37,10 @@ class TestoActivity : Schermata() {
     private var chiave: String? = null
     private var caricato: TestoBrano? = null
     private var righe: List<TextView> = emptyList()
+    private var tradotte: List<TextView> = emptyList()
+    private var traduzioneAccesa = false
+    private var traduzione: List<String>? = null
+    private var traducendo = false
     private var corrente = -1
     private var seguendo = true
     private var daCentrare = false
@@ -47,15 +55,27 @@ class TestoActivity : Schermata() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        dimensione = getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getFloat(CHIAVE_DIMENSIONE, DIMENSIONE_PREDEFINITA)
+        val preferenze = getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE)
+        dimensione = preferenze.getFloat(CHIAVE_DIMENSIONE, DIMENSIONE_PREDEFINITA)
+        traduzioneAccesa = preferenze.getBoolean(CHIAVE_TRADUZIONE, false)
+        traduci = tastoDimensione("Traduci", "Traduzione in italiano", 0f).apply {
+            textSize = 24f
+            setOnClickListener { cambiaTraduzione() }
+            visibility = View.GONE
+        }
         val dimensioni = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            addView(traduci, LinearLayout.LayoutParams(dp(150), dp(80)).apply { marginEnd = dp(12) })
             addView(tastoDimensione("A−", "Testo più piccolo", -PASSO), LinearLayout.LayoutParams(dp(96), dp(80)))
             addView(tastoDimensione("A+", "Testo più grande", PASSO), LinearLayout.LayoutParams(dp(96), dp(80)).apply { marginStart = dp(12) })
         }
         brano = secondario("", 22f).apply {
             isSingleLine = true
             setPadding(dp(40), 0, dp(40), dp(8))
+        }
+        nota = secondario("", 20f).apply {
+            setPadding(dp(40), 0, dp(40), dp(8))
+            visibility = View.GONE
         }
         avviso = testo("", 28f).apply {
             gravity = Gravity.CENTER
@@ -90,6 +110,7 @@ class TestoActivity : Schermata() {
             setBackgroundColor(SFONDO)
             addView(intestazione("Testo", dimensioni))
             addView(brano)
+            addView(nota)
             addView(avviso, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(scorrimento, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
             addView(segui, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -146,6 +167,10 @@ class TestoActivity : Schermata() {
     private fun mostraAvviso(messaggio: String) {
         caricato = null
         righe = emptyList()
+        tradotte = emptyList()
+        traduzione = null
+        traduci.visibility = View.GONE
+        mostraNota("")
         corrente = -1
         colonnaRighe.removeAllViews()
         avviso.text = messaggio
@@ -158,17 +183,24 @@ class TestoActivity : Schermata() {
         caricato = nuovo
         corrente = -1
         seguendo = nuovo.sincronizzato
+        traduzione = null
         avviso.visibility = View.GONE
         scorrimento.visibility = View.VISIBLE
         segui.visibility = View.GONE
         colonnaRighe.removeAllViews()
-        righe = nuovo.righe.map { riga ->
-            TextView(this).apply {
-                text = riga.testo.ifEmpty { "♪" }
-                textSize = dimensione
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(if (nuovo.sincronizzato) SPENTA else Color.WHITE)
-                setPadding(0, dp(10), 0, dp(10))
+        val colore = if (nuovo.sincronizzato) SPENTA else Color.WHITE
+        val originali = mutableListOf<TextView>()
+        val traduzioni = mutableListOf<TextView>()
+        nuovo.righe.forEach { riga ->
+            val originale = rigaTesto(riga.testo.ifEmpty { "♪" }, colore, Typeface.DEFAULT_BOLD)
+            val tradotta = rigaTesto("", colore, Typeface.DEFAULT).apply {
+                setPadding(dp(24), dp(10), 0, dp(10))
+                visibility = View.GONE
+            }
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                addView(originale, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                addView(tradotta, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
                 if (nuovo.sincronizzato) {
                     setOnClickListener {
                         lettore?.vaiA(riga.ms)
@@ -176,11 +208,92 @@ class TestoActivity : Schermata() {
                         segui.visibility = View.GONE
                     }
                 }
-            }.also { colonnaRighe.addView(it) }
+            }.also { colonnaRighe.addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)) }
+            originali.add(originale)
+            traduzioni.add(tradotta)
         }
+        righe = originali
+        tradotte = traduzioni
+        traduci.visibility = View.VISIBLE
+        aggiornaTasto()
+        mostraNota("")
+        if (traduzioneAccesa) caricaTraduzione()
         scorrimento.scrollTo(0, 0)
         daCentrare = true
         aggiornaRiga()
+    }
+
+    private fun rigaTesto(contenuto: String, colore: Int, carattere: Typeface): TextView = TextView(this).apply {
+        text = contenuto
+        textSize = dimensione
+        typeface = carattere
+        setTextColor(colore)
+        setPadding(0, dp(10), 0, dp(10))
+    }
+
+    private fun cambiaTraduzione() {
+        traduzioneAccesa = !traduzioneAccesa
+        getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit().putBoolean(CHIAVE_TRADUZIONE, traduzioneAccesa).apply()
+        aggiornaTasto()
+        if (traduzioneAccesa) caricaTraduzione() else mostraTraduzione()
+    }
+
+    private fun aggiornaTasto() {
+        traduci.setTextColor(if (traduzioneAccesa) accento else Color.WHITE)
+        (traduci.background as GradientDrawable).setStroke(if (traduzioneAccesa) dp(2) else 0, accento)
+    }
+
+    private fun caricaTraduzione() {
+        val attuale = caricato ?: return
+        val perBrano = chiave ?: return
+        if (traduzione != null) {
+            mostraTraduzione()
+            return
+        }
+        if (traducendo) return
+        traducendo = true
+        mostraNota("Traduco…")
+        val email = getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).getString(CHIAVE_EMAIL, "").orEmpty()
+        Thread {
+            val esito = runCatching { FonteTraduzioni.traduci(perBrano, attuale.righe.map { it.testo }, email) }
+            runOnUiThread {
+                traducendo = false
+                if (isDestroyed || chiave != perBrano || caricato !== attuale) return@runOnUiThread
+                val errore = esito.exceptionOrNull()
+                when {
+                    errore is LimiteTraduzioni -> mostraNota(
+                        if (email.isBlank()) "Traduzioni di oggi finite: con un'email in Impostazioni → Musica se ne hanno di più"
+                        else "Traduzioni di oggi finite",
+                    )
+                    errore != null -> mostraNota("Traduzione non raggiungibile: controlla la connessione")
+                    esito.getOrNull() == null -> {
+                        traduci.visibility = View.GONE
+                        mostraNota("")
+                    }
+                    else -> {
+                        traduzione = esito.getOrNull()
+                        mostraNota("")
+                        mostraTraduzione()
+                    }
+                }
+            }
+        }.start()
+    }
+
+    private fun mostraTraduzione() {
+        val testi = traduzione
+        val visibile = traduzioneAccesa && testi != null
+        tradotte.forEachIndexed { i, vista ->
+            vista.text = testi?.getOrNull(i).orEmpty()
+            vista.visibility = if (visibile) View.VISIBLE else View.GONE
+        }
+        if (!traduzioneAccesa) mostraNota("")
+        scorrimento.post { centra(false) }
+    }
+
+    private fun mostraNota(messaggio: String) {
+        nota.text = messaggio
+        nota.visibility = if (messaggio.isEmpty()) View.GONE else View.VISIBLE
     }
 
     private fun aggiornaRiga() {
@@ -194,13 +307,15 @@ class TestoActivity : Schermata() {
         }
         if (indice == corrente) return
         righe.getOrNull(corrente)?.setTextColor(SPENTA)
+        tradotte.getOrNull(corrente)?.setTextColor(SPENTA)
         righe.getOrNull(indice)?.setTextColor(Color.WHITE)
+        tradotte.getOrNull(indice)?.setTextColor(Color.WHITE)
         corrente = indice
         if (seguendo) centra(true)
     }
 
     private fun centra(animato: Boolean) {
-        val riga = righe.getOrNull(corrente.coerceAtLeast(0)) ?: return
+        val riga = righe.getOrNull(corrente.coerceAtLeast(0))?.parent as? View ?: return
         if (caricato?.sincronizzato != true) return
         val meta = scorrimento.height / 2
         val destinazione = (riga.top + riga.height / 2 - meta).coerceAtLeast(0)
@@ -242,17 +357,20 @@ class TestoActivity : Schermata() {
         dimensione = nuova
         getSharedPreferences(PREFERENZE, Context.MODE_PRIVATE).edit().putFloat(CHIAVE_DIMENSIONE, nuova).apply()
         righe.forEach { it.textSize = nuova }
+        tradotte.forEach { it.textSize = nuova }
         scorrimento.post { centra(false) }
     }
 
-    private companion object {
+    companion object {
         const val PREFERENZE = "testi"
-        const val CHIAVE_DIMENSIONE = "dimensione"
-        const val DIMENSIONE_PREDEFINITA = 34f
-        const val DIMENSIONE_MINIMA = 22f
-        const val DIMENSIONE_MASSIMA = 58f
-        const val PASSO = 4f
-        const val INTERVALLO_MS = 200L
-        const val SPENTA = 0xFF5E636C.toInt()
+        const val CHIAVE_EMAIL = "email"
+        private const val CHIAVE_DIMENSIONE = "dimensione"
+        private const val CHIAVE_TRADUZIONE = "traduzione"
+        private const val DIMENSIONE_PREDEFINITA = 34f
+        private const val DIMENSIONE_MINIMA = 22f
+        private const val DIMENSIONE_MASSIMA = 58f
+        private const val PASSO = 4f
+        private const val INTERVALLO_MS = 200L
+        private const val SPENTA = 0xFF5E636C.toInt()
     }
 }

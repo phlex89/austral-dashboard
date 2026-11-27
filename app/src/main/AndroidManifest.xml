@@ -50,6 +50,11 @@
             android:exported="false" />
 
         <activity
+            android:name=".TraduzioniActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".DiagnosticaActivity"
             android:exported="false" />
 

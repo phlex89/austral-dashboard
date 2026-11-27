@@ -3,6 +3,7 @@ package app.australdashboard.funzioni
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -70,5 +71,32 @@ class TestiTest {
         assertEquals(5000L, posizioneStimata(5000, 1000, 1f, false, 9000))
         assertEquals(13_000L, posizioneStimata(5000, 1000, 1f, true, 9000))
         assertNull(posizioneStimata(-1, 1000, 1f, true, 9000))
+    }
+
+    @Test
+    fun blocchiSottoIlLimite() {
+        val righe = List(30) { "riga numero $it con un po' di testo" }
+        val blocchi = FonteTraduzioni.blocchi(righe)
+        assertEquals(righe, blocchi.flatten())
+        assertTrue(blocchi.size > 1)
+        assertTrue(blocchi.all { b -> b.joinToString("\n").toByteArray().size <= 450 })
+    }
+
+    @Test
+    fun rispostaTradotta() {
+        val json = """{"responseData":{"translatedText":"Non ho &#39;rimpianti&quot;\nE tu?"},"quotaFinished":false,"responseStatus":200}"""
+        assertEquals("Non ho 'rimpianti\"\nE tu?", FonteTraduzioni.leggiRisposta(json))
+    }
+
+    @Test
+    fun rispostaGiaInItaliano() {
+        val json = """{"responseData":{"translatedText":"PLEASE SELECT TWO DISTINCT LANGUAGES"},"quotaFinished":null,"responseDetails":"PLEASE SELECT TWO DISTINCT LANGUAGES","responseStatus":"403"}"""
+        assertNull(FonteTraduzioni.leggiRisposta(json))
+    }
+
+    @Test
+    fun limiteRaggiunto() {
+        val json = """{"responseData":{"translatedText":"MYMEMORY WARNING"},"quotaFinished":true,"responseStatus":429}"""
+        assertThrows(LimiteTraduzioni::class.java) { FonteTraduzioni.leggiRisposta(json) }
     }
 }

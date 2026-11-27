@@ -20,6 +20,7 @@ Perché il progetto è fatto così. Una voce `##` per decisione, con la più rec
 - [Luoghi del meteo e mappa dei benzinai](#luoghi-del-meteo-e-mappa-dei-benzinai)
 - [Niente volume dal launcher, Bluetooth diretto](#niente-volume-dal-launcher-bluetooth-diretto)
 - [Il testo delle canzoni nel launcher, da LRCLIB](#il-testo-delle-canzoni-nel-launcher-da-lrclib)
+- [La traduzione dei testi, da MyMemory](#la-traduzione-dei-testi-da-mymemory)
 <!-- /indice -->
 
 ## Kotlin e View native, senza dipendenze
@@ -175,3 +176,15 @@ Ordini di grandezza stimati: APK sotto i 300 KB e 20–30 MB di memoria con le V
 - LRCLIB si interroga con titolo, artista e durata, che la sessione media dà già; la posizione per seguire il testo viene da `PlaybackState`, quindi niente permessi nuovi.
 - Limite: LRCLIB non ha tutti i brani, soprattutto quelli italiani meno noti; in quel caso la schermata lo dice.
 - Seguire il testo si ferma appena l'utente scorre a mano, e riparte solo col tasto: un aggancio a tempo farebbe saltare la pagina mentre si legge.
+
+## La traduzione dei testi, da MyMemory
+
+**In breve.** Deciso il 2026-11-27 (D-1 e D-2 della richiesta): la traduzione in italiano arriva da MyMemory, gratuito e senza chiave, con un'email facoltativa scritta nelle Impostazioni del box che alza il limite da circa 3 a circa 30 brani al giorno. Si vede a schermo diviso, originale a sinistra e traduzione a destra, riga per riga, con un tasto «Traduci» che resta acceso tra un brano e l'altro.
+
+**Dettagli.**
+
+- L'endpoint gratuito non ufficiale di Google rifiutava già le richieste dal Mac («automated queries»): troppo fragile. DeepL traduce meglio ma vuole account e chiave.
+- Limiti di MyMemory: 5.000 caratteri al giorno senza email, 50.000 con `de=<email>`, 500 byte per richiesta. Si mandano solo le righe diverse (i ritornelli una volta) e gli esiti restano in memoria.
+- L'email non sta nel codice né nell'APK, che sono pubblici: si scrive sul box e va solo a MyMemory.
+- Con `autodetect` MyMemory riconosce la lingua; un testo italiano risponde «two distinct languages», e allora il tasto sparisce.
+- Su circa 620 dp di larghezza le due colonne vanno a capo più spesso: ogni riga è un contenitore orizzontale, così una riga lunga spinge giù tutte e due le colonne e restano allineate.
